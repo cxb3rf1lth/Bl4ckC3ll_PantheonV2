@@ -1,0 +1,112 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node.js and NPM
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.eslintcache
+
+# Testing
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+*.cover
+.cache
+
+# Application specific - Bl4ckC3ll_PANTHEON
+runs/*
+!runs/.gitkeep
+logs/*.log
+logs/*.txt
+!logs/.gitkeep
+bcar_results/*
+!bcar_results/.gitkeep
+backups/*
+!backups/.gitkeep
+
+# Security tools downloads (keep structure but not content)
+external_lists/*/
+lists_merged/*/
+payloads/*/
+exploits/*/
+!external_lists/.gitkeep
+!lists_merged/.gitkeep
+!payloads/.gitkeep
+!exploits/.gitkeep
+
+# Temporary files
+/tmp/
+temp/
+*.tmp
+*.temp
+test_*.tmp
+*_test_output.*
+
+# Automation integration results
+bug_bounty_results/
+eslint-results.json
+security-results.*
+comprehensive_test_report.json
+
+# Sensitive data
+*.key
+*.pem
+*.p12
+*.pfx
+config.local.json
+.env
+.env.local
+
+# Security tools output
+nuclei_results/
+nmap_results/
+scan_results/
+target_output/
+
+# Application artifacts
+*.zip
+.setup_complete
+.write_test

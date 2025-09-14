@@ -1,0 +1,4 @@
+#!/bin/bash
+# Bl4ckC3ll_PANTHEON Launcher
+cd "$(dirname "$0")"
+python3 tui_consolidated.py "$@"

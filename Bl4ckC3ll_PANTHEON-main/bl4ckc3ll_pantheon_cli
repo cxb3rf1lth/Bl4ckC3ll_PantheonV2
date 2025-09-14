@@ -1,0 +1,4 @@
+#!/bin/bash
+# Bl4ckC3ll_PANTHEON CLI Launcher
+cd "$(dirname "$0")"
+python3 bl4ckc3ll_p4nth30n.py "$@"

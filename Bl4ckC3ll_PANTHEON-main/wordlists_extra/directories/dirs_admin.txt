@@ -1,0 +1,6 @@
+admin
+administrator
+dashboard
+panel
+phpmyadmin
+wp-admin

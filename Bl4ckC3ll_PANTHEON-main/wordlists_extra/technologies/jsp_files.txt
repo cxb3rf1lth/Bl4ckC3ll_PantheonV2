@@ -1,0 +1,7 @@
+META-INF/context.xml
+WEB-INF/web.xml
+admin.jsp
+config.jsp
+index.jsp
+login.jsp
+web.xml

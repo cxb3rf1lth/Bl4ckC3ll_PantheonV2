@@ -1,0 +1,12 @@
+www
+mail
+api
+admin
+dev
+test
+staging
+blog
+app
+secure
+portal
+dashboard

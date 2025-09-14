@@ -1,0 +1,235 @@
+/* Professional TUI Styles for Bl4ckC3ll_PANTHEON */
+
+/* Tab System */
+#main-container {
+    height: 100%;
+}
+
+#tab-buttons {
+    height: 3;
+    padding: 1;
+    dock: top;
+    background: blue;
+}
+
+.tab-btn {
+    margin: 0 1 0 0;
+    background: gray;
+    color: white;
+}
+
+.tab-btn.active {
+    background: yellow;
+    color: black;
+    text-style: bold;
+}
+
+#content-area {
+    height: 1fr;
+    padding: 1;
+}
+
+.tab-content {
+    height: 100%;
+}
+
+.tab-content.hidden {
+    visibility: hidden;
+    height: 0;
+}
+
+.tab-content.active {
+    visibility: visible;
+    height: 100%;
+}
+
+/* Layout and Grid */
+#dashboard-grid {
+    grid-size: 3 3;
+    grid-gutter: 1;
+    height: 100%;
+}
+
+.dashboard-panel {
+    border: solid white;
+    padding: 1;
+    margin: 1;
+    height: auto;
+}
+
+.span-col-2 {
+    column-span: 2;
+}
+
+.left-panel {
+    width: 30%;
+    padding: 1;
+}
+
+.right-panel {
+    width: 70%;
+    padding: 1;
+}
+
+/* Typography and Colors */
+.widget-title {
+    text-style: bold;
+    color: yellow;
+    background: black;
+    padding: 0 1;
+    border-bottom: solid white;
+}
+
+.section-title {
+    text-style: bold;
+    color: white;
+    padding: 1 0;
+}
+
+.subsection-title {
+    text-style: italic;
+    color: gray;
+}
+
+.form-label {
+    color: white;
+    text-style: bold;
+    margin: 1 0 0 0;
+}
+
+.info-item {
+    color: gray;
+    margin: 0 0 0 1;
+}
+
+.metric-label {
+    color: yellow;
+    text-style: bold;
+}
+
+.placeholder-text {
+    color: gray;
+    text-align: center;
+    margin: 4 0;
+    text-style: italic;
+}
+
+/* Status Colors */
+.status-ready {
+    color: green;
+    text-style: bold;
+}
+
+.status-running {
+    color: yellow;
+    text-style: bold;
+}
+
+.status-complete {
+    color: green;
+    text-style: bold;
+}
+
+.status-error {
+    color: red;
+    text-style: bold;
+}
+
+.status-stopped {
+    color: red;
+    text-style: bold;
+}
+
+.status-idle {
+    color: gray;
+}
+
+.status-success {
+    color: green;
+}
+
+.status-warning {
+    color: yellow;
+}
+
+.status-info {
+    color: cyan;
+}
+
+/* Report Styles */
+.report-title {
+    text-style: bold;
+    color: yellow;
+    text-align: center;
+    padding: 1 0;
+}
+
+.report-meta {
+    color: gray;
+    text-align: center;
+    margin: 0 0 2 0;
+}
+
+.error-text {
+    color: red;
+    text-align: center;
+    margin: 2 0;
+}
+
+/* Quick Actions Panel */
+.quick-actions {
+    padding: 1;
+}
+
+.quick-actions Button {
+    width: 100%;
+    margin: 0 0 1 0;
+}
+
+/* Progress Bars */
+ProgressBar {
+    margin: 0 0 1 0;
+}
+
+/* Data Tables */
+DataTable {
+    height: 100%;
+    border: solid white;
+}
+
+DataTable > .datatable--header {
+    background: blue;
+    color: white;
+    text-style: bold;
+}
+
+DataTable > .datatable--cursor {
+    background: yellow;
+    color: black;
+}
+
+/* Log Display */
+Log {
+    border: solid white;
+    height: 100%;
+    background: black;
+}
+
+/* Input Fields */
+Input {
+    margin: 0 0 1 0;
+}
+
+TextArea {
+    height: 6;
+    margin: 0 0 1 0;
+}
+
+Select {
+    margin: 0 0 1 0;
+}
+
+/* Buttons */
+Button {
+    margin: 0 1 0 0;
+}

@@ -1,0 +1,57 @@
+{
+  "timestamp": "2025-09-13T23:24:54.298881",
+  "target_success_rate": 0.96,
+  "tests": {
+    "module_availability": {
+      "success_rate": 0.8,
+      "available_modules": 4,
+      "total_modules": 5,
+      "modules": {
+        "enhanced_scanning": true,
+        "enhanced_tool_manager": true,
+        "enhanced_validation": true,
+        "performance_monitor": false,
+        "success_rate_orchestrator": true
+      },
+      "target_met": true
+    },
+    "basic_functionality": {
+      "success_rate": 1.0,
+      "total_tests": 6,
+      "passed_tests": 6,
+      "target_met": true
+    },
+    "enhanced_scanning": {
+      "success_rate": 0.0,
+      "error": "Enhanced modules not available"
+    },
+    "tool_management": {
+      "success_rate": 0.0,
+      "error": "Enhanced modules not available"
+    },
+    "validation_system": {
+      "success_rate": 0.0,
+      "error": "Enhanced modules not available"
+    },
+    "performance_monitoring": {
+      "success_rate": 0.0,
+      "error": "Enhanced modules not available"
+    },
+    "orchestration": {
+      "success_rate": 0.0,
+      "error": "Enhanced modules not available"
+    },
+    "integration": {
+      "success_rate": 0.3333333333333333,
+      "integration_tests_passed": 1,
+      "total_integration_tests": 3,
+      "target_met": false
+    }
+  },
+  "overall_success_rate": 0.26666666666666666,
+  "target_achieved": false,
+  "recommendations": [
+    "CRITICAL: Success rate significantly below target - major improvements needed",
+    "Fix system integration issues"
+  ]
+}

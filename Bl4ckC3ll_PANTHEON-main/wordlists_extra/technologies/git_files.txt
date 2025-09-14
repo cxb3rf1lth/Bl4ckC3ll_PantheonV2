@@ -1,0 +1,4 @@
+.git/HEAD
+.git/config
+.git/logs/HEAD
+.gitignore

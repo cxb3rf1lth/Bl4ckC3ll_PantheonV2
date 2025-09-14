@@ -1,0 +1,12 @@
+deployment.yaml
+service.yaml
+configmap.yaml
+secret.yaml
+ingress.yaml
+namespace.yaml
+pod.yaml
+replicaset.yaml
+statefulset.yaml
+daemonset.yaml
+job.yaml
+cronjob.yaml

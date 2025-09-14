@@ -1,0 +1,53 @@
+{
+  "security": {
+    "input_validation": {
+      "max_string_length": 1000,
+      "max_list_size": 100,
+      "blocked_patterns": [
+        "[;&|`$()]",
+        "\\.\\./|\\.\\.\\\\\\\\",
+        "<script|javascript:|data:",
+        "union\\s+select|drop\\s+table"
+      ]
+    },
+    "network": {
+      "allow_private_addresses": false,
+      "max_connections": 50,
+      "timeout_seconds": 30,
+      "rate_limit_requests_per_minute": 60
+    },
+    "file_operations": {
+      "allowed_extensions": [
+        ".txt",
+        ".json",
+        ".html",
+        ".xml",
+        ".csv"
+      ],
+      "max_file_size_mb": 100,
+      "quarantine_suspicious_files": true
+    },
+    "subprocess": {
+      "default_timeout": 300,
+      "allowed_commands": [
+        "nmap",
+        "nuclei",
+        "subfinder",
+        "httpx",
+        "ffuf",
+        "sqlmap",
+        "nikto",
+        "dirb",
+        "gobuster",
+        "amass"
+      ],
+      "block_shell_execution": true
+    },
+    "logging": {
+      "log_level": "INFO",
+      "log_security_events": true,
+      "log_file_operations": true,
+      "log_network_requests": true
+    }
+  }
+}

@@ -1,0 +1,39 @@
+id: custom-common-vulns
+
+info:
+  name: Common Web Application Vulnerabilities
+  author: Bl4ckC3ll_PANTHEON
+  severity: medium
+  description: Detects common web application vulnerabilities and misconfigurations
+  tags: custom,webapp,misconfiguration
+
+requests:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.env"
+      - "{{BaseURL}}/config.php.bak"
+      - "{{BaseURL}}/backup.sql"
+      - "{{BaseURL}}/phpinfo.php" 
+      - "{{BaseURL}}/server-status"
+      - "{{BaseURL}}/server-info"
+      - "{{BaseURL}}/.git/config"
+      - "{{BaseURL}}/web.config"
+      - "{{BaseURL}}/WEB-INF/web.xml"
+
+    matchers-condition: or
+    matchers:
+      - type: word
+        words:
+          - "APP_KEY="
+          - "DB_PASSWORD="
+          - "<?php"
+          - "CREATE TABLE"
+          - "Server Information"
+          - "Apache Server Status"
+          - "[core]"
+          - "<configuration>"
+          - "<web-app"
+        
+      - type: status
+        status:
+          - 200

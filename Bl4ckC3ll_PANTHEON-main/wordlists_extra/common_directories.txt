@@ -1,0 +1,14 @@
+admin
+api
+app
+backup
+config
+data
+debug
+dev
+docs
+files
+images
+login
+test
+upload

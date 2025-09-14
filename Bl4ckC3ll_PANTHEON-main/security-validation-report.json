@@ -21,8 +21,8 @@
     "WARNING: Potential sensitive data in node_modules/@eslint-community/eslint-utils/node_modules/eslint-visitor-keys/package.json"
   ],
   "files_checked": {
-    "python": 56,
-    "json": 245,
+    "python": 58,
+    "json": 369,
     "yaml": 29
   }
 }

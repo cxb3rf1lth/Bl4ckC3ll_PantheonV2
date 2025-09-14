@@ -3,12 +3,12 @@
 Final comprehensive integration test for enhanced Bl4ckC3ll_PANTHEON
 """
 
-import sys
-import subprocess
-import shutil
-from pathlib import Path
 import json
+import shutil
+import subprocess
+import sys
 import time
+from pathlib import Path
 
 # Add current directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -22,7 +22,10 @@ def run_main_script_test():
     try:
         # Test script can start without errors (timeout after a few seconds)
         result = subprocess.run(
-            [sys.executable, "bl4ckc3ll_p4nth30n.py", "--help"], capture_output=True, text=True, timeout=10
+            [sys.executable, "bl4ckc3ll_p4nth30n.py", "--help"],
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
 
         if result.returncode == 0:
@@ -161,7 +164,9 @@ def test_enhanced_features():
             else:
                 print(f"❌ {func_name} missing")
 
-        print(f"\nEnhanced Functions Available: {function_count}/{len(enhanced_functions)}")
+        print(
+            f"\nEnhanced Functions Available: {function_count}/{len(enhanced_functions)}"
+        )
 
         # Test that directories exist
         essential_dirs = ["wordlists_extra", "external_lists", "payloads", "runs"]
@@ -192,7 +197,9 @@ def test_enhanced_features():
 
     except Exception as e:
         print(f"❌ Enhanced features test failed: {e}")
-        print("⚠️ Warning: Enhanced features test failed - may be development environment")
+        print(
+            "⚠️ Warning: Enhanced features test failed - may be development environment"
+        )
 
 
 def test_bug_bounty_quick():

@@ -1,0 +1,198 @@
+{
+  "success_rate_validation.py": [
+    "Uses bare except clauses - should specify exception types",
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (68) - consider refactoring",
+    "Large file (564 lines) - consider splitting"
+  ],
+  "bl4ckc3ll_p4nth30n.py": [
+    "Uses many print statements - consider using logging",
+    "Uses eval/exec - potential security risk",
+    "High cyclomatic complexity (1550) - consider refactoring",
+    "Large file (12928 lines) - consider splitting"
+  ],
+  "performance_monitor.py": [
+    "Uses many print statements - consider using logging",
+    "Uses eval/exec - potential security risk",
+    "High cyclomatic complexity (66) - consider refactoring",
+    "Large file (610 lines) - consider splitting"
+  ],
+  "final_integration_test.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (33) - consider refactoring"
+  ],
+  "cicd_integration.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (62) - consider refactoring",
+    "Large file (557 lines) - consider splitting"
+  ],
+  "enhanced_wordlists.py": [
+    "Uses many print statements - consider using logging",
+    "Uses eval/exec - potential security risk",
+    "High cyclomatic complexity (27) - consider refactoring",
+    "Large file (976 lines) - consider splitting"
+  ],
+  "config_validator.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (50) - consider refactoring"
+  ],
+  "bcar.py": [
+    "Uses eval/exec - potential security risk",
+    "High cyclomatic complexity (89) - consider refactoring",
+    "Large file (900 lines) - consider splitting"
+  ],
+  "fallback_scanner.py": [
+    "Uses bare except clauses - should specify exception types",
+    "High cyclomatic complexity (79) - consider refactoring",
+    "Large file (729 lines) - consider splitting"
+  ],
+  "enhanced_tool_manager.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (45) - consider refactoring"
+  ],
+  "demo_enhanced_reporting.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (25) - consider refactoring",
+    "Large file (558 lines) - consider splitting"
+  ],
+  "security_utils.py": [
+    "High cyclomatic complexity (76) - consider refactoring",
+    "Large file (728 lines) - consider splitting"
+  ],
+  "success_rate_orchestrator.py": [
+    "Uses bare except clauses - should specify exception types",
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (91) - consider refactoring",
+    "Large file (678 lines) - consider splitting"
+  ],
+  "enhanced_report_controller.py": [
+    "High cyclomatic complexity (163) - consider refactoring",
+    "Large file (1536 lines) - consider splitting"
+  ],
+  "bl4ckc3ll_pantheon_master.py": [
+    "Uses bare except clauses - should specify exception types",
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (223) - consider refactoring",
+    "Large file (1846 lines) - consider splitting"
+  ],
+  "quick_functional_test.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (19) - consider refactoring"
+  ],
+  "enhanced_validation.py": [
+    "Uses bare except clauses - should specify exception types",
+    "High cyclomatic complexity (79) - consider refactoring",
+    "Large file (564 lines) - consider splitting"
+  ],
+  "enhanced_scanning.py": [
+    "Uses bare except clauses - should specify exception types",
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (84) - consider refactoring",
+    "Large file (710 lines) - consider splitting"
+  ],
+  "diagnostics.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (25) - consider refactoring"
+  ],
+  "security_monitor.py": [
+    "High cyclomatic complexity (12) - consider refactoring"
+  ],
+  "error_handler.py": [
+    "High cyclomatic complexity (71) - consider refactoring",
+    "Large file (698 lines) - consider splitting"
+  ],
+  "intelligent_report_engine.py": [
+    "High cyclomatic complexity (195) - consider refactoring",
+    "Large file (1600 lines) - consider splitting"
+  ],
+  "setup_runner.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (54) - consider refactoring",
+    "Large file (509 lines) - consider splitting"
+  ],
+  "success_rate_optimizer.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (25) - consider refactoring"
+  ],
+  "scripts/master_workflow_automation.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (24) - consider refactoring"
+  ],
+  "scripts/intelligent_debugger.py": [
+    "Contains TODO/FIXME comments - needs attention",
+    "Uses bare except clauses - should specify exception types",
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (60) - consider refactoring",
+    "Large file (597 lines) - consider splitting"
+  ],
+  "scripts/performance_tester.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (20) - consider refactoring"
+  ],
+  "scripts/monitoring_system.py": [
+    "Contains TODO/FIXME comments - needs attention",
+    "High cyclomatic complexity (80) - consider refactoring",
+    "Large file (611 lines) - consider splitting"
+  ],
+  "scripts/intelligent_repo_manager.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (71) - consider refactoring",
+    "Large file (509 lines) - consider splitting"
+  ],
+  "scripts/security_validator.py": [
+    "High cyclomatic complexity (46) - consider refactoring"
+  ],
+  "scripts/docs_validator.py": [
+    "Contains TODO/FIXME comments - needs attention",
+    "High cyclomatic complexity (33) - consider refactoring"
+  ],
+  "tui/backend_integration.py": [
+    "High cyclomatic complexity (52) - consider refactoring"
+  ],
+  "tui/app.py": [
+    "High cyclomatic complexity (13) - consider refactoring"
+  ],
+  "plugins/nuclei_template_manager.py": [
+    "Uses bare except clauses - should specify exception types",
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (27) - consider refactoring"
+  ],
+  "plugins/advanced_osint.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (59) - consider refactoring"
+  ],
+  "plugins/api_security_scanner.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (83) - consider refactoring",
+    "Large file (590 lines) - consider splitting"
+  ],
+  "plugins/cloud_security_scanner.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (84) - consider refactoring",
+    "Large file (661 lines) - consider splitting"
+  ],
+  "plugins/enhanced_fuzzing.py": [
+    "Uses many print statements - consider using logging",
+    "High cyclomatic complexity (71) - consider refactoring",
+    "Large file (520 lines) - consider splitting"
+  ],
+  "tui/screens/settings.py": [
+    "High cyclomatic complexity (21) - consider refactoring"
+  ],
+  "tui/screens/main_dashboard.py": [
+    "High cyclomatic complexity (17) - consider refactoring"
+  ],
+  "tui/screens/scan_runner.py": [
+    "High cyclomatic complexity (23) - consider refactoring"
+  ],
+  "tui/screens/targets.py": [
+    "High cyclomatic complexity (25) - consider refactoring"
+  ],
+  "tui/screens/reports.py": [
+    "High cyclomatic complexity (28) - consider refactoring"
+  ],
+  "node_modules/flatted/python/flatted.py": [
+    "Uses bare except clauses - should specify exception types",
+    "High cyclomatic complexity (24) - consider refactoring"
+  ]
+}

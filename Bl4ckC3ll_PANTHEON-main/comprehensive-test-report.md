@@ -1,0 +1,2354 @@
+# 📊 Comprehensive Test Coverage Report
+
+Generated: 2025-09-14 19:31:53 UTC
+
+## 📈 Summary Statistics
+
+- **Total Files Analyzed**: 52
+- **Successfully Tested**: 47 (90.4%)
+- **Total Lines of Code**: 36295
+- **Functions Tested**: 997
+- **Classes Tested**: 117
+
+## 📁 Detailed File Analysis
+
+### ✅ success_rate_validation.py
+
+- **Lines of Code**: 564
+- **Cyclomatic Complexity**: 68
+- **Functions**: 14
+- **Classes**: 1
+- **Imports**: 22
+- **Test Status**: Passed
+- **Functions Found**:
+  - `main()` (line 540)
+  - `__init__()` (line 46)
+  - `run_comprehensive_validation()` (line 65)
+  - `_test_module_availability()` (line 141)
+  - `_test_basic_functionality()` (line 171)
+  - `_test_enhanced_scanning()` (line 209)
+  - `_test_tool_management()` (line 267)
+  - `_test_validation_system()` (line 296)
+  - `_test_performance_monitoring()` (line 328)
+  - `_test_success_rate_orchestration()` (line 364)
+  - `_test_system_integration()` (line 395)
+  - `_generate_recommendations()` (line 448)
+  - `export_validation_report()` (line 505)
+  - `print_validation_summary()` (line 510)
+- **Classes Found**:
+  - `SuccessRateValidator` (line 43)
+    - `__init__()`
+    - `run_comprehensive_validation()`
+    - `_test_module_availability()`
+    - `_test_basic_functionality()`
+    - `_test_enhanced_scanning()`
+    - `_test_tool_management()`
+    - `_test_validation_system()`
+    - `_test_performance_monitoring()`
+    - `_test_success_rate_orchestration()`
+    - `_test_system_integration()`
+    - `_generate_recommendations()`
+    - `export_validation_report()`
+    - `print_validation_summary()`
+
+### ✅ bl4ckc3ll_p4nth30n.py
+
+- **Lines of Code**: 12928
+- **Cyclomatic Complexity**: 1550
+- **Functions**: 274
+- **Classes**: 10
+- **Imports**: 69
+- **Test Status**: Passed
+- **Functions Found**:
+  - `monitor_performance()` (line 151)
+  - `validate_command_args()` (line 188)
+  - `sanitize_filename()` (line 250)
+  - `validate_network_address()` (line 315)
+  - `backup_dependencies()` (line 360)
+  - `restore_dependencies()` (line 424)
+  - `safe_execute()` (line 796)
+  - `safe_file_operation()` (line 913)
+  - `get_system_resources()` (line 931)
+  - `optimize_concurrency_based_on_resources()` (line 954)
+  - `safe_run_command()` (line 1001)
+  - `validate_input()` (line 1014)
+  - `validate_domain_input()` (line 1175)
+  - `validate_ip_input()` (line 1219)
+  - `validate_url_input()` (line 1254)
+  - `sanitize_user_input()` (line 1390)
+  - `create_fallback_functions()` (line 1399)
+  - `safe_http_request()` (line 1581)
+  - `run_preset_scan_menu()` (line 2121)
+  - `run_subdomain_discovery_with_config()` (line 2171)
+  - `run_port_scan_with_config()` (line 2187)
+  - `run_http_probe_with_config()` (line 2194)
+  - `run_directory_fuzzing_with_config()` (line 2200)
+  - `run_parameter_discovery_with_config()` (line 2207)
+  - `run_vulnerability_scan_with_config()` (line 2214)
+  - `run_tech_detection_with_config()` (line 2219)
+  - `run_web_crawling_with_config()` (line 2225)
+  - `run_api_testing_with_config()` (line 2231)
+  - `check_stop_condition()` (line 2237)
+  - `create_resource_monitor_thread()` (line 3523)
+  - `cleanup_resource_monitor()` (line 3535)
+  - `execute_tool_safely()` (line 3546)
+  - `_bump_path()` (line 3685)
+  - `ts()` (line 3740)
+  - `atomic_write()` (line 3744)
+  - `read_lines()` (line 3764)
+  - `write_uniq()` (line 3785)
+  - `write_lines()` (line 3796)
+  - `os_kind()` (line 3801)
+  - `run_cmd()` (line 3818)
+  - `ensure_layout()` (line 3962)
+  - `load_cfg()` (line 3993)
+  - `_validate_configuration()` (line 4029)
+  - `save_cfg()` (line 4132)
+  - `which()` (line 4136)
+  - `get_best_available_tool()` (line 4435)
+  - `_check_python_version()` (line 4441)
+  - `_check_python_packages()` (line 4455)
+  - `_get_security_tools_config()` (line 4482)
+  - `_check_security_tools()` (line 4517)
+  - `_check_essential_tools()` (line 4563)
+  - `validate_dependencies()` (line 4584)
+  - `check_and_setup_environment()` (line 4611)
+  - `get_system_resources()` (line 4651)
+  - `resource_monitor()` (line 4686)
+  - `git_clone_or_pull()` (line 4723)
+  - `direct_zip_download()` (line 4740)
+  - `refresh_external_sources()` (line 4768)
+  - `get_best_wordlist()` (line 4810)
+  - `create_enhanced_payloads()` (line 4874)
+  - `merge_wordlists()` (line 4968)
+  - `new_run()` (line 5071)
+  - `start_run()` (line 5079)
+  - `env_with_lists()` (line 5098)
+  - `run_subfinder()` (line 5107)
+  - `run_amass()` (line 5119)
+  - `run_naabu()` (line 5132)
+  - `run_masscan()` (line 5155)
+  - `run_httpx()` (line 5167)
+  - `run_gobuster()` (line 5199)
+  - `run_dirb()` (line 5230)
+  - `run_ffuf()` (line 5245)
+  - `run_waybackurls()` (line 5277)
+  - `run_gospider()` (line 5299)
+  - `run_whatweb()` (line 5323)
+  - `run_nikto()` (line 5344)
+  - `run_subjack()` (line 5366)
+  - `run_sqlmap()` (line 5390)
+  - `run_additional_sql_tests()` (line 5430)
+  - `run_xss_strike()` (line 5499)
+  - `run_dalfox()` (line 5536)
+  - `run_subzy()` (line 5567)
+  - `run_enhanced_nmap()` (line 5599)
+  - `run_feroxbuster()` (line 5647)
+  - `run_nuclei_single_target()` (line 5691)
+  - `run_dns_enumeration()` (line 5751)
+  - `run_ssl_analysis()` (line 5779)
+  - `run_network_analysis()` (line 5813)
+  - `run_api_discovery()` (line 5869)
+  - `run_graphql_testing()` (line 5930)
+  - `run_jwt_analysis()` (line 6028)
+  - `run_cloud_storage_scanning()` (line 6080)
+  - `run_threat_intelligence_lookup()` (line 6196)
+  - `run_compliance_checks()` (line 6285)
+  - `run_ml_vulnerability_analysis()` (line 6412)
+  - `stage_recon()` (line 6520)
+  - `stage_vuln_scan()` (line 6883)
+  - `check_security_headers()` (line 7032)
+  - `check_cors_configuration()` (line 7087)
+  - `_check_admin_panels()` (line 7154)
+  - `_check_backup_files()` (line 7184)
+  - `_check_robots_txt()` (line 7203)
+  - `perform_additional_checks()` (line 7222)
+  - `stage_report()` (line 7294)
+  - `calculate_risk_score()` (line 7605)
+  - `generate_risk_recommendations()` (line 7662)
+  - `generate_executive_summary()` (line 7703)
+  - `extract_key_findings()` (line 7755)
+  - `generate_csv_report()` (line 7813)
+  - `generate_sarif_report()` (line 7860)
+  - `map_severity_to_sarif()` (line 7922)
+  - `generate_enhanced_html_report()` (line 7934)
+  - `generate_enhanced_intelligent_html_report()` (line 8274)
+  - `find_plugins()` (line 8868)
+  - `load_plugin()` (line 8873)
+  - `load_plugins()` (line 8890)
+  - `create_plugin_template()` (line 8918)
+  - `execute_plugin()` (line 8942)
+  - `display_menu()` (line 8967)
+  - `get_choice()` (line 9006)
+  - `show_enhanced_help()` (line 9048)
+  - `show_quick_status()` (line 9091)
+  - `run_full_pipeline()` (line 9135)
+  - `settings_menu()` (line 9173)
+  - `configure_scan_settings()` (line 9230)
+  - `configure_report_settings()` (line 9282)
+  - `configure_network_settings()` (line 9323)
+  - `configure_security_settings()` (line 9353)
+  - `network_tools_menu()` (line 9394)
+  - `perform_whois_lookup()` (line 9448)
+  - `perform_dns_enumeration()` (line 9467)
+  - `perform_traceroute()` (line 9492)
+  - `perform_asn_lookup()` (line 9514)
+  - `perform_ssl_analysis()` (line 9537)
+  - `perform_quick_port_scan()` (line 9582)
+  - `security_assessment_summary()` (line 9619)
+  - `manage_targets()` (line 9710)
+  - `view_current_targets()` (line 9751)
+  - `add_single_target()` (line 9766)
+  - `add_multiple_targets()` (line 9784)
+  - `import_targets_from_file()` (line 9817)
+  - `remove_individual_target()` (line 9857)
+  - `manage_target_lists()` (line 9904)
+  - `create_target_categories()` (line 9936)
+  - `validate_all_targets()` (line 9964)
+  - `clear_all_targets()` (line 10004)
+  - `validate_target()` (line 10021)
+  - `validate_target_input()` (line 10026)
+  - `validate_single_target()` (line 10058)
+  - `create_new_target_list()` (line 10066)
+  - `switch_active_target_list()` (line 10085)
+  - `merge_target_lists()` (line 10112)
+  - `delete_target_list()` (line 10140)
+  - `view_all_target_lists()` (line 10181)
+  - `refresh_and_merge()` (line 10210)
+  - `run_recon()` (line 10221)
+  - `run_vuln()` (line 10233)
+  - `run_advanced_vuln_scan()` (line 10245)
+  - `generate_enhanced_report()` (line 10268)
+  - `run_report_for_latest()` (line 10302)
+  - `plugins_menu()` (line 10323)
+  - `run_eslint_security_check()` (line 10353)
+  - `run_bug_bounty_automation()` (line 10412)
+  - `run_automated_testing_chain()` (line 10501)
+  - `run_enhanced_recon()` (line 10542)
+  - `enhanced_subdomain_enum()` (line 10572)
+  - `enhanced_port_scanning()` (line 10627)
+  - `enhanced_tech_detection()` (line 10656)
+  - `enhanced_web_crawling()` (line 10687)
+  - `run_ai_vulnerability_analysis()` (line 10735)
+  - `run_cloud_security_assessment()` (line 10788)
+  - `run_api_security_testing()` (line 10821)
+  - `run_compliance_assessment()` (line 10854)
+  - `run_cicd_integration_mode()` (line 10889)
+  - `setup_argument_parser()` (line 10939)
+  - `handle_cli_execution()` (line 11098)
+  - `main()` (line 11257)
+  - `run_preset_scan_cli()` (line 11406)
+  - `run_full_pipeline_cli()` (line 11439)
+  - `run_recon_cli()` (line 11461)
+  - `run_vuln_cli()` (line 11511)
+  - `save_results_to_file()` (line 11582)
+  - `display_results()` (line 11609)
+  - `dict_to_xml()` (line 11620)
+  - `dict_to_text()` (line 11640)
+  - `generate_html_report()` (line 11659)
+  - `launch_advanced_tui()` (line 11689)
+  - `view_last_report()` (line 11724)
+  - `enhanced_payload_management_menu()` (line 11753)
+  - `tool_status_management_menu()` (line 11821)
+  - `show_comprehensive_tool_status()` (line 11865)
+  - `test_tool_availability()` (line 11897)
+  - `install_missing_tools_menu()` (line 11914)
+  - `show_tool_alternatives()` (line 11965)
+  - `validate_all_dependencies_comprehensive()` (line 11985)
+  - `create_tool_status_report()` (line 12034)
+  - `run_bcar_enhanced_reconnaissance()` (line 12080)
+  - `run_enhanced_bug_bounty_automation()` (line 12154)
+  - `run_comprehensive_bug_bounty_scan()` (line 12212)
+  - `run_enhanced_subdomain_enumeration()` (line 12254)
+  - `search_certificate_transparency()` (line 12338)
+  - `run_enhanced_port_scanning()` (line 12383)
+  - `run_enhanced_web_discovery()` (line 12444)
+  - `run_enhanced_vulnerability_assessment()` (line 12507)
+  - `auto_fix_missing_dependencies()` (line 12556)
+  - `run_advanced_subdomain_takeover()` (line 12629)
+  - `run_automated_payload_injection()` (line 12714)
+  - `run_comprehensive_fuzzing()` (line 12819)
+  - `__init__()` (line 98)
+  - `is_allowed()` (line 104)
+  - `wait_time()` (line 123)
+  - `decorator()` (line 154)
+  - `__init__()` (line 711)
+  - `set_level()` (line 724)
+  - `should_log()` (line 729)
+  - `log()` (line 735)
+  - `__init__()` (line 770)
+  - `log()` (line 776)
+  - `info()` (line 779)
+  - `warning()` (line 782)
+  - `error()` (line 785)
+  - `debug()` (line 788)
+  - `success()` (line 791)
+  - `__init__()` (line 1330)
+  - `sanitize_input()` (line 1347)
+  - `fallback_subdomain_enum()` (line 1402)
+  - `fallback_port_scan()` (line 1470)
+  - `fallback_http_probe()` (line 1519)
+  - `__init__()` (line 1685)
+  - `start_monitoring()` (line 1692)
+  - `stop_monitoring()` (line 1702)
+  - `_monitor_loop()` (line 1709)
+  - `get_current_metrics()` (line 1729)
+  - `should_throttle_operations()` (line 1733)
+  - `get_optimal_threads()` (line 1744)
+  - `list_presets()` (line 2029)
+  - `get_preset()` (line 2040)
+  - `run_preset_scan()` (line 2045)
+  - `initialize_payload_structure()` (line 2410)
+  - `download_payload_sources()` (line 2434)
+  - `create_custom_payloads()` (line 2504)
+  - `create_enhanced_wordlists()` (line 2622)
+  - `get_best_wordlist()` (line 3120)
+  - `create_enhanced_payloads()` (line 3147)
+  - `get_payload_file()` (line 3298)
+  - `show_payload_stats()` (line 3319)
+  - `update_nuclei_templates()` (line 3362)
+  - `get_nuclei_template_paths()` (line 3425)
+  - `create_custom_nuclei_templates()` (line 3448)
+  - `show_nuclei_stats()` (line 3503)
+  - `_write_operation()` (line 3747)
+  - `_read_operation()` (line 3769)
+  - `get_available_tool()` (line 4283)
+  - `install_tool()` (line 4310)
+  - `ensure_tool_available()` (line 4349)
+  - `get_tool_status()` (line 4381)
+  - `run_with_fallback()` (line 4409)
+  - `_collect_wordlist_files()` (line 4978)
+  - `_process_wordlist_file()` (line 5001)
+  - `__init__()` (line 5065)
+  - `per_target()` (line 6529)
+  - `per_target()` (line 6892)
+  - `_perform_checks()` (line 7237)
+  - `esc()` (line 7938)
+  - `html_recon()` (line 7941)
+  - `html_vuln()` (line 7990)
+  - `dict_to_xml_recursive()` (line 11623)
+  - `wrapper()` (line 156)
+  - `esc()` (line 8280)
+  - `generate_executive_summary_html()` (line 8297)
+  - `generate_threat_intel_html()` (line 8358)
+  - `generate_vulnerability_analysis_html()` (line 8394)
+  - `generate_narrative_html()` (line 8471)
+  - `generate_remediation_html()` (line 8516)
+- **Classes Found**:
+  - `RateLimiter` (line 95)
+    - `__init__()`
+    - `is_allowed()`
+    - `wait_time()`
+  - `Logger` (line 709)
+    - `__init__()`
+    - `set_level()`
+    - `should_log()`
+    - `log()`
+  - `PantheonLogger` (line 767)
+    - `__init__()`
+    - `log()`
+    - `info()`
+    - `warning()`
+    - `error()`
+    - `debug()`
+    - `success()`
+  - `EnhancedInputSanitizer` (line 1307)
+    - `__init__()`
+    - `sanitize_input()`
+  - `PerformanceMonitor` (line 1682)
+    - `__init__()`
+    - `start_monitoring()`
+    - `stop_monitoring()`
+    - `_monitor_loop()`
+    - `get_current_metrics()`
+    - `should_throttle_operations()`
+    - `get_optimal_threads()`
+  - `ScanPresets` (line 1784)
+    - `list_presets()`
+    - `get_preset()`
+    - `run_preset_scan()`
+  - `EnhancedPayloadManager` (line 2243)
+    - `initialize_payload_structure()`
+    - `download_payload_sources()`
+    - `create_custom_payloads()`
+    - `create_enhanced_wordlists()`
+    - `get_best_wordlist()`
+    - `create_enhanced_payloads()`
+    - `get_payload_file()`
+    - `show_payload_stats()`
+  - `EnhancedNucleiManager` (line 3358)
+    - `update_nuclei_templates()`
+    - `get_nuclei_template_paths()`
+    - `create_custom_nuclei_templates()`
+    - `show_nuclei_stats()`
+  - `EnhancedToolFallbackManager` (line 4150)
+    - `get_available_tool()`
+    - `install_tool()`
+    - `ensure_tool_available()`
+    - `get_tool_status()`
+    - `run_with_fallback()`
+  - `RunData` (line 5062)
+    - `__init__()`
+
+### ✅ performance_monitor.py
+
+- **Lines of Code**: 610
+- **Cyclomatic Complexity**: 66
+- **Functions**: 25
+- **Classes**: 3
+- **Imports**: 12
+- **Test Status**: Passed
+- **Functions Found**:
+  - `start_performance_monitoring()` (line 562)
+  - `stop_performance_monitoring()` (line 568)
+  - `record_operation_result()` (line 573)
+  - `get_current_performance_metrics()` (line 578)
+  - `is_success_rate_target_met()` (line 583)
+  - `__init__()` (line 53)
+  - `_initialize_optimization_rules()` (line 75)
+  - `_load_current_settings()` (line 128)
+  - `start_monitoring()` (line 149)
+  - `stop_monitoring()` (line 163)
+  - `_monitoring_loop()` (line 170)
+  - `_capture_performance_snapshot()` (line 192)
+  - `_check_optimization_triggers()` (line 232)
+  - `_apply_optimization()` (line 260)
+  - `_get_parameter_value()` (line 295)
+  - `_set_parameter_value()` (line 314)
+  - `_apply_parameter_bounds()` (line 342)
+  - `_save_settings()` (line 358)
+  - `_log_optimization()` (line 367)
+  - `_log_performance_changes()` (line 400)
+  - `record_operation()` (line 420)
+  - `get_current_success_rate()` (line 432)
+  - `get_current_throughput()` (line 438)
+  - `get_performance_report()` (line 456)
+  - `export_performance_data()` (line 520)
+- **Classes Found**:
+  - `PerformanceSnapshot` (line 23)
+  - `OptimizationRule` (line 39)
+  - `PerformanceMonitor` (line 50)
+    - `__init__()`
+    - `_initialize_optimization_rules()`
+    - `_load_current_settings()`
+    - `start_monitoring()`
+    - `stop_monitoring()`
+    - `_monitoring_loop()`
+    - `_capture_performance_snapshot()`
+    - `_check_optimization_triggers()`
+    - `_apply_optimization()`
+    - `_get_parameter_value()`
+    - `_set_parameter_value()`
+    - `_apply_parameter_bounds()`
+    - `_save_settings()`
+    - `_log_optimization()`
+    - `_log_performance_changes()`
+    - `record_operation()`
+    - `get_current_success_rate()`
+    - `get_current_throughput()`
+    - `get_performance_report()`
+    - `export_performance_data()`
+
+### ✅ final_integration_test.py
+
+- **Lines of Code**: 304
+- **Cyclomatic Complexity**: 33
+- **Functions**: 6
+- **Classes**: 0
+- **Imports**: 10
+- **Test Status**: Passed
+- **Functions Found**:
+  - `run_main_script_test()` (line 17)
+  - `test_integration_functions()` (line 52)
+  - `test_tool_coverage()` (line 102)
+  - `test_enhanced_features()` (line 140)
+  - `test_bug_bounty_quick()` (line 205)
+  - `main()` (line 245)
+
+### ✅ cicd_integration.py
+
+- **Lines of Code**: 557
+- **Cyclomatic Complexity**: 62
+- **Functions**: 18
+- **Classes**: 1
+- **Imports**: 12
+- **Test Status**: Passed
+- **Functions Found**:
+  - `main()` (line 20)
+  - `__init__()` (line 66)
+  - `run()` (line 98)
+  - `_prepare_target_file()` (line 135)
+  - `_run_quick_scan()` (line 150)
+  - `_run_full_scan()` (line 185)
+  - `_run_api_scan()` (line 227)
+  - `_run_cloud_scan()` (line 268)
+  - `_collect_scan_results()` (line 307)
+  - `_process_compliance_results()` (line 397)
+  - `_process_cloud_results()` (line 417)
+  - `_process_api_results()` (line 437)
+  - `_process_results()` (line 457)
+  - `_generate_output()` (line 473)
+  - `_generate_json_output()` (line 482)
+  - `_generate_sarif_output()` (line 487)
+  - `_generate_junit_output()` (line 520)
+  - `_map_severity_to_sarif()` (line 543)
+- **Classes Found**:
+  - `CICDScanner` (line 65)
+    - `__init__()`
+    - `run()`
+    - `_prepare_target_file()`
+    - `_run_quick_scan()`
+    - `_run_full_scan()`
+    - `_run_api_scan()`
+    - `_run_cloud_scan()`
+    - `_collect_scan_results()`
+    - `_process_compliance_results()`
+    - `_process_cloud_results()`
+    - `_process_api_results()`
+    - `_process_results()`
+    - `_generate_output()`
+    - `_generate_json_output()`
+    - `_generate_sarif_output()`
+    - `_generate_junit_output()`
+    - `_map_severity_to_sarif()`
+
+### ✅ enhanced_wordlists.py
+
+- **Lines of Code**: 976
+- **Cyclomatic Complexity**: 27
+- **Functions**: 13
+- **Classes**: 2
+- **Imports**: 6
+- **Test Status**: Passed
+- **Functions Found**:
+  - `save_all_wordlists_and_payloads()` (line 879)
+  - `main()` (line 969)
+  - `__init__()` (line 23)
+  - `generate_technology_specific_wordlists()` (line 31)
+  - `generate_cloud_specific_wordlists()` (line 222)
+  - `generate_api_wordlists()` (line 306)
+  - `generate_security_wordlists()` (line 412)
+  - `__init__()` (line 549)
+  - `generate_xss_payloads()` (line 553)
+  - `generate_sqli_payloads()` (line 610)
+  - `generate_command_injection_payloads()` (line 682)
+  - `generate_lfi_payloads()` (line 734)
+  - `save_all_wordlists_and_payloads()` (line 790)
+- **Classes Found**:
+  - `EnhancedWordlistGenerator` (line 20)
+    - `__init__()`
+    - `generate_technology_specific_wordlists()`
+    - `generate_cloud_specific_wordlists()`
+    - `generate_api_wordlists()`
+    - `generate_security_wordlists()`
+  - `EnhancedPayloadGenerator` (line 546)
+    - `__init__()`
+    - `generate_xss_payloads()`
+    - `generate_sqli_payloads()`
+    - `generate_command_injection_payloads()`
+    - `generate_lfi_payloads()`
+    - `save_all_wordlists_and_payloads()`
+
+### ✅ config_validator.py
+
+- **Lines of Code**: 445
+- **Cyclomatic Complexity**: 50
+- **Functions**: 8
+- **Classes**: 1
+- **Imports**: 4
+- **Test Status**: Passed
+- **Functions Found**:
+  - `validate_config_file()` (line 384)
+  - `__init__()` (line 16)
+  - `validate_config()` (line 120)
+  - `_validate_section()` (line 164)
+  - `_validate_value()` (line 204)
+  - `validate_file()` (line 278)
+  - `get_default_config()` (line 315)
+  - `generate_config_template()` (line 341)
+- **Classes Found**:
+  - `ConfigValidator` (line 13)
+    - `__init__()`
+    - `validate_config()`
+    - `_validate_section()`
+    - `_validate_value()`
+    - `validate_file()`
+    - `get_default_config()`
+    - `generate_config_template()`
+
+### ✅ bcar.py
+
+- **Lines of Code**: 900
+- **Cyclomatic Complexity**: 89
+- **Functions**: 25
+- **Classes**: 2
+- **Imports**: 19
+- **Test Status**: Passed
+- **Functions Found**:
+  - `main()` (line 820)
+  - `__init__()` (line 36)
+  - `_setup_logger()` (line 49)
+  - `certificate_transparency_search()` (line 62)
+  - `advanced_subdomain_enumeration()` (line 99)
+  - `subdomain_takeover_check()` (line 127)
+  - `advanced_port_scanning()` (line 181)
+  - `web_technology_detection()` (line 236)
+  - `advanced_fuzzing()` (line 292)
+  - `parameter_discovery()` (line 347)
+  - `generate_reverse_shell_payloads()` (line 436)
+  - `_get_default_subdomain_wordlist()` (line 460)
+  - `_get_default_fuzzing_wordlist()` (line 542)
+  - `_extract_title()` (line 652)
+  - `run_comprehensive_scan()` (line 660)
+  - `__init__()` (line 758)
+  - `integrate_with_pantheon_scan()` (line 764)
+  - `generate_meterpreter_payloads()` (line 786)
+  - `enhanced_reconnaissance()` (line 804)
+  - `check_subdomain()` (line 109)
+  - `check_takeover()` (line 148)
+  - `scan_port()` (line 208)
+  - `analyze_url()` (line 256)
+  - `fuzz_path()` (line 314)
+  - `test_parameter()` (line 405)
+- **Classes Found**:
+  - `BCARCore` (line 33)
+    - `__init__()`
+    - `_setup_logger()`
+    - `certificate_transparency_search()`
+    - `advanced_subdomain_enumeration()`
+    - `subdomain_takeover_check()`
+    - `advanced_port_scanning()`
+    - `web_technology_detection()`
+    - `advanced_fuzzing()`
+    - `parameter_discovery()`
+    - `generate_reverse_shell_payloads()`
+    - `_get_default_subdomain_wordlist()`
+    - `_get_default_fuzzing_wordlist()`
+    - `_extract_title()`
+    - `run_comprehensive_scan()`
+  - `PantheonBCARIntegration` (line 755)
+    - `__init__()`
+    - `integrate_with_pantheon_scan()`
+    - `generate_meterpreter_payloads()`
+    - `enhanced_reconnaissance()`
+
+### ✅ fallback_scanner.py
+
+- **Lines of Code**: 729
+- **Cyclomatic Complexity**: 79
+- **Functions**: 22
+- **Classes**: 2
+- **Imports**: 14
+- **Test Status**: Passed
+- **Functions Found**:
+  - `run_fallback_scan()` (line 695)
+  - `__init__()` (line 46)
+  - `scan_target()` (line 58)
+  - `_is_ip_address()` (line 75)
+  - `_is_domain()` (line 83)
+  - `_is_url()` (line 87)
+  - `_scan_ip()` (line 91)
+  - `_scan_domain()` (line 107)
+  - `_scan_url()` (line 131)
+  - `_port_scan()` (line 145)
+  - `_dns_enumeration()` (line 211)
+  - `_basic_subdomain_discovery()` (line 292)
+  - `_scan_web_service()` (line 372)
+  - `_http_response_analysis()` (line 388)
+  - `_ssl_analysis()` (line 501)
+  - `_basic_directory_enum()` (line 571)
+  - `_is_port_open()` (line 655)
+  - `_guess_service()` (line 665)
+  - `_save_json_result()` (line 684)
+  - `check_port()` (line 152)
+  - `check_subdomain()` (line 323)
+  - `check_path()` (line 599)
+- **Classes Found**:
+  - `ScanResult` (line 31)
+  - `FallbackScanner` (line 43)
+    - `__init__()`
+    - `scan_target()`
+    - `_is_ip_address()`
+    - `_is_domain()`
+    - `_is_url()`
+    - `_scan_ip()`
+    - `_scan_domain()`
+    - `_scan_url()`
+    - `_port_scan()`
+    - `_dns_enumeration()`
+    - `_basic_subdomain_discovery()`
+    - `_scan_web_service()`
+    - `_http_response_analysis()`
+    - `_ssl_analysis()`
+    - `_basic_directory_enum()`
+    - `_is_port_open()`
+    - `_guess_service()`
+    - `_save_json_result()`
+
+### ✅ enhanced_tool_manager.py
+
+- **Lines of Code**: 491
+- **Cyclomatic Complexity**: 45
+- **Functions**: 17
+- **Classes**: 2
+- **Imports**: 12
+- **Test Status**: Passed
+- **Functions Found**:
+  - `enhanced_which()` (line 438)
+  - `check_tool_availability()` (line 443)
+  - `install_missing_tools()` (line 449)
+  - `get_tool_coverage_report()` (line 454)
+  - `__init__()` (line 40)
+  - `_initialize_tool_configs()` (line 47)
+  - `which()` (line 170)
+  - `_update_tool_status()` (line 243)
+  - `get_tool_status()` (line 248)
+  - `get_missing_critical_tools()` (line 253)
+  - `auto_install_tool()` (line 261)
+  - `_install_go_tool()` (line 281)
+  - `_install_apt_tool()` (line 320)
+  - `install_missing_tools()` (line 344)
+  - `get_tool_alternatives()` (line 362)
+  - `suggest_fallbacks()` (line 375)
+  - `export_tool_report()` (line 398)
+- **Classes Found**:
+  - `ToolConfig` (line 23)
+  - `ToolManager` (line 37)
+    - `__init__()`
+    - `_initialize_tool_configs()`
+    - `which()`
+    - `_update_tool_status()`
+    - `get_tool_status()`
+    - `get_missing_critical_tools()`
+    - `auto_install_tool()`
+    - `_install_go_tool()`
+    - `_install_apt_tool()`
+    - `install_missing_tools()`
+    - `get_tool_alternatives()`
+    - `suggest_fallbacks()`
+    - `export_tool_report()`
+
+### ✅ demo_enhanced_reporting.py
+
+- **Lines of Code**: 558
+- **Cyclomatic Complexity**: 25
+- **Functions**: 4
+- **Classes**: 0
+- **Imports**: 9
+- **Test Status**: Passed
+- **Functions Found**:
+  - `create_demo_data()` (line 19)
+  - `create_demo_config()` (line 189)
+  - `run_demo()` (line 211)
+  - `show_feature_summary()` (line 482)
+
+### ✅ security_utils.py
+
+- **Lines of Code**: 728
+- **Cyclomatic Complexity**: 76
+- **Functions**: 21
+- **Classes**: 7
+- **Imports**: 16
+- **Test Status**: Passed
+- **Functions Found**:
+  - `create_security_context()` (line 698)
+  - `sanitize_url()` (line 48)
+  - `sanitize_domain()` (line 97)
+  - `sanitize_filename()` (line 143)
+  - `sanitize_parameter()` (line 198)
+  - `is_safe_path()` (line 227)
+  - `validate_target_host()` (line 294)
+  - `_is_valid_ip()` (line 343)
+  - `_is_private_ip()` (line 356)
+  - `_is_reserved_ip()` (line 361)
+  - `_validate_domain_name()` (line 366)
+  - `_is_internal_target()` (line 385)
+  - `analyze_headers()` (line 434)
+  - `validate_input()` (line 494)
+  - `__init__()` (line 555)
+  - `is_allowed()` (line 571)
+  - `get_stats()` (line 599)
+  - `is_private_ip()` (line 608)
+  - `is_valid_domain()` (line 617)
+  - `is_valid_ip()` (line 629)
+  - `analyze_headers()` (line 669)
+- **Classes Found**:
+  - `InputSanitizer` (line 17)
+    - `sanitize_url()`
+    - `sanitize_domain()`
+    - `sanitize_filename()`
+    - `sanitize_parameter()`
+    - `is_safe_path()`
+  - `NetworkValidator` (line 274)
+    - `validate_target_host()`
+    - `_is_valid_ip()`
+    - `_is_private_ip()`
+    - `_is_reserved_ip()`
+    - `_validate_domain_name()`
+    - `_is_internal_target()`
+  - `SecureHeaders` (line 403)
+    - `analyze_headers()`
+  - `InputValidator` (line 490)
+    - `validate_input()`
+  - `RateLimiter` (line 552)
+    - `__init__()`
+    - `is_allowed()`
+    - `get_stats()`
+  - `NetworkValidator` (line 604)
+    - `is_private_ip()`
+    - `is_valid_domain()`
+    - `is_valid_ip()`
+  - `SecurityHeaderAnalyzer` (line 638)
+    - `analyze_headers()`
+
+### ⚠️ enhanced_scanner.py
+
+- **Lines of Code**: 35
+- **Cyclomatic Complexity**: 0
+- **Functions**: 0
+- **Classes**: 0
+- **Imports**: 1
+- **Test Status**: Failed (exit code 5)
+- **Error Output**: ```
+
+----------------------------------------------------------------------
+Ran 0 tests in 0.000s
+
+NO TESTS RAN
+
+```
+
+### ✅ success_rate_orchestrator.py
+
+- **Lines of Code**: 678
+- **Cyclomatic Complexity**: 91
+- **Functions**: 28
+- **Classes**: 3
+- **Imports**: 16
+- **Test Status**: Passed
+- **Functions Found**:
+  - `start_success_rate_monitoring()` (line 619)
+  - `stop_success_rate_monitoring()` (line 625)
+  - `get_success_rate_report()` (line 630)
+  - `force_improvements()` (line 635)
+  - `is_target_success_rate_achieved()` (line 640)
+  - `composite_score()` (line 60)
+  - `__init__()` (line 99)
+  - `_initialize_improvement_actions()` (line 116)
+  - `start_monitoring()` (line 185)
+  - `stop_monitoring()` (line 200)
+  - `_monitoring_loop()` (line 207)
+  - `_update_metrics()` (line 227)
+  - `_check_improvement_needs()` (line 270)
+  - `_select_best_improvement_action()` (line 287)
+  - `_check_prerequisites()` (line 302)
+  - `_execute_improvement_action()` (line 324)
+  - `_install_critical_tools()` (line 362)
+  - `_optimize_scan_parameters()` (line 381)
+  - `_enable_performance_monitoring()` (line 397)
+  - `_update_tool_configurations()` (line 411)
+  - `_enable_adaptive_scanning()` (line 444)
+  - `_implement_fallback_chains()` (line 456)
+  - `_optimize_resource_usage()` (line 464)
+  - `_enhance_error_handling()` (line 483)
+  - `_log_progress()` (line 491)
+  - `get_comprehensive_report()` (line 504)
+  - `_generate_recommendations()` (line 538)
+  - `force_improvement_cycle()` (line 588)
+- **Classes Found**:
+  - `SuccessRateMetrics` (line 48)
+    - `composite_score()`
+  - `ImprovementAction` (line 80)
+  - `SuccessRateOrchestrator` (line 94)
+    - `__init__()`
+    - `_initialize_improvement_actions()`
+    - `start_monitoring()`
+    - `stop_monitoring()`
+    - `_monitoring_loop()`
+    - `_update_metrics()`
+    - `_check_improvement_needs()`
+    - `_select_best_improvement_action()`
+    - `_check_prerequisites()`
+    - `_execute_improvement_action()`
+    - `_install_critical_tools()`
+    - `_optimize_scan_parameters()`
+    - `_enable_performance_monitoring()`
+    - `_update_tool_configurations()`
+    - `_enable_adaptive_scanning()`
+    - `_implement_fallback_chains()`
+    - `_optimize_resource_usage()`
+    - `_enhance_error_handling()`
+    - `_log_progress()`
+    - `get_comprehensive_report()`
+    - `_generate_recommendations()`
+    - `force_improvement_cycle()`
+
+### ✅ enhanced_report_controller.py
+
+- **Lines of Code**: 1536
+- **Cyclomatic Complexity**: 163
+- **Functions**: 39
+- **Classes**: 1
+- **Imports**: 10
+- **Test Status**: Passed
+- **Functions Found**:
+  - `atomic_write()` (line 1521)
+  - `__init__()` (line 31)
+  - `_create_business_context()` (line 54)
+  - `generate_enhanced_report()` (line 73)
+  - `_serialize_vulnerability_context()` (line 208)
+  - `_extract_vulnerabilities()` (line 222)
+  - `_generate_enhanced_executive_summary()` (line 249)
+  - `_estimate_financial_impact()` (line 327)
+  - `_generate_key_insights()` (line 383)
+  - `_identify_affected_business_functions()` (line 447)
+  - `_identify_quick_wins()` (line 490)
+  - `_estimate_resource_requirements()` (line 516)
+  - `_identify_specialist_skills()` (line 551)
+  - `_generate_executive_narrative()` (line 572)
+  - `_extract_key_messages()` (line 663)
+  - `_generate_board_summary()` (line 675)
+  - `_generate_media_statement()` (line 691)
+  - `_generate_technical_analysis()` (line 700)
+  - `_analyze_attack_vectors()` (line 723)
+  - `_identify_common_techniques()` (line 757)
+  - `_suggest_vector_mitigations()` (line 784)
+  - `_assess_exploit_difficulty()` (line 817)
+  - `_map_skill_level()` (line 861)
+  - `_identify_required_tools()` (line 874)
+  - `_identify_defense_evasion()` (line 899)
+  - `_analyze_lateral_movement()` (line 941)
+  - `_assess_data_exfiltration_risks()` (line 997)
+  - `_identify_persistence_mechanisms()` (line 1063)
+  - `_analyze_attack_surface()` (line 1104)
+  - `_analyze_service_exposure()` (line 1146)
+  - `_estimate_surface_evolution()` (line 1176)
+  - `_perform_temporal_analysis()` (line 1199)
+  - `_generate_remediation_roadmap()` (line 1225)
+  - `_generate_compliance_assessment()` (line 1296)
+  - `_generate_strategic_recommendations()` (line 1347)
+  - `_generate_monitoring_recommendations()` (line 1379)
+  - `_calculate_analysis_confidence()` (line 1414)
+  - `_document_methodology()` (line 1454)
+  - `_generate_fallback_report()` (line 1485)
+- **Classes Found**:
+  - `EnhancedReportController` (line 28)
+    - `__init__()`
+    - `_create_business_context()`
+    - `generate_enhanced_report()`
+    - `_serialize_vulnerability_context()`
+    - `_extract_vulnerabilities()`
+    - `_generate_enhanced_executive_summary()`
+    - `_estimate_financial_impact()`
+    - `_generate_key_insights()`
+    - `_identify_affected_business_functions()`
+    - `_identify_quick_wins()`
+    - `_estimate_resource_requirements()`
+    - `_identify_specialist_skills()`
+    - `_generate_executive_narrative()`
+    - `_extract_key_messages()`
+    - `_generate_board_summary()`
+    - `_generate_media_statement()`
+    - `_generate_technical_analysis()`
+    - `_analyze_attack_vectors()`
+    - `_identify_common_techniques()`
+    - `_suggest_vector_mitigations()`
+    - `_assess_exploit_difficulty()`
+    - `_map_skill_level()`
+    - `_identify_required_tools()`
+    - `_identify_defense_evasion()`
+    - `_analyze_lateral_movement()`
+    - `_assess_data_exfiltration_risks()`
+    - `_identify_persistence_mechanisms()`
+    - `_analyze_attack_surface()`
+    - `_analyze_service_exposure()`
+    - `_estimate_surface_evolution()`
+    - `_perform_temporal_analysis()`
+    - `_generate_remediation_roadmap()`
+    - `_generate_compliance_assessment()`
+    - `_generate_strategic_recommendations()`
+    - `_generate_monitoring_recommendations()`
+    - `_calculate_analysis_confidence()`
+    - `_document_methodology()`
+    - `_generate_fallback_report()`
+
+### ✅ bl4ckc3ll_pantheon_master.py
+
+- **Lines of Code**: 1846
+- **Cyclomatic Complexity**: 223
+- **Functions**: 53
+- **Classes**: 6
+- **Imports**: 47
+- **Test Status**: Passed
+- **Functions Found**:
+  - `safe_execute_master()` (line 353)
+  - `execute_tool_safely_master()` (line 423)
+  - `safe_http_request_master()` (line 518)
+  - `main()` (line 1778)
+  - `validate_domain()` (line 203)
+  - `validate_ip()` (line 240)
+  - `validate_url()` (line 275)
+  - `sanitize_input()` (line 316)
+  - `validate_file_path()` (line 331)
+  - `__init__()` (line 618)
+  - `info()` (line 647)
+  - `warning()` (line 651)
+  - `error()` (line 655)
+  - `debug()` (line 659)
+  - `success()` (line 663)
+  - `__init__()` (line 676)
+  - `certificate_transparency_search()` (line 690)
+  - `advanced_subdomain_enumeration()` (line 741)
+  - `subdomain_takeover_check()` (line 773)
+  - `_get_default_wordlist()` (line 829)
+  - `__init__()` (line 888)
+  - `comprehensive_port_scan()` (line 894)
+  - `web_technology_detection()` (line 938)
+  - `_extract_title()` (line 1000)
+  - `__init__()` (line 1248)
+  - `show_banner()` (line 1253)
+  - `show_main_menu()` (line 1260)
+  - `handle_menu_selection()` (line 1291)
+  - `target_management_menu()` (line 1334)
+  - `bcar_reconnaissance_menu()` (line 1364)
+  - `port_scanning_menu()` (line 1411)
+  - `technology_detection_menu()` (line 1436)
+  - `subdomain_takeover_menu()` (line 1466)
+  - `security_validation_menu()` (line 1475)
+  - `vulnerability_assessment_menu()` (line 1513)
+  - `cloud_security_menu()` (line 1532)
+  - `api_security_menu()` (line 1546)
+  - `automated_testing_menu()` (line 1560)
+  - `payload_management_menu()` (line 1606)
+  - `launch_tui()` (line 1620)
+  - `generate_reports_menu()` (line 1635)
+  - `configuration_menu()` (line 1658)
+  - `diagnostics_menu()` (line 1674)
+  - `help_menu()` (line 1706)
+  - `run()` (line 1752)
+  - `check_subdomain()` (line 751)
+  - `check_takeover()` (line 794)
+  - `scan_target_port()` (line 904)
+  - `analyze_url()` (line 961)
+  - `__init__()` (line 1032)
+  - `compose()` (line 1038)
+  - `_get_dashboard_content()` (line 1106)
+  - `run_scan()` (line 1190)
+- **Classes Found**:
+  - `SecurityValidator` (line 181)
+    - `validate_domain()`
+    - `validate_ip()`
+    - `validate_url()`
+    - `sanitize_input()`
+    - `validate_file_path()`
+  - `PantheonLogger` (line 615)
+    - `__init__()`
+    - `info()`
+    - `warning()`
+    - `error()`
+    - `debug()`
+    - `success()`
+  - `BCARCore` (line 673)
+    - `__init__()`
+    - `certificate_transparency_search()`
+    - `advanced_subdomain_enumeration()`
+    - `subdomain_takeover_check()`
+    - `_get_default_wordlist()`
+  - `AdvancedScanManager` (line 885)
+    - `__init__()`
+    - `comprehensive_port_scan()`
+    - `web_technology_detection()`
+    - `_extract_title()`
+  - `PantheonMasterCLI` (line 1245)
+    - `__init__()`
+    - `show_banner()`
+    - `show_main_menu()`
+    - `handle_menu_selection()`
+    - `target_management_menu()`
+    - `bcar_reconnaissance_menu()`
+    - `port_scanning_menu()`
+    - `technology_detection_menu()`
+    - `subdomain_takeover_menu()`
+    - `security_validation_menu()`
+    - `vulnerability_assessment_menu()`
+    - `cloud_security_menu()`
+    - `api_security_menu()`
+    - `automated_testing_menu()`
+    - `payload_management_menu()`
+    - `launch_tui()`
+    - `generate_reports_menu()`
+    - `configuration_menu()`
+    - `diagnostics_menu()`
+    - `help_menu()`
+    - `run()`
+  - `PantheonMasterTUI` (line 1015)
+    - `__init__()`
+    - `compose()`
+    - `_get_dashboard_content()`
+
+### ✅ quick_functional_test.py
+
+- **Lines of Code**: 183
+- **Cyclomatic Complexity**: 19
+- **Functions**: 5
+- **Classes**: 0
+- **Imports**: 5
+- **Test Status**: Passed
+- **Functions Found**:
+  - `test_config_validator()` (line 11)
+  - `test_enhanced_scanner()` (line 55)
+  - `test_domain_validation()` (line 84)
+  - `test_main_imports()` (line 115)
+  - `main()` (line 145)
+
+### ✅ enhanced_validation.py
+
+- **Lines of Code**: 564
+- **Cyclomatic Complexity**: 79
+- **Functions**: 18
+- **Classes**: 4
+- **Imports**: 13
+- **Test Status**: Passed
+- **Functions Found**:
+  - `validate_target_input()` (line 490)
+  - `validate_targets_file()` (line 510)
+  - `get_system_reliability_score()` (line 531)
+  - `success_rate()` (line 54)
+  - `accuracy_rate()` (line 60)
+  - `__init__()` (line 70)
+  - `validate_domain()` (line 94)
+  - `validate_ip()` (line 161)
+  - `validate_url()` (line 212)
+  - `validate_input_list()` (line 295)
+  - `bulk_validate_and_clean()` (line 325)
+  - `__init__()` (line 365)
+  - `record_operation()` (line 370)
+  - `record_finding_verification()` (line 392)
+  - `is_likely_false_positive()` (line 405)
+  - `get_reliability_score()` (line 410)
+  - `get_performance_summary()` (line 424)
+  - `export_metrics()` (line 460)
+- **Classes Found**:
+  - `ValidationResult` (line 30)
+  - `ReliabilityMetrics` (line 42)
+    - `success_rate()`
+    - `accuracy_rate()`
+  - `EnhancedValidator` (line 67)
+    - `__init__()`
+    - `validate_domain()`
+    - `validate_ip()`
+    - `validate_url()`
+    - `validate_input_list()`
+    - `bulk_validate_and_clean()`
+  - `ReliabilityTracker` (line 362)
+    - `__init__()`
+    - `record_operation()`
+    - `record_finding_verification()`
+    - `is_likely_false_positive()`
+    - `get_reliability_score()`
+    - `get_performance_summary()`
+    - `export_metrics()`
+
+### ✅ enhanced_scanning.py
+
+- **Lines of Code**: 710
+- **Cyclomatic Complexity**: 84
+- **Functions**: 32
+- **Classes**: 6
+- **Imports**: 20
+- **Test Status**: Passed
+- **Functions Found**:
+  - `get_current_success_rate()` (line 616)
+  - `get_performance_report()` (line 621)
+  - `run_enhanced_scanning()` (line 638)
+  - `duration()` (line 115)
+  - `success_score()` (line 119)
+  - `update()` (line 151)
+  - `__init__()` (line 176)
+  - `_initialize_adaptive_settings()` (line 200)
+  - `record_result()` (line 220)
+  - `_auto_adjust_settings()` (line 240)
+  - `get_optimized_settings()` (line 279)
+  - `get_current_success_rate()` (line 283)
+  - `get_tool_performance()` (line 295)
+  - `should_skip_tool()` (line 299)
+  - `export_metrics()` (line 315)
+  - `__init__()` (line 340)
+  - `enhanced_nuclei_scan()` (line 344)
+  - `_nuclei_scan_with_tool()` (line 366)
+  - `_fallback_scan()` (line 467)
+  - `enhanced_subdomain_enum()` (line 502)
+  - `_certificate_transparency_search()` (line 584)
+  - `enhanced_which()` (line 27)
+  - `safe_run_command()` (line 48)
+  - `which()` (line 57)
+  - `atomic_write()` (line 60)
+  - `read_lines()` (line 65)
+  - `validate_domain_input()` (line 79)
+  - `validate_ip_input()` (line 82)
+  - `__init__()` (line 73)
+  - `log()` (line 76)
+  - `is_allowed()` (line 92)
+  - `wait_time()` (line 95)
+- **Classes Found**:
+  - `ScanResult` (line 102)
+    - `duration()`
+    - `success_score()`
+  - `PerformanceMetrics` (line 142)
+    - `update()`
+  - `AdaptiveScanManager` (line 170)
+    - `__init__()`
+    - `_initialize_adaptive_settings()`
+    - `record_result()`
+    - `_auto_adjust_settings()`
+    - `get_optimized_settings()`
+    - `get_current_success_rate()`
+    - `get_tool_performance()`
+    - `should_skip_tool()`
+    - `export_metrics()`
+  - `EnhancedScanner` (line 337)
+    - `__init__()`
+    - `enhanced_nuclei_scan()`
+    - `_nuclei_scan_with_tool()`
+    - `_fallback_scan()`
+    - `enhanced_subdomain_enum()`
+    - `_certificate_transparency_search()`
+  - `PantheonLogger` (line 72)
+    - `__init__()`
+    - `log()`
+  - `MockRateLimiter` (line 91)
+    - `is_allowed()`
+    - `wait_time()`
+
+### ✅ diagnostics.py
+
+- **Lines of Code**: 276
+- **Cyclomatic Complexity**: 25
+- **Functions**: 5
+- **Classes**: 0
+- **Imports**: 9
+- **Test Status**: Passed
+- **Functions Found**:
+  - `print_header()` (line 15)
+  - `print_section()` (line 21)
+  - `check_status()` (line 27)
+  - `run_command()` (line 35)
+  - `main()` (line 57)
+
+### ✅ security_monitor.py
+
+- **Lines of Code**: 72
+- **Cyclomatic Complexity**: 12
+- **Functions**: 4
+- **Classes**: 1
+- **Imports**: 6
+- **Test Status**: Passed
+- **Functions Found**:
+  - `start_monitoring()` (line 54)
+  - `__init__()` (line 19)
+  - `on_modified()` (line 29)
+  - `check_log_file()` (line 36)
+- **Classes Found**:
+  - `SecurityMonitor` (line 16)
+    - `__init__()`
+    - `on_modified()`
+    - `check_log_file()`
+
+### ✅ error_handler.py
+
+- **Lines of Code**: 698
+- **Cyclomatic Complexity**: 71
+- **Functions**: 34
+- **Classes**: 10
+- **Imports**: 13
+- **Test Status**: Passed
+- **Functions Found**:
+  - `safe_execute()` (line 401)
+  - `validate_input()` (line 449)
+  - `safe_file_write()` (line 533)
+  - `safe_file_read()` (line 572)
+  - `__init__()` (line 36)
+  - `__init__()` (line 57)
+  - `set_context()` (line 94)
+  - `clear_context()` (line 98)
+  - `log()` (line 102)
+  - `log_exception()` (line 122)
+  - `log_tool_error()` (line 130)
+  - `export_error_summary()` (line 143)
+  - `_count_log_entries()` (line 154)
+  - `log_with_context()` (line 166)
+  - `error()` (line 176)
+  - `warning()` (line 189)
+  - `info()` (line 193)
+  - `debug()` (line 197)
+  - `__init__()` (line 205)
+  - `retry_with_exponential_backoff()` (line 209)
+  - `circuit_breaker()` (line 273)
+  - `__init__()` (line 338)
+  - `execute_with_fallback()` (line 342)
+  - `safe_call()` (line 373)
+  - `decorator()` (line 420)
+  - `retry_operation()` (line 607)
+  - `__init__()` (line 665)
+  - `register_fallback()` (line 669)
+  - `safe_execute()` (line 673)
+  - `decorator()` (line 218)
+  - `decorator()` (line 278)
+  - `wrapper()` (line 422)
+  - `wrapper()` (line 220)
+  - `wrapper()` (line 287)
+- **Classes Found**:
+  - `SecurityTestingError` (line 21)
+  - `ConfigurationError` (line 27)
+  - `ToolExecutionError` (line 33)
+    - `__init__()`
+  - `NetworkError` (line 42)
+  - `ValidationError` (line 48)
+  - `EnhancedLogger` (line 54)
+    - `__init__()`
+    - `set_context()`
+    - `clear_context()`
+    - `log()`
+    - `log_exception()`
+    - `log_tool_error()`
+    - `export_error_summary()`
+    - `_count_log_entries()`
+    - `log_with_context()`
+    - `error()`
+    - `warning()`
+    - `info()`
+    - `debug()`
+  - `ErrorRecoveryManager` (line 202)
+    - `__init__()`
+    - `retry_with_exponential_backoff()`
+    - `circuit_breaker()`
+  - `SafeExecutor` (line 335)
+    - `__init__()`
+    - `execute_with_fallback()`
+    - `safe_call()`
+  - `ErrorRecovery` (line 603)
+    - `retry_operation()`
+  - `AdvancedErrorRecovery` (line 662)
+    - `__init__()`
+    - `register_fallback()`
+    - `safe_execute()`
+
+### ✅ intelligent_report_engine.py
+
+- **Lines of Code**: 1600
+- **Cyclomatic Complexity**: 195
+- **Functions**: 58
+- **Classes**: 9
+- **Imports**: 12
+- **Test Status**: Passed
+- **Functions Found**:
+  - `__init__()` (line 93)
+  - `_initialize_intelligence_db()` (line 104)
+  - `analyze_vulnerability_intelligence()` (line 141)
+  - `_create_vulnerability_context()` (line 159)
+  - `_determine_attack_vector()` (line 211)
+  - `_calculate_cvss_score()` (line 221)
+  - `_calculate_exploitability()` (line 252)
+  - `_calculate_confidence_score()` (line 276)
+  - `_calculate_business_impact()` (line 303)
+  - `_calculate_remediation_complexity()` (line 331)
+  - `_check_public_exploits()` (line 352)
+  - `_gather_threat_intelligence()` (line 360)
+  - `_estimate_attack_frequency()` (line 377)
+  - `_correlate_vulnerabilities()` (line 392)
+  - `_find_attack_chains()` (line 408)
+  - `_identify_related_vulnerabilities()` (line 420)
+  - `_are_vulnerabilities_related()` (line 431)
+  - `_templates_similar()` (line 463)
+  - `__init__()` (line 475)
+  - `_default_business_context()` (line 479)
+  - `calculate_contextual_risk()` (line 490)
+  - `_empty_risk_assessment()` (line 541)
+  - `_calculate_base_risk()` (line 561)
+  - `_apply_business_context()` (line 591)
+  - `_calculate_vector_distribution()` (line 638)
+  - `_identify_critical_attack_paths()` (line 659)
+  - `_estimate_time_to_compromise()` (line 698)
+  - `_calculate_remediation_priority()` (line 718)
+  - `_effort_mapping()` (line 749)
+  - `_generate_business_justification()` (line 754)
+  - `_assess_compliance_impact()` (line 765)
+  - `_affects_compliance()` (line 793)
+  - `_get_potential_violations()` (line 808)
+  - `_generate_risk_insights()` (line 830)
+  - `_generate_contextual_recommendations()` (line 889)
+  - `__init__()` (line 978)
+  - `_initialize_correlation_rules()` (line 982)
+  - `analyze_correlations()` (line 1016)
+  - `_find_attack_chains()` (line 1034)
+  - `_match_chain_pattern()` (line 1064)
+  - `_cluster_vulnerabilities()` (line 1078)
+  - `_determine_cluster_type()` (line 1118)
+  - `_are_vulnerabilities_clustered()` (line 1135)
+  - `_find_amplification_scenarios()` (line 1167)
+  - `_build_dependency_graph()` (line 1206)
+  - `_determine_relationship()` (line 1247)
+  - `_calculate_relationship_weight()` (line 1271)
+  - `_find_critical_paths()` (line 1285)
+  - `_estimate_path_time()` (line 1315)
+  - `_calculate_risk_amplification()` (line 1329)
+  - `__init__()` (line 1355)
+  - `_initialize_threat_feeds()` (line 1361)
+  - `aggregate_threat_intelligence()` (line 1376)
+  - `_analyze_target_intelligence()` (line 1405)
+  - `_simulate_threat_intelligence_lookup()` (line 1447)
+  - `_analyze_vulnerability_intelligence()` (line 1497)
+  - `_merge_intelligence()` (line 1550)
+  - `_calculate_reputation_score()` (line 1580)
+- **Classes Found**:
+  - `ThreatLevel` (line 22)
+  - `AttackVector` (line 32)
+  - `VulnerabilityContext` (line 44)
+  - `ThreatIntelligence` (line 66)
+  - `BusinessContext` (line 79)
+  - `IntelligentReportAnalyzer` (line 90)
+    - `__init__()`
+    - `_initialize_intelligence_db()`
+    - `analyze_vulnerability_intelligence()`
+    - `_create_vulnerability_context()`
+    - `_determine_attack_vector()`
+    - `_calculate_cvss_score()`
+    - `_calculate_exploitability()`
+    - `_calculate_confidence_score()`
+    - `_calculate_business_impact()`
+    - `_calculate_remediation_complexity()`
+    - `_check_public_exploits()`
+    - `_gather_threat_intelligence()`
+    - `_estimate_attack_frequency()`
+    - `_correlate_vulnerabilities()`
+    - `_find_attack_chains()`
+    - `_identify_related_vulnerabilities()`
+    - `_are_vulnerabilities_related()`
+    - `_templates_similar()`
+  - `AdvancedRiskCalculator` (line 472)
+    - `__init__()`
+    - `_default_business_context()`
+    - `calculate_contextual_risk()`
+    - `_empty_risk_assessment()`
+    - `_calculate_base_risk()`
+    - `_apply_business_context()`
+    - `_calculate_vector_distribution()`
+    - `_identify_critical_attack_paths()`
+    - `_estimate_time_to_compromise()`
+    - `_calculate_remediation_priority()`
+    - `_effort_mapping()`
+    - `_generate_business_justification()`
+    - `_assess_compliance_impact()`
+    - `_affects_compliance()`
+    - `_get_potential_violations()`
+    - `_generate_risk_insights()`
+    - `_generate_contextual_recommendations()`
+  - `VulnerabilityCorrelationEngine` (line 975)
+    - `__init__()`
+    - `_initialize_correlation_rules()`
+    - `analyze_correlations()`
+    - `_find_attack_chains()`
+    - `_match_chain_pattern()`
+    - `_cluster_vulnerabilities()`
+    - `_determine_cluster_type()`
+    - `_are_vulnerabilities_clustered()`
+    - `_find_amplification_scenarios()`
+    - `_build_dependency_graph()`
+    - `_determine_relationship()`
+    - `_calculate_relationship_weight()`
+    - `_find_critical_paths()`
+    - `_estimate_path_time()`
+    - `_calculate_risk_amplification()`
+  - `ThreatIntelligenceAggregator` (line 1352)
+    - `__init__()`
+    - `_initialize_threat_feeds()`
+    - `aggregate_threat_intelligence()`
+    - `_analyze_target_intelligence()`
+    - `_simulate_threat_intelligence_lookup()`
+    - `_analyze_vulnerability_intelligence()`
+    - `_merge_intelligence()`
+    - `_calculate_reputation_score()`
+
+### ✅ setup_runner.py
+
+- **Lines of Code**: 509
+- **Cyclomatic Complexity**: 54
+- **Functions**: 24
+- **Classes**: 2
+- **Imports**: 9
+- **Test Status**: Passed
+- **Functions Found**:
+  - `main()` (line 470)
+  - `__init__()` (line 18)
+  - `install_dependencies()` (line 22)
+  - `setup_pre_commit_hooks()` (line 61)
+  - `setup_git_hooks()` (line 76)
+  - `setup_github_workflows()` (line 114)
+  - `create_configuration_files()` (line 140)
+  - `validate_scripts()` (line 199)
+  - `run_initial_tests()` (line 245)
+  - `setup_monitoring()` (line 280)
+  - `run_complete_setup()` (line 295)
+  - `__init__()` (line 351)
+  - `run_component()` (line 354)
+  - `_run_setup()` (line 377)
+  - `_run_tests()` (line 383)
+  - `_run_security()` (line 395)
+  - `_run_performance()` (line 400)
+  - `_run_docs()` (line 405)
+  - `_run_debug()` (line 410)
+  - `_run_monitor()` (line 415)
+  - `_run_manage()` (line 427)
+  - `_run_workflow()` (line 432)
+  - `_run_format()` (line 440)
+  - `_run_validate()` (line 452)
+- **Classes Found**:
+  - `ComprehensiveSetup` (line 17)
+    - `__init__()`
+    - `install_dependencies()`
+    - `setup_pre_commit_hooks()`
+    - `setup_git_hooks()`
+    - `setup_github_workflows()`
+    - `create_configuration_files()`
+    - `validate_scripts()`
+    - `run_initial_tests()`
+    - `setup_monitoring()`
+    - `run_complete_setup()`
+  - `ComprehensiveRunner` (line 350)
+    - `__init__()`
+    - `run_component()`
+    - `_run_setup()`
+    - `_run_tests()`
+    - `_run_security()`
+    - `_run_performance()`
+    - `_run_docs()`
+    - `_run_debug()`
+    - `_run_monitor()`
+    - `_run_manage()`
+    - `_run_workflow()`
+    - `_run_format()`
+    - `_run_validate()`
+
+### ✅ success_rate_optimizer.py
+
+- **Lines of Code**: 359
+- **Cyclomatic Complexity**: 25
+- **Functions**: 7
+- **Classes**: 0
+- **Imports**: 5
+- **Test Status**: Passed
+- **Functions Found**:
+  - `optimize_tool_coverage()` (line 14)
+  - `optimize_scanning_parameters()` (line 46)
+  - `enhance_validation_accuracy()` (line 109)
+  - `implement_performance_optimizations()` (line 155)
+  - `create_success_rate_boosters()` (line 200)
+  - `calculate_expected_improvement()` (line 240)
+  - `apply_all_optimizations()` (line 271)
+
+### ⚠️ security_config.py
+
+- **Lines of Code**: 47
+- **Cyclomatic Complexity**: 0
+- **Functions**: 0
+- **Classes**: 0
+- **Imports**: 0
+- **Test Status**: Failed (exit code 5)
+- **Error Output**: ```
+
+----------------------------------------------------------------------
+Ran 0 tests in 0.000s
+
+NO TESTS RAN
+
+```
+
+### ✅ scripts/master_workflow_automation.py
+
+- **Lines of Code**: 388
+- **Cyclomatic Complexity**: 24
+- **Functions**: 13
+- **Classes**: 1
+- **Imports**: 9
+- **Test Status**: Passed
+- **Functions Found**:
+  - `main()` (line 348)
+  - `__init__()` (line 19)
+  - `run_component()` (line 24)
+  - `run_security_validation()` (line 83)
+  - `run_performance_testing()` (line 91)
+  - `run_documentation_validation()` (line 99)
+  - `run_comprehensive_testing()` (line 107)
+  - `run_intelligent_debugging()` (line 115)
+  - `run_repository_management()` (line 123)
+  - `run_existing_test_suites()` (line 131)
+  - `run_code_quality_checks()` (line 149)
+  - `generate_comprehensive_report()` (line 185)
+  - `run_complete_workflow()` (line 279)
+- **Classes Found**:
+  - `MasterWorkflowAutomation` (line 18)
+    - `__init__()`
+    - `run_component()`
+    - `run_security_validation()`
+    - `run_performance_testing()`
+    - `run_documentation_validation()`
+    - `run_comprehensive_testing()`
+    - `run_intelligent_debugging()`
+    - `run_repository_management()`
+    - `run_existing_test_suites()`
+    - `run_code_quality_checks()`
+    - `generate_comprehensive_report()`
+    - `run_complete_workflow()`
+
+### ✅ scripts/intelligent_debugger.py
+
+- **Lines of Code**: 597
+- **Cyclomatic Complexity**: 60
+- **Functions**: 10
+- **Classes**: 2
+- **Imports**: 13
+- **Test Status**: Passed
+- **Functions Found**:
+  - `__init__()` (line 36)
+  - `analyze_file_for_errors()` (line 86)
+  - `_analyze_ast_patterns()` (line 141)
+  - `_analyze_content_patterns()` (line 231)
+  - `run_automated_tests_with_debugging()` (line 293)
+  - `_analyze_test_output()` (line 342)
+  - `generate_automated_fixes()` (line 365)
+  - `recursive_improvement_cycle()` (line 405)
+  - `generate_debugging_report()` (line 476)
+  - `run_full_debugging_system()` (line 554)
+- **Classes Found**:
+  - `ErrorPattern` (line 23)
+  - `IntelligentDebugger` (line 35)
+    - `__init__()`
+    - `analyze_file_for_errors()`
+    - `_analyze_ast_patterns()`
+    - `_analyze_content_patterns()`
+    - `run_automated_tests_with_debugging()`
+    - `_analyze_test_output()`
+    - `generate_automated_fixes()`
+    - `recursive_improvement_cycle()`
+    - `generate_debugging_report()`
+    - `run_full_debugging_system()`
+
+### ✅ scripts/performance_tester.py
+
+- **Lines of Code**: 222
+- **Cyclomatic Complexity**: 20
+- **Functions**: 7
+- **Classes**: 1
+- **Imports**: 8
+- **Test Status**: Passed
+- **Functions Found**:
+  - `__init__()` (line 19)
+  - `measure_startup_time()` (line 23)
+  - `measure_memory_usage()` (line 40)
+  - `measure_test_suite_performance()` (line 64)
+  - `measure_file_operations()` (line 86)
+  - `validate_performance_requirements()` (line 113)
+  - `run_all_benchmarks()` (line 164)
+- **Classes Found**:
+  - `PerformanceTester` (line 18)
+    - `__init__()`
+    - `measure_startup_time()`
+    - `measure_memory_usage()`
+    - `measure_test_suite_performance()`
+    - `measure_file_operations()`
+    - `validate_performance_requirements()`
+    - `run_all_benchmarks()`
+
+### ✅ scripts/monitoring_system.py
+
+- **Lines of Code**: 611
+- **Cyclomatic Complexity**: 80
+- **Functions**: 20
+- **Classes**: 1
+- **Imports**: 13
+- **Test Status**: Passed
+- **Functions Found**:
+  - `main()` (line 587)
+  - `__init__()` (line 22)
+  - `_load_config()` (line 39)
+  - `_load_state()` (line 84)
+  - `_save_state()` (line 103)
+  - `collect_system_metrics()` (line 111)
+  - `collect_git_metrics()` (line 131)
+  - `collect_test_metrics()` (line 171)
+  - `collect_security_metrics()` (line 217)
+  - `analyze_metrics_trends()` (line 250)
+  - `check_alert_conditions()` (line 281)
+  - `send_alerts()` (line 336)
+  - `_send_email_alerts()` (line 360)
+  - `_send_webhook_alerts()` (line 365)
+  - `_send_slack_alerts()` (line 370)
+  - `update_performance_baseline()` (line 375)
+  - `cleanup_old_data()` (line 391)
+  - `run_monitoring_cycle()` (line 410)
+  - `generate_monitoring_report()` (line 477)
+  - `run_continuous_monitoring()` (line 559)
+- **Classes Found**:
+  - `MonitoringSystem` (line 21)
+    - `__init__()`
+    - `_load_config()`
+    - `_load_state()`
+    - `_save_state()`
+    - `collect_system_metrics()`
+    - `collect_git_metrics()`
+    - `collect_test_metrics()`
+    - `collect_security_metrics()`
+    - `analyze_metrics_trends()`
+    - `check_alert_conditions()`
+    - `send_alerts()`
+    - `_send_email_alerts()`
+    - `_send_webhook_alerts()`
+    - `_send_slack_alerts()`
+    - `update_performance_baseline()`
+    - `cleanup_old_data()`
+    - `run_monitoring_cycle()`
+    - `generate_monitoring_report()`
+    - `run_continuous_monitoring()`
+
+### ✅ scripts/intelligent_repo_manager.py
+
+- **Lines of Code**: 509
+- **Cyclomatic Complexity**: 71
+- **Functions**: 10
+- **Classes**: 1
+- **Imports**: 9
+- **Test Status**: Passed
+- **Functions Found**:
+  - `__init__()` (line 20)
+  - `_load_config()` (line 29)
+  - `_load_state()` (line 76)
+  - `_save_state()` (line 96)
+  - `check_repository_health()` (line 104)
+  - `automated_maintenance()` (line 183)
+  - `optimize_repository()` (line 299)
+  - `monitor_and_alert()` (line 344)
+  - `auto_merge_eligible_prs()` (line 420)
+  - `run_full_management_cycle()` (line 441)
+- **Classes Found**:
+  - `IntelligentRepoManager` (line 19)
+    - `__init__()`
+    - `_load_config()`
+    - `_load_state()`
+    - `_save_state()`
+    - `check_repository_health()`
+    - `automated_maintenance()`
+    - `optimize_repository()`
+    - `monitor_and_alert()`
+    - `auto_merge_eligible_prs()`
+    - `run_full_management_cycle()`
+
+### ✅ scripts/security_validator.py
+
+- **Lines of Code**: 207
+- **Cyclomatic Complexity**: 46
+- **Functions**: 7
+- **Classes**: 1
+- **Imports**: 7
+- **Test Status**: Passed
+- **Functions Found**:
+  - `__init__()` (line 18)
+  - `validate_python_files()` (line 28)
+  - `validate_json_files()` (line 66)
+  - `validate_yaml_files()` (line 91)
+  - `_contains_sensitive_data()` (line 108)
+  - `_validate_security_config()` (line 126)
+  - `validate_all()` (line 139)
+- **Classes Found**:
+  - `SecurityValidator` (line 17)
+    - `__init__()`
+    - `validate_python_files()`
+    - `validate_json_files()`
+    - `validate_yaml_files()`
+    - `_contains_sensitive_data()`
+    - `_validate_security_config()`
+    - `validate_all()`
+
+### ✅ scripts/docs_validator.py
+
+- **Lines of Code**: 186
+- **Cyclomatic Complexity**: 33
+- **Functions**: 5
+- **Classes**: 1
+- **Imports**: 5
+- **Test Status**: Passed
+- **Functions Found**:
+  - `__init__()` (line 15)
+  - `validate_markdown()` (line 18)
+  - `validate_rst()` (line 73)
+  - `check_documentation_completeness()` (line 103)
+  - `validate_all()` (line 128)
+- **Classes Found**:
+  - `DocumentationValidator` (line 14)
+    - `__init__()`
+    - `validate_markdown()`
+    - `validate_rst()`
+    - `check_documentation_completeness()`
+    - `validate_all()`
+
+### ⚠️ tui/__init__.py
+
+- **Lines of Code**: 9
+- **Cyclomatic Complexity**: 0
+- **Functions**: 0
+- **Classes**: 0
+- **Imports**: 1
+- **Test Status**: Failed (exit code 5)
+- **Error Output**: ```
+
+----------------------------------------------------------------------
+Ran 0 tests in 0.000s
+
+NO TESTS RAN
+
+```
+
+### ✅ tui/backend_integration.py
+
+- **Lines of Code**: 321
+- **Cyclomatic Complexity**: 52
+- **Functions**: 16
+- **Classes**: 4
+- **Imports**: 10
+- **Test Status**: Passed
+- **Functions Found**:
+  - `__init__()` (line 39)
+  - `set_progress_callback()` (line 48)
+  - `update_progress()` (line 52)
+  - `start_full_scan()` (line 65)
+  - `start_recon_scan()` (line 81)
+  - `start_vuln_scan()` (line 97)
+  - `stop_scan()` (line 113)
+  - `_run_full_scan()` (line 119)
+  - `_run_recon_scan()` (line 164)
+  - `_run_vuln_scan()` (line 187)
+  - `load_config()` (line 217)
+  - `save_config()` (line 230)
+  - `load_targets()` (line 245)
+  - `save_targets()` (line 260)
+  - `get_available_reports()` (line 274)
+  - `load_report()` (line 300)
+- **Classes Found**:
+  - `ScanManager` (line 36)
+    - `__init__()`
+    - `set_progress_callback()`
+    - `update_progress()`
+    - `start_full_scan()`
+    - `start_recon_scan()`
+    - `start_vuln_scan()`
+    - `stop_scan()`
+    - `_run_full_scan()`
+    - `_run_recon_scan()`
+    - `_run_vuln_scan()`
+  - `ConfigManager` (line 213)
+    - `load_config()`
+    - `save_config()`
+  - `TargetManager` (line 241)
+    - `load_targets()`
+    - `save_targets()`
+  - `ReportManager` (line 270)
+    - `get_available_reports()`
+    - `load_report()`
+
+### ✅ tui/app.py
+
+- **Lines of Code**: 200
+- **Cyclomatic Complexity**: 13
+- **Functions**: 15
+- **Classes**: 1
+- **Imports**: 18
+- **Test Status**: Passed
+- **Functions Found**:
+  - `__init__()` (line 61)
+  - `compose()` (line 66)
+  - `switch_tab()` (line 110)
+  - `on_mount()` (line 139)
+  - `start_system_monitor()` (line 147)
+  - `action_quit()` (line 158)
+  - `action_toggle_dark()` (line 162)
+  - `action_show_help()` (line 166)
+  - `action_targets()` (line 170)
+  - `action_scan()` (line 174)
+  - `action_reports()` (line 178)
+  - `action_settings()` (line 182)
+  - `action_refresh()` (line 186)
+  - `action_save_config()` (line 191)
+  - `monitor_loop()` (line 150)
+- **Classes Found**:
+  - `PantheonTUI` (line 42)
+    - `__init__()`
+    - `compose()`
+    - `switch_tab()`
+    - `on_mount()`
+    - `start_system_monitor()`
+    - `action_quit()`
+    - `action_toggle_dark()`
+    - `action_show_help()`
+    - `action_targets()`
+    - `action_scan()`
+    - `action_reports()`
+    - `action_settings()`
+    - `action_refresh()`
+    - `action_save_config()`
+
+### ✅ plugins/nuclei_template_manager.py
+
+- **Lines of Code**: 327
+- **Cyclomatic Complexity**: 27
+- **Functions**: 4
+- **Classes**: 0
+- **Imports**: 8
+- **Test Status**: Passed
+- **Functions Found**:
+  - `execute()` (line 24)
+  - `count_templates()` (line 133)
+  - `create_custom_templates()` (line 151)
+  - `generate_template_statistics()` (line 284)
+
+### ✅ plugins/advanced_osint.py
+
+- **Lines of Code**: 323
+- **Cyclomatic Complexity**: 59
+- **Functions**: 6
+- **Classes**: 0
+- **Imports**: 9
+- **Test Status**: Passed
+- **Functions Found**:
+  - `execute()` (line 21)
+  - `search_certificate_transparency()` (line 101)
+  - `get_dns_history()` (line 146)
+  - `get_external_subdomains()` (line 180)
+  - `search_social_presence()` (line 230)
+  - `analyze_technology_stack()` (line 268)
+
+### ✅ plugins/api_security_scanner.py
+
+- **Lines of Code**: 590
+- **Cyclomatic Complexity**: 83
+- **Functions**: 6
+- **Classes**: 0
+- **Imports**: 7
+- **Test Status**: Passed
+- **Functions Found**:
+  - `execute()` (line 22)
+  - `discover_api_endpoints()` (line 95)
+  - `test_rest_api_security()` (line 227)
+  - `test_graphql_security()` (line 313)
+  - `test_authentication_security()` (line 428)
+  - `test_rate_limiting()` (line 524)
+
+### ✅ plugins/cloud_security_scanner.py
+
+- **Lines of Code**: 661
+- **Cyclomatic Complexity**: 84
+- **Functions**: 7
+- **Classes**: 0
+- **Imports**: 7
+- **Test Status**: Passed
+- **Functions Found**:
+  - `execute()` (line 22)
+  - `scan_aws_s3_buckets()` (line 111)
+  - `scan_azure_storage()` (line 267)
+  - `scan_gcp_storage()` (line 359)
+  - `test_cloud_metadata()` (line 433)
+  - `scan_container_registries()` (line 512)
+  - `scan_kubernetes_exposure()` (line 571)
+
+### ✅ plugins/enhanced_fuzzing.py
+
+- **Lines of Code**: 520
+- **Cyclomatic Complexity**: 71
+- **Functions**: 8
+- **Classes**: 0
+- **Imports**: 6
+- **Test Status**: Passed
+- **Functions Found**:
+  - `execute()` (line 21)
+  - `get_wordlists()` (line 133)
+  - `run_ffuf_fuzzing()` (line 182)
+  - `run_feroxbuster_fuzzing()` (line 253)
+  - `run_gobuster_fuzzing()` (line 307)
+  - `run_dirb_fuzzing()` (line 361)
+  - `run_parameter_fuzzing()` (line 406)
+  - `run_subdomain_fuzzing()` (line 444)
+
+### ✅ tui/screens/settings.py
+
+- **Lines of Code**: 308
+- **Cyclomatic Complexity**: 21
+- **Functions**: 13
+- **Classes**: 7
+- **Imports**: 6
+- **Test Status**: Passed
+- **Functions Found**:
+  - `compose()` (line 27)
+  - `compose()` (line 55)
+  - `compose()` (line 95)
+  - `compose()` (line 128)
+  - `compose()` (line 161)
+  - `compose()` (line 186)
+  - `save_configuration()` (line 208)
+  - `load_configuration()` (line 225)
+  - `reset_configuration()` (line 248)
+  - `collect_config_values()` (line 254)
+  - `apply_config_values()` (line 276)
+  - `compose()` (line 285)
+  - `on_mount()` (line 304)
+- **Classes Found**:
+  - `GeneralSettingsPanel` (line 24)
+    - `compose()`
+  - `NucleiSettingsPanel` (line 52)
+    - `compose()`
+  - `ScanningSettingsPanel` (line 92)
+    - `compose()`
+  - `ReportSettingsPanel` (line 125)
+    - `compose()`
+  - `AdvancedSettingsPanel` (line 158)
+    - `compose()`
+  - `SettingsControlPanel` (line 183)
+    - `compose()`
+    - `save_configuration()`
+    - `load_configuration()`
+    - `reset_configuration()`
+    - `collect_config_values()`
+    - `apply_config_values()`
+  - `SettingsScreen` (line 282)
+    - `compose()`
+    - `on_mount()`
+
+### ✅ tui/screens/main_dashboard.py
+
+- **Lines of Code**: 230
+- **Cyclomatic Complexity**: 17
+- **Functions**: 17
+- **Classes**: 6
+- **Imports**: 13
+- **Test Status**: Passed
+- **Functions Found**:
+  - `compose()` (line 44)
+  - `compose()` (line 61)
+  - `on_mount()` (line 74)
+  - `update_resources()` (line 78)
+  - `compose()` (line 108)
+  - `on_mount()` (line 119)
+  - `update_status()` (line 123)
+  - `compose()` (line 132)
+  - `start_full_scan()` (line 146)
+  - `quick_recon()` (line 159)
+  - `vuln_scan()` (line 169)
+  - `generate_report()` (line 179)
+  - `view_results()` (line 184)
+  - `open_settings()` (line 189)
+  - `compose()` (line 197)
+  - `compose()` (line 219)
+  - `on_mount()` (line 227)
+- **Classes Found**:
+  - `SystemInfoWidget` (line 41)
+    - `compose()`
+  - `ResourceMonitor` (line 54)
+    - `compose()`
+    - `on_mount()`
+    - `update_resources()`
+  - `StatusOverview` (line 105)
+    - `compose()`
+    - `on_mount()`
+    - `update_status()`
+  - `QuickActionsPanel` (line 129)
+    - `compose()`
+    - `start_full_scan()`
+    - `quick_recon()`
+    - `vuln_scan()`
+    - `generate_report()`
+    - `view_results()`
+    - `open_settings()`
+  - `RecentActivity` (line 194)
+    - `compose()`
+  - `MainDashboard` (line 216)
+    - `compose()`
+    - `on_mount()`
+
+### ✅ tui/screens/scan_runner.py
+
+- **Lines of Code**: 294
+- **Cyclomatic Complexity**: 23
+- **Functions**: 14
+- **Classes**: 5
+- **Imports**: 9
+- **Test Status**: Passed
+- **Functions Found**:
+  - `compose()` (line 28)
+  - `compose()` (line 67)
+  - `start_scan()` (line 92)
+  - `stop_scan()` (line 131)
+  - `__init__()` (line 150)
+  - `compose()` (line 156)
+  - `start_scan()` (line 174)
+  - `stop_scan()` (line 186)
+  - `update_from_backend()` (line 192)
+  - `_progress_monitor()` (line 212)
+  - `compose()` (line 258)
+  - `add_log_entry()` (line 270)
+  - `compose()` (line 280)
+  - `on_mount()` (line 291)
+- **Classes Found**:
+  - `ScanConfigPanel` (line 25)
+    - `compose()`
+  - `ScanControlPanel` (line 64)
+    - `compose()`
+    - `start_scan()`
+    - `stop_scan()`
+  - `ScanProgressPanel` (line 147)
+    - `__init__()`
+    - `compose()`
+    - `start_scan()`
+    - `stop_scan()`
+    - `update_from_backend()`
+    - `_progress_monitor()`
+  - `LiveLogsPanel` (line 255)
+    - `compose()`
+    - `add_log_entry()`
+  - `ScanRunner` (line 277)
+    - `compose()`
+    - `on_mount()`
+
+### ⚠️ tui/screens/__init__.py
+
+- **Lines of Code**: 2
+- **Cyclomatic Complexity**: 0
+- **Functions**: 0
+- **Classes**: 0
+- **Imports**: 0
+- **Test Status**: Failed (exit code 5)
+- **Error Output**: ```
+
+----------------------------------------------------------------------
+Ran 0 tests in 0.000s
+
+NO TESTS RAN
+
+```
+
+### ✅ tui/screens/targets.py
+
+- **Lines of Code**: 216
+- **Cyclomatic Complexity**: 25
+- **Functions**: 14
+- **Classes**: 4
+- **Imports**: 7
+- **Test Status**: Passed
+- **Functions Found**:
+  - `compose()` (line 19)
+  - `add_single_target()` (line 42)
+  - `import_bulk_targets()` (line 62)
+  - `validate_target()` (line 89)
+  - `compose()` (line 107)
+  - `load_existing_targets()` (line 125)
+  - `remove_selected_target()` (line 140)
+  - `clear_all_targets()` (line 147)
+  - `export_target_list()` (line 153)
+  - `refresh_target_status()` (line 170)
+  - `compose()` (line 181)
+  - `update_stats()` (line 196)
+  - `compose()` (line 205)
+  - `on_mount()` (line 213)
+- **Classes Found**:
+  - `TargetInputPanel` (line 16)
+    - `compose()`
+    - `add_single_target()`
+    - `import_bulk_targets()`
+    - `validate_target()`
+  - `TargetListPanel` (line 104)
+    - `compose()`
+    - `load_existing_targets()`
+    - `remove_selected_target()`
+    - `clear_all_targets()`
+    - `export_target_list()`
+    - `refresh_target_status()`
+  - `TargetStatsPanel` (line 178)
+    - `compose()`
+    - `update_stats()`
+  - `TargetsScreen` (line 202)
+    - `compose()`
+    - `on_mount()`
+
+### ✅ tui/screens/reports.py
+
+- **Lines of Code**: 299
+- **Cyclomatic Complexity**: 28
+- **Functions**: 15
+- **Classes**: 4
+- **Imports**: 7
+- **Test Status**: Passed
+- **Functions Found**:
+  - `compose()` (line 19)
+  - `load_reports()` (line 39)
+  - `view_selected_report()` (line 79)
+  - `export_html_report()` (line 91)
+  - `export_pdf_report()` (line 97)
+  - `delete_selected_report()` (line 103)
+  - `__init__()` (line 113)
+  - `compose()` (line 117)
+  - `load_report()` (line 123)
+  - `show_error()` (line 218)
+  - `compose()` (line 228)
+  - `apply_filters()` (line 273)
+  - `reset_filters()` (line 279)
+  - `compose()` (line 288)
+  - `on_mount()` (line 296)
+- **Classes Found**:
+  - `ReportListPanel` (line 16)
+    - `compose()`
+    - `load_reports()`
+    - `view_selected_report()`
+    - `export_html_report()`
+    - `export_pdf_report()`
+    - `delete_selected_report()`
+  - `ReportViewer` (line 110)
+    - `__init__()`
+    - `compose()`
+    - `load_report()`
+    - `show_error()`
+  - `ReportFiltersPanel` (line 225)
+    - `compose()`
+    - `apply_filters()`
+    - `reset_filters()`
+  - `ReportsScreen` (line 285)
+    - `compose()`
+    - `on_mount()`
+
+### ✅ tui/widgets/system_monitor.py
+
+- **Lines of Code**: 75
+- **Cyclomatic Complexity**: 5
+- **Functions**: 7
+- **Classes**: 1
+- **Imports**: 5
+- **Test Status**: Passed
+- **Functions Found**:
+  - `__init__()` (line 16)
+  - `compose()` (line 21)
+  - `start_monitoring()` (line 33)
+  - `stop_monitoring()` (line 39)
+  - `_monitor_loop()` (line 43)
+  - `on_mount()` (line 68)
+  - `on_unmount()` (line 72)
+- **Classes Found**:
+  - `SystemMonitor` (line 13)
+    - `__init__()`
+    - `compose()`
+    - `start_monitoring()`
+    - `stop_monitoring()`
+    - `_monitor_loop()`
+    - `on_mount()`
+    - `on_unmount()`
+
+### ⚠️ tui/widgets/__init__.py
+
+- **Lines of Code**: 2
+- **Cyclomatic Complexity**: 0
+- **Functions**: 0
+- **Classes**: 0
+- **Imports**: 0
+- **Test Status**: Failed (exit code 5)
+- **Error Output**: ```
+
+----------------------------------------------------------------------
+Ran 0 tests in 0.000s
+
+NO TESTS RAN
+
+```
+
+### ✅ tui/widgets/log_viewer.py
+
+- **Lines of Code**: 88
+- **Cyclomatic Complexity**: 4
+- **Functions**: 7
+- **Classes**: 1
+- **Imports**: 6
+- **Test Status**: Passed
+- **Functions Found**:
+  - `__init__()` (line 18)
+  - `compose()` (line 23)
+  - `add_log_entry()` (line 44)
+  - `filter_logs()` (line 58)
+  - `search_logs()` (line 65)
+  - `refresh_log_display()` (line 71)
+  - `clear_logs()` (line 80)
+- **Classes Found**:
+  - `LogViewer` (line 15)
+    - `__init__()`
+    - `compose()`
+    - `add_log_entry()`
+    - `filter_logs()`
+    - `search_logs()`
+    - `refresh_log_display()`
+    - `clear_logs()`
+
+### ✅ tui/widgets/scan_progress.py
+
+- **Lines of Code**: 57
+- **Cyclomatic Complexity**: 1
+- **Functions**: 7
+- **Classes**: 1
+- **Imports**: 3
+- **Test Status**: Passed
+- **Functions Found**:
+  - `compose()` (line 18)
+  - `watch_progress()` (line 26)
+  - `watch_phase()` (line 31)
+  - `watch_status()` (line 36)
+  - `start_scan()` (line 41)
+  - `stop_scan()` (line 47)
+  - `complete_scan()` (line 52)
+- **Classes Found**:
+  - `ScanProgress` (line 11)
+    - `compose()`
+    - `watch_progress()`
+    - `watch_phase()`
+    - `watch_status()`
+    - `start_scan()`
+    - `stop_scan()`
+    - `complete_scan()`
+
+### ✅ node_modules/flatted/python/flatted.py
+
+- **Lines of Code**: 150
+- **Cyclomatic Complexity**: 24
+- **Functions**: 15
+- **Classes**: 2
+- **Imports**: 1
+- **Test Status**: Passed
+- **Functions Found**:
+  - `_array_keys()` (line 29)
+  - `_object_keys()` (line 37)
+  - `_is_array()` (line 43)
+  - `_is_object()` (line 46)
+  - `_is_string()` (line 49)
+  - `_index()` (line 52)
+  - `_loop()` (line 59)
+  - `_ref()` (line 67)
+  - `_relate()` (line 77)
+  - `_transform()` (line 86)
+  - `_wrap()` (line 101)
+  - `parse()` (line 117)
+  - `stringify()` (line 141)
+  - `__init__()` (line 20)
+  - `__init__()` (line 25)
+- **Classes Found**:
+  - `_Known` (line 19)
+    - `__init__()`
+  - `_String` (line 24)
+    - `__init__()`
+
+## 🎯 Line Coverage Data
+
+### /home/runner/work/Bl4ckC3ll_PantheonV2/Bl4ckC3ll_PantheonV2/Bl4ckC3ll_PANTHEON-main/scripts/comprehensive_test_framework.py
+- **Lines Executed**: 92
+- **Line Numbers**: 33, 34, 35, 36, 37, 50, 51, 55, 56, 57, 59, 61, 62, 63, 64, 65, 66, 69, 70, 71
+  ... and 72 more
+

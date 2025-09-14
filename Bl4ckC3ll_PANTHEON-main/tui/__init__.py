@@ -5,4 +5,4 @@ Professional security testing framework TUI
 
 from .app import PantheonTUI
 
-__all__ = ['PantheonTUI']
+__all__ = ["PantheonTUI"]

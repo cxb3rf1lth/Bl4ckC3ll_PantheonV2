@@ -1,0 +1,14 @@
+.azure
+azure.json
+azuredeploy.json
+parameters.json
+arm-template
+bicep
+storage
+webapp
+function
+keyvault
+cosmosdb
+sql
+redis
+servicebus

@@ -1,0 +1,9 @@
+Dockerfile
+docker-compose.yml
+docker-compose.yaml
+.dockerignore
+docker-entrypoint.sh
+entrypoint.sh
+supervisord.conf
+nginx.conf
+apache2.conf

@@ -1,0 +1,4 @@
+Gemfile
+Rakefile
+config/database.yml
+config/routes.rb

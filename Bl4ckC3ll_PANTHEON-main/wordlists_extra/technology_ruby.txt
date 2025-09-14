@@ -1,0 +1,15 @@
+Gemfile
+Gemfile.lock
+config.ru
+Rakefile
+application.rb
+routes.rb
+database.yml
+secrets.yml
+application_controller.rb
+user.rb
+admin.rb
+.env
+.env.local
+.ruby-version
+unicorn.rb

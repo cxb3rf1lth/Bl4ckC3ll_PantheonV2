@@ -1,0 +1,9 @@
+admin.asp
+admin.aspx
+config.asp
+default.asp
+default.aspx
+global.asa
+index.asp
+login.asp
+web.config

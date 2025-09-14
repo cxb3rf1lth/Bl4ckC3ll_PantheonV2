@@ -1,0 +1,87 @@
+# Python dependencies for Bl4ckC3ll_PANTHEON V2.0.0
+# Unified requirements with security-focused versions and enhanced functionality
+
+# Core dependencies for system monitoring and resource management
+psutil>=7.0.0  # Latest version for enhanced functionality
+distro>=1.9.0
+
+# Advanced TUI interface
+textual>=6.1.0  # Latest version for enhanced TUI features
+
+# Essential web and API functionality
+requests>=2.32.3  # Security: Updated for vulnerability fixes
+urllib3>=2.5.0    # Security: Fixed CVE-2024-37891, CVE-2025-50181, CVE-2025-50182
+aiohttp>=3.11.7   # Security: Updated async HTTP client
+
+# Enhanced scanning and analysis capabilities
+beautifulsoup4>=4.13.0
+lxml>=6.0.0
+numpy>=2.3.0      # Latest for enhanced performance
+pandas>=2.3.0     # Latest for data analysis features
+scikit-learn>=1.7.0  # Latest ML capabilities
+
+# Cryptography and security
+pycryptodome>=3.23.0
+cryptography>=43.0.3  # Security: Latest cryptography library
+PyJWT>=2.10.1      # Security: Fixed CVE-2024-53861
+
+# Report generation and visualization
+matplotlib>=3.10.0
+plotly>=6.3.0
+jinja2>=3.1.6      # Security: Fixed multiple CVEs
+
+# Network analysis
+python-nmap>=0.7.1
+netaddr>=1.3.0
+
+# Cloud security
+boto3>=1.40.0
+azure-storage-blob>=12.26.0
+google-cloud-storage>=3.3.0
+
+# Additional security tools
+XSStrike>=3.2.2
+dirsearch>=0.4.3
+arjun>=2.2.7
+
+# Enhanced parsing and processing
+jsonschema>=4.25.0
+pyyaml>=6.0.2
+colorama>=0.4.6
+tqdm>=4.67.0
+
+# Security scanning and validation
+bandit>=1.8.6      # Python security linter
+safety>=3.6.1      # Dependency vulnerability scanner
+bleach>=6.2.0      # HTML sanitization
+markupsafe>=3.0.2  # Secure string handling
+
+# Authentication and credential management
+keyring>=25.5.0    # Secure credential storage
+argon2-cffi>=23.1.0  # Secure password hashing
+
+# Certificate and trust management
+certifi>=2024.8.30  # Security: Fixed CVE-2024-39689
+
+# Web framework security
+twisted>=24.7.0    # Security: Fixed CVE-2024-41810
+
+# Performance and caching
+cachetools>=5.5.0
+redis>=5.2.0       # Distributed caching support
+
+# Async throttling and rate limiting
+asyncio-throttle>=1.0.2
+
+# Logging and monitoring
+structlog>=24.4.0
+sentry-sdk>=2.17.0  # Error tracking and monitoring
+
+# Testing and quality assurance
+pytest>=8.4.0
+
+# Development tools (optional but recommended)
+black>=24.10.0     # Code formatting
+isort>=5.13.2      # Import sorting
+mypy>=1.13.0       # Type checking
+pre-commit>=4.0.1  # Git hooks for quality

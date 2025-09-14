@@ -1,0 +1,127 @@
+{
+  "repos": {
+    "SecLists": "https://github.com/danielmiessler/SecLists.git",
+    "PayloadsAllTheThings": "https://github.com/swisskyrepo/PayloadsAllTheThings.git",
+    "Exploits": "https://github.com/offensive-security/exploitdb.git",
+    "NucleiTemplates": "https://github.com/projectdiscovery/nuclei-templates.git",
+    "Wordlists": "https://github.com/berzerk0/Probable-Wordlists.git"
+  },
+  "limits": {
+    "parallel_jobs": 12,
+    "http_timeout": 25,
+    "rps": 300,
+    "max_concurrent_scans": 4,
+    "retry_attempts": 3,
+    "backoff_delay": 2
+  },
+  "nuclei": {
+    "enabled": true,
+    "severity": "info,low,medium,high,critical",
+    "rps": 400,
+    "conc": 80,
+    "all_templates": true,
+    "timeout": 45,
+    "retries": 2
+  },
+  "bcar": {
+    "ct_search": true,
+    "subdomain_enum": true,
+    "takeover_check": true,
+    "port_scan": true,
+    "tech_detection": true,
+    "directory_fuzz": true,
+    "parameter_discovery": true,
+    "max_subdomains": 1000,
+    "threads": 30,
+    "timeout": 10
+  },
+  "payload_injection": {
+    "lhost": "127.0.0.1",
+    "lport": 4444,
+    "test_mode": true,
+    "platforms": [
+      "bash",
+      "python",
+      "php",
+      "powershell",
+      "perl",
+      "ruby"
+    ],
+    "meterpreter_enabled": true,
+    "listener_auto_setup": true
+  },
+  "fuzzing": {
+    "directory_wordlist_size": 500,
+    "parameter_wordlist_size": 400,
+    "threads": 30,
+    "timeout": 5,
+    "status_codes": [
+      200,
+      301,
+      302,
+      403,
+      500
+    ],
+    "extensions": [
+      "",
+      ".php",
+      ".asp",
+      ".aspx",
+      ".jsp",
+      ".html",
+      ".txt",
+      ".bak",
+      ".old"
+    ]
+  },
+  "report": {
+    "formats": [
+      "html",
+      "json"
+    ]
+  },
+  "plugins": {
+    "enabled": true,
+    "directory": "/home/runner/work/Bl4ckC3ll_PANTHEON/Bl4ckC3ll_PANTHEON/plugins"
+  },
+  "fallback": {
+    "enabled": true,
+    "direct_downloads": true,
+    "aggressive_scanning": false,
+    "timeout_multiplier": 1.5,
+    "max_findings_per_target": 1000
+  },
+  "resource_management": {
+    "cpu_threshold": 85,
+    "memory_threshold": 90,
+    "disk_threshold": 95,
+    "monitor_interval": 5
+  },
+  "reliability": {
+    "min_success_rate": 0.96,
+    "auto_tune": true,
+    "performance_monitoring": true,
+    "adaptive_timeouts": true
+  },
+  "validation": {
+    "strict_mode": false,
+    "timeout_seconds": 15,
+    "retry_count": 2,
+    "dns_resolvers": [
+      "8.8.8.8",
+      "1.1.1.1",
+      "208.67.222.222"
+    ],
+    "validate_certificates": true,
+    "check_accessibility": true,
+    "confidence_threshold": 0.7
+  },
+  "performance": {
+    "connection_pool_size": 20,
+    "request_cache_size": 1000,
+    "memory_limit_mb": 2048,
+    "cpu_cores_max": 4,
+    "disk_cache_enabled": true,
+    "compression_enabled": true
+  }
+}

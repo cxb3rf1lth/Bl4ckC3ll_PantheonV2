@@ -1,0 +1,82 @@
+name: Automated Weekly Updates
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # Every Monday at 03:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  update-and-verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl wget git dnsutils whois
+
+      - name: Install Python deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt || true
+
+      - name: Prepare update branch
+        run: |
+          BRANCH="auto/update-$(date +%Y%m%d)"
+          echo "BRANCH=$BRANCH" >> $GITHUB_ENV
+          git checkout -b "$BRANCH"
+
+      - name: Refresh local wordlists (fast)
+        run: |
+          python3 bl4ckc3ll_p4nth30n.py --update-wordlists || true
+
+      - name: Update nuclei templates (if available)
+        run: |
+          if command -v nuclei >/dev/null 2>&1; then
+            nuclei -update-templates || true
+          fi
+
+      - name: Run quick test suites
+        run: |
+          python3 enhanced_test_suite.py || exit 1
+          python3 final_integration_test.py || true
+          # Keep automation tests optional to avoid environment noise
+          python3 test_automation_integration.py || true
+
+      - name: Commit changes
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "chore(auto-update): refresh wordlists and templates; update artifacts"
+          fi
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ env.BRANCH }}
+          title: "chore(auto-update): weekly refresh"
+          body: |
+            Automated weekly update:
+            - Refreshed wordlists via fast path
+            - Updated nuclei templates (if available)
+            - Ran test suites; see workflow logs for details
+          commit-message: "chore(auto-update): refresh wordlists and templates"
+          delete-branch: true

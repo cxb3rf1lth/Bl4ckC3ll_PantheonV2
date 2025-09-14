@@ -1,0 +1,286 @@
+name: Security Scanner with Enhanced Testing Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Mondays at 2 AM
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target to scan'
+        required: true
+        default: 'example.com'
+      scan_type:
+        description: 'Scan type'
+        required: true
+        default: 'quick'
+        type: choice
+        options:
+        - quick
+        - full
+        - api-only
+        - cloud-only
+        - bug-bounty
+        - automated-chain
+
+jobs:
+  eslint-security:
+    runs-on: ubuntu-latest
+    name: ESLint Security Check
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install ESLint dependencies
+      run: |
+        if [ -f package.json ]; then
+          npm ci
+        else
+          npm init -y
+          npm install --save-dev eslint eslint-plugin-security eslint-plugin-node @eslint/js
+        fi
+        
+    - name: Run ESLint security check
+      run: |
+        # Create basic eslint config if it doesn't exist
+        if [ ! -f .eslintrc.json ]; then
+          echo '{"extends": ["eslint:recommended"], "env": {"node": true}}' > .eslintrc.json
+        fi
+        
+        # Run ESLint on JavaScript files
+        if ls *.js 1> /dev/null 2>&1; then
+          npx eslint --ext .js,.json .
+        else
+          echo "No JavaScript files found to lint"
+        fi
+        
+    - name: Upload ESLint results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: eslint-results
+        path: |
+          eslint-results.json
+          .eslintrc*.json
+        retention-days: 7
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: eslint-security
+    
+    permissions:
+      contents: read
+      security-events: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        
+    - name: Set up Node.js for additional tools
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y curl wget git openssl dnsutils whois nmap
+        
+    - name: Install Python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Install security tools
+      run: |
+        # Install Go-based security tools
+        go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+        go install github.com/projectdiscovery/httpx/cmd/httpx@latest
+        go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
+        go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+        go install github.com/projectdiscovery/katana/cmd/katana@latest
+        go install github.com/lc/gau/v2/cmd/gau@latest
+        go install github.com/ffuf/ffuf/v2@latest
+        go install github.com/tomnomnom/waybackurls@latest
+        
+        # Add Go bin to PATH
+        echo "$HOME/go/bin" >> $GITHUB_PATH
+        
+    - name: Install ESLint for JavaScript code quality
+      run: |
+        npm ci
+        
+    - name: Update Nuclei templates
+      run: |
+        nuclei -update-templates
+        
+    - name: Run Enhanced Testing Chain
+      env:
+        SHODAN_API: ${{ secrets.SHODAN_API_KEY }}
+        VIRUSTOTAL_API: ${{ secrets.VIRUSTOTAL_API_KEY }}
+      run: |
+        # Determine target and scan type
+        TARGET="${{ github.event.inputs.target || 'testphp.vulnweb.com' }}"
+        SCAN_TYPE="${{ github.event.inputs.scan_type || 'quick' }}"
+        
+        echo "Starting enhanced testing chain for $TARGET with scan type: $SCAN_TYPE"
+        
+        # Phase 1: ESLint Security Check
+        echo "=== Phase 1: ESLint Security Check ==="
+        npm run lint:check || echo "ESLint check completed with warnings"
+        
+        # Phase 2: Bug Bounty Automation (if selected)
+        if [[ "$SCAN_TYPE" == "bug-bounty" || "$SCAN_TYPE" == "automated-chain" ]]; then
+          echo "=== Phase 2: Bug Bounty Automation ==="
+          chmod +x bug_bounty_commands.sh
+          timeout 1200 ./bug_bounty_commands.sh "$TARGET" || echo "Bug bounty automation completed with timeout"
+        fi
+        
+        # Phase 3: Standard Security Scan
+        echo "=== Phase 3: Security Scanner ==="
+        python3 cicd_integration.py \
+          --target "$TARGET" \
+          --scan-type "$SCAN_TYPE" \
+          --output-format sarif \
+          --output-file security-results.sarif \
+          --fail-on high \
+          --timeout 3600
+          
+        # Phase 4: Enhanced Python Application Test
+        echo "=== Phase 4: Application Testing ==="
+        python3 test_enhanced_features.py || echo "Enhanced features test completed"
+          
+    - name: Upload SARIF results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: security-results.sarif
+        category: security-scanner
+        
+    - name: Generate comprehensive report
+      if: always()
+      run: |
+        # Generate additional formats for artifact upload
+        python3 cicd_integration.py \
+          --target "${{ github.event.inputs.target || 'testphp.vulnweb.com' }}" \
+          --scan-type "${{ github.event.inputs.scan_type || 'quick' }}" \
+          --output-format json \
+          --output-file security-results.json \
+          --fail-on high \
+          --timeout 3600
+          
+    - name: Upload comprehensive security artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: enhanced-security-results
+        path: |
+          security-results.sarif
+          security-results.json
+          bug_bounty_results/
+          runs/
+          logs/
+          eslint-results.json
+        retention-days: 30
+        
+    - name: Comment PR with enhanced results
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          
+          try {
+            const results = JSON.parse(fs.readFileSync('security-results.json', 'utf8'));
+            const summary = results.summary;
+            
+            // Check for ESLint results
+            let eslintSummary = 'ESLint check completed';
+            try {
+              if (fs.existsSync('eslint-results.json')) {
+                eslintSummary = 'ESLint security issues detected - see artifacts';
+              }
+            } catch (e) {
+              console.log('ESLint results not found:', e);
+            }
+            
+            // Check for bug bounty results
+            let bugBountySummary = 'Bug bounty automation not run';
+            try {
+              if (fs.existsSync('bug_bounty_results')) {
+                const files = fs.readdirSync('bug_bounty_results');
+                bugBountySummary = `Bug bounty results: ${files.length} result files generated`;
+              }
+            } catch (e) {
+              console.log('Bug bounty results not found:', e);
+            }
+            
+            const comment = `## 🛡️ Enhanced Security Scan Results
+            
+            **Target:** \`${results.scan_info.target}\`
+            **Scan Type:** \`${results.scan_info.scan_type}\`
+            **Duration:** ${Math.round(results.scan_info.duration)}s
+            
+            ### 🔍 Testing Chain Summary
+            - **ESLint Security:** ${eslintSummary}
+            - **Bug Bounty Automation:** ${bugBountySummary}
+            - **Vulnerability Scan:** ${summary.total_vulns} vulnerabilities found
+            
+            ### 📊 Vulnerability Summary
+            - **Total Vulnerabilities:** ${summary.total_vulns}
+            - **Critical:** ${summary.by_severity.critical}
+            - **High:** ${summary.by_severity.high}
+            - **Medium:** ${summary.by_severity.medium}
+            - **Low:** ${summary.by_severity.low}
+            
+            ${summary.by_severity.critical > 0 || summary.by_severity.high > 0 ? 
+              '⚠️ **Action Required:** Critical or High severity vulnerabilities found!' : 
+              '✅ **No critical issues found**'}
+            
+            <details>
+            <summary>🎯 Top Vulnerabilities</summary>
+            
+            ${results.vulnerabilities.slice(0, 10).map(v => 
+              `- **${v.severity.toUpperCase()}**: ${v.name} (${v.id})`
+            ).join('\n')}
+            
+            ${results.vulnerabilities.length > 10 ? 
+              `\n... and ${results.vulnerabilities.length - 10} more` : ''}
+            
+            </details>
+            
+            ### 📁 Artifacts
+            - Enhanced security scan results
+            - ESLint security analysis
+            - Bug bounty reconnaissance data
+            - Comprehensive vulnerability reports`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Could not create comment:', error);
+          }

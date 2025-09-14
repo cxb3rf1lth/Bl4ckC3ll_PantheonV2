@@ -4,13 +4,14 @@ Enhanced Automation Integration Test Suite
 Tests the new ESLint integration, bug bounty commands, and automated testing chain
 """
 
-import os
-import sys
-import pytest
 import json
+import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
+
+import pytest
 
 
 def test_eslint_integration():
@@ -51,7 +52,9 @@ def test_bug_bounty_script():
     assert os.access(script_path, os.X_OK), "bug_bounty_commands.sh is not executable"
 
     # Test script syntax
-    result = subprocess.run(["bash", "-n", str(script_path)], capture_output=True, text=True, timeout=300)
+    result = subprocess.run(
+        ["bash", "-n", str(script_path)], capture_output=True, text=True, timeout=300
+    )
 
     assert result.returncode == 0, f"Script syntax error: {result.stderr}"
 
@@ -59,7 +62,13 @@ def test_bug_bounty_script():
     with open(script_path, "r") as f:
         content = f.read()
 
-    required_functions = ["subdomain_enum", "port_scan", "http_probe", "vuln_scan", "generate_report"]
+    required_functions = [
+        "subdomain_enum",
+        "port_scan",
+        "http_probe",
+        "vuln_scan",
+        "generate_report",
+    ]
 
     for func in required_functions:
         assert func in content, f"Missing function: {func}"
@@ -183,7 +192,9 @@ def test_security_and_compliance():
 
             # Check for security rules
             rules = config.get("rules", {})
-            security_rules = [rule for rule in rules.keys() if rule.startswith("security/")]
+            security_rules = [
+                rule for rule in rules.keys() if rule.startswith("security/")
+            ]
             assert len(security_rules) >= 5, "✗ Insufficient security rules configured"
 
         # Check bug bounty script security

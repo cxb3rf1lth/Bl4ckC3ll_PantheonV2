@@ -8,25 +8,27 @@ This module provides a consistent import interface for the enhanced scanning fun
 from enhanced_scanning import (
     AdaptiveScanManager,
     EnhancedScanner,
-    ScanResult,
     PerformanceMetrics,
+    ScanResult,
     get_current_success_rate,
     get_performance_report,
-    run_enhanced_scanning
+    run_enhanced_scanning,
 )
 
 # Make them available for direct import
 __all__ = [
-    'AdaptiveScanManager',
-    'EnhancedScanner', 
-    'ScanResult',
-    'PerformanceMetrics',
-    'get_current_success_rate',
-    'get_performance_report',
-    'run_enhanced_scanning'
+    "AdaptiveScanManager",
+    "EnhancedScanner",
+    "ScanResult",
+    "PerformanceMetrics",
+    "get_current_success_rate",
+    "get_performance_report",
+    "run_enhanced_scanning",
 ]
 
 # Module metadata
 __version__ = "2.0.0"
 __author__ = "Bl4ckC3ll_PANTHEON Team"
-__description__ = "Enhanced scanning capabilities with adaptive performance optimization"
+__description__ = (
+    "Enhanced scanning capabilities with adaptive performance optimization"
+)

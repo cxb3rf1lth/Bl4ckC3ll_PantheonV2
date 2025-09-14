@@ -1,0 +1,18 @@
+{
+  "monitoring": {
+    "enabled": true,
+    "interval_seconds": 300,
+    "alert_thresholds": {
+      "cpu_usage": 80,
+      "memory_usage": 85,
+      "disk_usage": 90,
+      "test_failure_rate": 20,
+      "security_score": 80
+    }
+  },
+  "alerts": {
+    "console_enabled": true,
+    "email_enabled": false,
+    "webhook_enabled": false
+  }
+}

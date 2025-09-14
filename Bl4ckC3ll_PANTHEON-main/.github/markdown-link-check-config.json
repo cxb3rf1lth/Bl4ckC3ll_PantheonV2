@@ -1,0 +1,40 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^http://localhost"
+    },
+    {
+      "pattern": "^https://localhost"
+    },
+    {
+      "pattern": "^http://127.0.0.1"
+    },
+    {
+      "pattern": "^https://127.0.0.1"
+    },
+    {
+      "pattern": "example\\.com"
+    },
+    {
+      "pattern": "testphp\\.vulnweb\\.com"
+    }
+  ],
+  "httpStatusCodes": [
+    { "code": 200 },
+    { "code": 301 },
+    { "code": 302 },
+    { "code": 403 }
+  ],
+  "timeout": "20s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackHttpStatus": [
+    400,
+    401,
+    403,
+    404,
+    500,
+    502,
+    503
+  ]
+}

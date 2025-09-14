@@ -1,5 +1,5 @@
 # Python dependencies for Bl4ckC3ll_PANTHEON V2.0.0
-# Unified requirements with security-focused versions and enhanced functionality
+# Enhanced requirements with new security modules and improved functionality
 
 # Core dependencies for system monitoring and resource management
 psutil>=7.0.0  # Latest version for enhanced functionality
@@ -34,15 +34,14 @@ jinja2>=3.1.6      # Security: Fixed multiple CVEs
 python-nmap>=0.7.1
 netaddr>=1.3.0
 
-# Cloud security
-boto3>=1.40.0
-azure-storage-blob>=12.26.0
-google-cloud-storage>=3.3.0
+# Cloud security dependencies
+boto3>=1.40.0         # AWS SDK
+azure-storage-blob>=12.26.0  # Azure SDK
+google-cloud-storage>=3.3.0  # GCP SDK
 
-# Additional security tools
-XSStrike>=3.2.2
-dirsearch>=0.4.3
-arjun>=2.2.7
+# Container security dependencies
+docker>=7.1.0         # Docker SDK for container scanning
+kubernetes>=31.0.0    # Kubernetes client for K8s security
 
 # Enhanced parsing and processing
 jsonschema>=4.25.0
@@ -85,3 +84,20 @@ black>=24.10.0     # Code formatting
 isort>=5.13.2      # Import sorting
 mypy>=1.13.0       # Type checking
 pre-commit>=4.0.1  # Git hooks for quality
+
+# Enhanced reporting dependencies
+Pillow>=10.4.0     # Image processing for reports
+fpdf2>=2.8.1       # PDF generation
+reportlab>=4.3.0   # Advanced PDF reports
+
+# API security testing dependencies
+selenium>=4.27.0   # Web automation for API testing
+httpx>=0.28.1     # Modern HTTP client for API testing
+
+# Machine learning for vulnerability analysis
+tensorflow>=2.18.0  # Deep learning framework (optional)
+torch>=2.5.0        # PyTorch for ML models (optional)
+
+# Threat intelligence integration
+shodan>=1.31.0     # Shodan API client
+censys>=2.2.15     # Censys API client

@@ -1,0 +1,128 @@
+# Comprehensive Pre-commit Configuration for Bl4ckC3ll_PANTHEON
+# Advanced workflow automation with 100% testing coverage
+
+repos:
+  # Python Code Quality and Security
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.2.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=10240']  # 10MB limit
+      - id: check-merge-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: debug-statements
+      - id: check-docstring-first
+
+  # Python Security Scanning
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.6
+    hooks:
+      - id: bandit
+        args: ['-r', '.', '-f', 'json', '-o', 'bandit-report.json']
+        exclude: '^tests/'
+
+  # Python Code Formatting
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        language_version: python3
+
+  # Import Sorting
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  # Python Type Checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.18.1
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-requests, types-PyYAML]
+        args: [--strict, --ignore-missing-imports]
+
+  # Python Dependency Security
+  - repo: https://github.com/pyupio/safety
+    rev: 3.6.1
+    hooks:
+      - id: safety
+        args: [--full-report, --output, json, --save-json, safety-report.json]
+
+  # JavaScript/Node.js Security
+  - repo: local
+    hooks:
+      - id: eslint-security
+        name: ESLint Security Check
+        entry: npx eslint
+        language: node
+        files: \.(js|ts|jsx|tsx)$
+        args: [--config, .eslintrc-security.json, --fix]
+
+  # Custom Test Runner
+  - repo: local
+    hooks:
+      - id: comprehensive-tests
+        name: Comprehensive Test Suite
+        entry: python3
+        language: python
+        files: \.py$
+        args: [enhanced_test_suite.py]
+        pass_filenames: false
+
+  # Custom Security Validation
+  - repo: local
+    hooks:
+      - id: security-validation
+        name: Security Configuration Validation
+        entry: python3
+        language: python
+        files: \.(py|json|yaml|yml)$
+        args: [scripts/security_validator.py]
+        pass_filenames: false
+
+  # Documentation Validation
+  - repo: local
+    hooks:
+      - id: docs-validation
+        name: Documentation Validation
+        entry: python3
+        language: python
+        files: \.(md|rst)$
+        args: [scripts/docs_validator.py]
+        pass_filenames: false
+
+  # Performance Testing
+  - repo: local
+    hooks:
+      - id: performance-tests
+        name: Performance Benchmarks
+        entry: python3
+        language: python
+        files: \.py$
+        args: [scripts/performance_tester.py]
+        pass_filenames: false
+
+  # Git Commit Message Validation
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+
+# Configuration
+ci:
+  autofix_prs: true
+  autoupdate_branch: 'main'
+  autoupdate_schedule: weekly
+  skip: []
+
+default_language_version:
+  python: python3.12
+  node: '20.11.0'

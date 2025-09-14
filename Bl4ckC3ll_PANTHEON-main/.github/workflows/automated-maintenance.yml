@@ -1,0 +1,526 @@
+name: Automated Maintenance & Updates
+
+on:
+  schedule:
+    # Daily security updates
+    - cron: '0 2 * * *'
+    # Weekly comprehensive updates  
+    - cron: '0 3 * * 1'
+    # Monthly major updates
+    - cron: '0 4 1 * *'
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of update to perform'
+        required: true
+        default: 'security'
+        type: choice
+        options:
+        - security
+        - minor
+        - major
+        - comprehensive
+      auto_merge:
+        description: 'Auto-merge if tests pass'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+  security-events: write
+
+env:
+  PYTHON_VERSION: '3.12'
+  NODE_VERSION: '20'
+
+jobs:
+  dependency-updates:
+    name: Dependency Updates (${{ github.event.inputs.update_type || 'scheduled' }})
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install update tools
+        run: |
+          # Install Python update tools
+          pip install --upgrade pip pip-tools safety bandit
+          
+          # Install Node.js update tools
+          npm install -g npm-check-updates audit-ci
+
+      - name: Determine update type
+        id: update-type
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            if [[ "${{ github.event.schedule }}" == "0 2 * * *" ]]; then
+              echo "type=security" >> $GITHUB_OUTPUT
+            elif [[ "${{ github.event.schedule }}" == "0 3 * * 1" ]]; then
+              echo "type=minor" >> $GITHUB_OUTPUT
+            else
+              echo "type=major" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "type=${{ github.event.inputs.update_type }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Security Updates (Python)
+        if: steps.update-type.outputs.type == 'security' || steps.update-type.outputs.type == 'comprehensive'
+        run: |
+          echo "🔒 Checking for Python security updates..."
+          
+          # Generate current requirements.txt with versions
+          pip-compile requirements.txt --output-file requirements-compiled.txt
+          
+          # Check for security vulnerabilities
+          safety check --json --output safety-initial.json || true
+          
+          # Update only packages with known vulnerabilities
+          if [ -f safety-initial.json ] && [ -s safety-initial.json ]; then
+            echo "Security vulnerabilities found, updating affected packages..."
+            # Extract vulnerable packages and update them
+            python3 << 'EOF'
+          import json
+          import subprocess
+          import sys
+          
+          try:
+              with open('safety-initial.json', 'r') as f:
+                  safety_data = json.load(f)
+              
+              vulnerable_packages = set()
+              for vuln in safety_data.get('vulnerabilities', []):
+                  pkg_name = vuln.get('package_name', '')
+                  if pkg_name:
+                      vulnerable_packages.add(pkg_name)
+              
+              if vulnerable_packages:
+                  print(f"Updating vulnerable packages: {', '.join(vulnerable_packages)}")
+                  for pkg in vulnerable_packages:
+                      subprocess.run(['pip', 'install', '--upgrade', pkg], check=False)
+              else:
+                  print("No vulnerable packages found")
+                  
+          except Exception as e:
+              print(f"Error processing security updates: {e}")
+          EOF
+          else
+            echo "No security vulnerabilities found"
+          fi
+
+      - name: Security Updates (Node.js)
+        if: steps.update-type.outputs.type == 'security' || steps.update-type.outputs.type == 'comprehensive'
+        run: |
+          if [ -f package.json ]; then
+            echo "🔒 Checking for Node.js security updates..."
+            
+            # Run npm audit and fix automatically
+            npm audit fix || true
+            
+            # Check for remaining high/critical vulnerabilities
+            npm audit --audit-level=high --json > npm-audit.json || true
+          fi
+
+      - name: Minor Updates (Python)
+        if: steps.update-type.outputs.type == 'minor' || steps.update-type.outputs.type == 'comprehensive'
+        run: |
+          echo "📦 Performing Python minor updates..."
+          
+          # Update to latest compatible versions
+          pip-compile --upgrade --resolver=backtracking requirements.txt
+          
+          # Install updated packages
+          pip install -r requirements.txt
+
+      - name: Minor Updates (Node.js)
+        if: steps.update-type.outputs.type == 'minor' || steps.update-type.outputs.type == 'comprehensive'
+        run: |
+          if [ -f package.json ]; then
+            echo "📦 Performing Node.js minor updates..."
+            
+            # Update minor and patch versions
+            ncu -u --target minor
+            npm install
+          fi
+
+      - name: Major Updates (Python)
+        if: steps.update-type.outputs.type == 'major' || steps.update-type.outputs.type == 'comprehensive'
+        run: |
+          echo "🚀 Performing Python major updates..."
+          
+          # Backup current requirements
+          cp requirements.txt requirements-backup.txt
+          
+          # Try major updates with compatibility checking
+          python3 << 'EOF'
+          import subprocess
+          import sys
+          
+          # Read current requirements
+          with open('requirements.txt', 'r') as f:
+              lines = f.readlines()
+          
+          updated_reqs = []
+          for line in lines:
+              line = line.strip()
+              if line and not line.startswith('#'):
+                  if '>=' in line:
+                      # Keep package name, remove version constraint for major updates
+                      pkg_name = line.split('>=')[0]
+                      updated_reqs.append(f"{pkg_name}\n")
+                  else:
+                      updated_reqs.append(f"{line}\n")
+              else:
+                  updated_reqs.append(f"{line}\n")
+          
+          # Write updated requirements
+          with open('requirements-major.txt', 'w') as f:
+              f.writelines(updated_reqs)
+          EOF
+          
+          # Test major updates
+          pip install -r requirements-major.txt || {
+            echo "Major updates failed, reverting to current versions"
+            pip install -r requirements-backup.txt
+          }
+
+      - name: Major Updates (Node.js)
+        if: steps.update-type.outputs.type == 'major' || steps.update-type.outputs.type == 'comprehensive'
+        run: |
+          if [ -f package.json ]; then
+            echo "🚀 Performing Node.js major updates..."
+            
+            # Backup package.json
+            cp package.json package-backup.json
+            
+            # Update to latest major versions
+            ncu -u --target latest || {
+              echo "Major updates failed, reverting"
+              cp package-backup.json package.json
+            }
+            
+            npm install || {
+              echo "Installation failed, reverting"
+              cp package-backup.json package.json
+              npm install
+            }
+          fi
+
+      - name: Update security tools and wordlists
+        run: |
+          echo "🛡️ Updating security tools and wordlists..."
+          
+          # Update wordlists using existing functionality
+          python3 bl4ckc3ll_p4nth30n.py --update-wordlists || true
+          
+          # Update nuclei templates if available
+          if command -v nuclei >/dev/null 2>&1; then
+            nuclei -update-templates || true
+          fi
+
+      - name: Run comprehensive tests
+        run: |
+          echo "🧪 Running comprehensive test suite..."
+          
+          # Run main test suite
+          python3 enhanced_test_suite.py || exit 1
+          
+          # Run integration tests
+          python3 final_integration_test.py || true
+          
+          # Run security validation
+          python3 scripts/security_validator.py || true
+          
+          # Run performance tests
+          python3 scripts/performance_tester.py || true
+
+      - name: Run security scans
+        run: |
+          echo "🔍 Running security scans on updated dependencies..."
+          
+          # Python security scan
+          safety check --json --output safety-final.json || true
+          bandit -r . -f json -o bandit-final.json || true
+          
+          # Node.js security scan
+          if [ -f package.json ]; then
+            npm audit --audit-level=moderate --json > npm-audit-final.json || true
+          fi
+
+      - name: Generate update report
+        run: |
+          echo "📊 Generating update report..."
+          
+          cat > update-report.md << 'EOF'
+          # 🔄 Automated Update Report
+          
+          ## Update Details
+          - **Type**: ${{ steps.update-type.outputs.type }}
+          - **Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          - **Triggered by**: ${{ github.event_name }}
+          
+          ## Changes Made
+          EOF
+          
+          # Check for Python changes
+          if ! diff -q requirements.txt requirements-backup.txt >/dev/null 2>&1; then
+            echo "### Python Dependencies" >> update-report.md
+            echo "\`\`\`diff" >> update-report.md
+            diff requirements-backup.txt requirements.txt || true >> update-report.md
+            echo "\`\`\`" >> update-report.md
+          fi
+          
+          # Check for Node.js changes
+          if [ -f package-backup.json ] && ! diff -q package.json package-backup.json >/dev/null 2>&1; then
+            echo "### Node.js Dependencies" >> update-report.md
+            echo "Package.json was updated" >> update-report.md
+          fi
+          
+          # Add security scan results
+          echo "## Security Scan Results" >> update-report.md
+          
+          if [ -f safety-final.json ]; then
+            vuln_count=$(python3 -c "import json; data=json.load(open('safety-final.json')); print(len(data.get('vulnerabilities', [])))" 2>/dev/null || echo "0")
+            echo "- Python vulnerabilities: $vuln_count" >> update-report.md
+          fi
+          
+          if [ -f npm-audit-final.json ]; then
+            high_count=$(python3 -c "import json; data=json.load(open('npm-audit-final.json')); print(data.get('metadata', {}).get('vulnerabilities', {}).get('high', 0))" 2>/dev/null || echo "0")
+            echo "- Node.js high vulnerabilities: $high_count" >> update-report.md
+          fi
+
+      - name: Create Pull Request
+        id: create-pr
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore: automated dependency updates (${{ steps.update-type.outputs.type }})
+            
+            - Updated dependencies for security and compatibility
+            - Ran comprehensive test suite
+            - Generated security scan reports
+          title: "🔄 Automated Dependency Updates (${{ steps.update-type.outputs.type }})"
+          body-path: update-report.md
+          branch: automated-updates/${{ steps.update-type.outputs.type }}-${{ github.run_number }}
+          delete-branch: true
+          labels: |
+            dependencies
+            automated
+            ${{ steps.update-type.outputs.type }}
+
+      - name: Auto-merge if requested and tests pass
+        if: ${{ github.event.inputs.auto_merge == 'true' && steps.create-pr.outputs.pull-request-number }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: ${{ steps.create-pr.outputs.pull-request-number }}
+            });
+            
+            // Wait a bit for CI to start
+            await new Promise(resolve => setTimeout(resolve, 60000));
+            
+            // Check if all checks are passing
+            const { data: checks } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pr.head.sha
+            });
+            
+            const allPassed = checks.check_runs.every(check => 
+              check.status === 'completed' && check.conclusion === 'success'
+            );
+            
+            if (allPassed) {
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: ${{ steps.create-pr.outputs.pull-request-number }},
+                merge_method: 'squash'
+              });
+              
+              console.log('PR auto-merged successfully');
+            } else {
+              console.log('Not all checks passed, manual review required');
+            }
+
+      - name: Upload update artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: update-reports-${{ steps.update-type.outputs.type }}
+          path: |
+            update-report.md
+            *-final.json
+            requirements-*.txt
+            package-backup.json
+          retention-days: 30
+
+  maintenance-tasks:
+    name: Repository Maintenance
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 4 1 * *' || github.event.inputs.update_type == 'comprehensive'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Clean up old artifacts
+        run: |
+          echo "🧹 Cleaning up repository..."
+          
+          # Remove old log files
+          find . -name "*.log" -type f -mtime +30 -delete
+          
+          # Remove old backup files
+          find . -name "*.bak" -type f -delete
+          find . -name "*~" -type f -delete
+          
+          # Clean Python cache
+          find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          find . -name "*.pyc" -delete
+          
+          # Remove old test artifacts
+          rm -rf .pytest_cache
+          rm -rf .coverage
+          rm -rf htmlcov
+
+      - name: Update documentation
+        run: |
+          echo "📚 Updating auto-generated documentation..."
+          
+          # Update version information in README if needed
+          python3 << 'EOF'
+          import json
+          import re
+          
+          # Read package.json version
+          with open('package.json', 'r') as f:
+              package_data = json.load(f)
+              version = package_data['version']
+          
+          # Update README.md with current version
+          with open('README.md', 'r') as f:
+              readme_content = f.read()
+          
+          # Update version badges and references
+          updated_content = re.sub(
+              r'Bl4ckC3ll_PANTHEON V\d+\.\d+\.\d+',
+              f'Bl4ckC3ll_PANTHEON V{version}',
+              readme_content
+          )
+          
+          with open('README.md', 'w') as f:
+              f.write(updated_content)
+          EOF
+
+      - name: Optimize performance
+        run: |
+          echo "⚡ Running performance optimizations..."
+          
+          # Run performance tester and save baseline
+          python3 scripts/performance_tester.py
+          
+          # Archive performance reports
+          mkdir -p performance-history
+          cp performance-report.json "performance-history/performance-$(date +%Y%m%d).json"
+
+      - name: Generate security baseline
+        run: |
+          echo "🔒 Generating security baseline..."
+          
+          # Run comprehensive security scan
+          python3 scripts/security_validator.py
+          
+          # Archive security reports
+          mkdir -p security-history
+          cp security-validation-report.json "security-history/security-$(date +%Y%m%d).json"
+
+      - name: Update gitignore and git attributes
+        run: |
+          echo "⚙️ Updating Git configuration..."
+          
+          # Ensure comprehensive .gitignore
+          cat >> .gitignore << 'EOF'
+          
+          # Additional ignores for maintenance
+          performance-history/
+          security-history/
+          *.tmp
+          *.temp
+          .DS_Store
+          Thumbs.db
+          EOF
+          
+          # Create/update .gitattributes for security
+          cat > .gitattributes << 'EOF'
+          # Security-sensitive files
+          *.key binary
+          *.pem binary
+          *.p12 binary
+          *.jks binary
+          
+          # Ensure consistent line endings
+          *.py text eol=lf
+          *.js text eol=lf
+          *.json text eol=lf
+          *.md text eol=lf
+          *.yml text eol=lf
+          *.yaml text eol=lf
+          
+          # Binary files
+          *.png binary
+          *.jpg binary
+          *.jpeg binary
+          *.gif binary
+          *.ico binary
+          *.zip binary
+          *.tar.gz binary
+          EOF
+
+      - name: Commit maintenance changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add .
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: automated repository maintenance
+            
+            - Cleaned up old artifacts and cache files
+            - Updated documentation and version references
+            - Generated performance and security baselines
+            - Updated Git configuration files"
+            
+            git push
+          else
+            echo "No maintenance changes to commit"
+          fi

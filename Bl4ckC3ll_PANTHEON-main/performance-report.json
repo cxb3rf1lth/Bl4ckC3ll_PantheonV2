@@ -1,0 +1,22 @@
+{
+  "results": {
+    "startup_time": 0.23742413520812988,
+    "memory_usage": {
+      "initial_memory_mb": 15.09765625,
+      "peak_memory_mb": 15.84765625,
+      "memory_increase_mb": 0.75
+    },
+    "test_suite_performance": {
+      "execution_time": 5.1553730964660645,
+      "tests_per_second": 3.1035581131786123
+    },
+    "file_operations": {
+      "write_time": 0.002274036407470703,
+      "read_time": 0.0004105567932128906,
+      "lines_written": 10000,
+      "lines_read": 10000
+    }
+  },
+  "issues": [],
+  "timestamp": 1757877932.1534138
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Bl4CkC3ll_P4NTH30N — Cleaned Orchestrator (Recon + Vuln scan + Report + Plugins)
+# Molloch — Advanced Security Testing Framework
 # Author: @cxb3rf1lth
 # Notes:
 # - This is a deduplicated, hardened, and runnable version focused on reliability.
@@ -338,7 +338,7 @@ def validate_network_address(address: str) -> bool:
 
 
 # ---------- App meta ----------
-APP = "Bl4CkC3ll_P4NTH30N"
+APP = "Molloch"
 AUTHOR = "@cxb3rf1lth"
 VERSION = "9.0.0-clean"
 HERE = Path(__file__).resolve().parent
@@ -606,7 +606,7 @@ DEFAULT_CFG: Dict[str, Any] = {
             "revenue_impact_per_hour": 25000.0,
         },
     },
-    "plugins": {"enabled": True, "directory": str(PLUGINS_DIR), "auto_execute": False},
+    "plugins": {"enabled": True, "directory": str(PLUGINS_DIR), "auto_execute": True},  # Enable auto-execute plugins
     "fallback": {"enabled": True, "direct_downloads": True, "mirror_sites": True},
     "resource_management": {
         "cpu_threshold": 75,  # Reduced from 85
@@ -633,7 +633,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "pre_scan_validation": True,
     },
     "authentication": {
-        "enabled": False,
+        "enabled": True,  # Enable authentication testing
         "cookies_file": "",
         "headers_file": "",
         "basic_auth": "",
@@ -693,7 +693,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "iso27001": True,
     },
     "cicd_integration": {
-        "enabled": False,
+        "enabled": True,  # Enable CI/CD integration features
         "github_actions": True,
         "gitlab_ci": True,
         "jenkins": True,
@@ -709,7 +709,7 @@ DEFAULT_CFG: Dict[str, Any] = {
 class Logger:
 
     def __init__(self):
-        self.log_file = LOG_DIR / "bl4ckc3ll_p4nth30n.log"
+        self.log_file = LOG_DIR / "molloch.log"
         self.console_lock = threading.Lock()
         self.log_file.parent.mkdir(parents=True, exist_ok=True)
         self.current_level = "INFO"
@@ -764,10 +764,10 @@ logger = Logger()
 
 
 # Add alias for compatibility with other modules
-class PantheonLogger:
+class MollochLogger:
     """Compatibility wrapper for Logger class"""
 
-    def __init__(self, name="PANTHEON", log_level=None):
+    def __init__(self, name="MOLLOCH", log_level=None):
         self._logger = Logger()
         self.name = name
         if log_level:
@@ -1603,7 +1603,7 @@ def safe_http_request(
 
         # Set default headers
         default_headers = {
-            "User-Agent": "Bl4ckC3ll_PANTHEON/9.0.0 Security Scanner",
+            "User-Agent": "Molloch/1.0.0 Security Scanner",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.5",
             "Accept-Encoding": "gzip, deflate",
@@ -4114,7 +4114,7 @@ def _validate_configuration(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
     # Notification settings
     notifications = validated_cfg.get("notifications", {})
-    notifications["enabled"] = notifications.get("enabled", False)
+    notifications["enabled"] = notifications.get("enabled", True)  # Enable notifications by default
     notifications["critical_only"] = notifications.get("critical_only", True)
     notifications["methods"] = notifications.get("methods", [])
     validated_cfg["notifications"] = notifications
@@ -4159,17 +4159,24 @@ class EnhancedToolFallbackManager:
             "sublist3r",
             "dnsrecon",
             "fierce",
+            "chaos-client",
+            "uncover",
         ],
-        "amass": ["subfinder", "assetfinder", "findomain", "sublist3r"],
+        "amass": ["subfinder", "assetfinder", "findomain", "sublist3r", "chaos-client"],
         "assetfinder": ["subfinder", "amass", "findomain", "sublist3r"],
         "findomain": ["subfinder", "amass", "assetfinder", "sublist3r"],
         "sublist3r": ["subfinder", "amass", "assetfinder", "findomain"],
+        "chaos-client": ["subfinder", "amass", "uncover"],
+        "uncover": ["subfinder", "chaos-client", "amass"],
         # Port Scanning (Enhanced)
         "naabu": ["masscan", "nmap", "zmap", "rustscan", "unicornscan"],
         "masscan": ["nmap", "naabu", "zmap", "rustscan"],
         "nmap": ["masscan", "naabu", "zmap", "rustscan"],
         "rustscan": ["nmap", "masscan", "naabu", "zmap"],
         "zmap": ["masscan", "nmap", "naabu", "rustscan"],
+        # DNS Resolution (Enhanced)
+        "dnsx": ["dig", "nslookup", "host", "shuffledns"],
+        "shuffledns": ["dnsx", "dig", "nslookup"],
         # HTTP Probing (Enhanced)
         "httpx": ["httprobe", "curl", "wget", "meg"],
         "httprobe": ["httpx", "curl", "wget"],
@@ -4254,6 +4261,17 @@ class EnhancedToolFallbackManager:
         "paramspider": "go install github.com/devanshbatham/paramspider@latest",
         "dalfox": "go install github.com/hahwul/dalfox/v2@latest",
         "x8": "go install github.com/Sh1Yo/x8/cmd/x8@latest",
+        # Additional enhanced tools
+        "dnsx": "go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest",
+        "uncover": "go install -v github.com/projectdiscovery/uncover/cmd/uncover@latest",
+        "notify": "go install -v github.com/projectdiscovery/notify/cmd/notify@latest",
+        "interactsh-client": "go install -v github.com/projectdiscovery/interactsh/cmd/interactsh-client@latest",
+        "chaos-client": "go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest",
+        "tlsx": "go install github.com/projectdiscovery/tlsx/cmd/tlsx@latest",
+        "cdncheck": "go install github.com/projectdiscovery/cdncheck/cmd/cdncheck@latest",
+        "asnmap": "go install github.com/projectdiscovery/asnmap/cmd/asnmap@latest",
+        "mapcidr": "go install -v github.com/projectdiscovery/mapcidr/cmd/mapcidr@latest",
+        "shuffledns": "go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest",
         "rustscan": "go install github.com/RustScan/RustScan@latest",
         "hakrawler": "go install github.com/hakluke/hakrawler@latest",
         "meg": "go install github.com/tomnomnom/meg@latest",
@@ -8955,12 +8973,15 @@ def execute_plugin(
 
 # ---------- Menu ----------
 BANNER = r"""
-██████╗ ██╗      █████╗ ██╗  ██╗ ██████╗██╗  ██╗ ██████╗ ███████╗██╗     ██╗
-██╔══██╗██║     ██╔══██╗██║ ██╔╝██╔════╝██║ ██╔╝██╔════╝ ██╔════╝██║     ██║
-██████╔╝██║     ███████║█████╔╝ ██║     █████╔╝ ██║  ███╗█████╗  ██║     ██║
-██╔══██╗██║     ██╔══██║██╔═██╗ ██║     ██╔═██╗ ██║   ██║██╔══╝  ██║     ██║
-██████╔╝███████╗██║  ██║██║  ██╗╚██████╗██║  ██╗╚██████╔╝███████╗███████╗███████╗
-╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝╚══════╝
+ _______  _______  _        _        _______  _______          
+(       )(  ___  )( \      ( \      (  ___  )(  ____ \|\     /|
+| () () || (   ) || (      | (      | (   ) || (    \/| )   ( |
+| || || || |   | || |      | |      | |   | || |      | (___) |
+| |(_)| || |   | || |      | |      | |   | || |      |  ___  |
+| |   | || |   | || |      | |      | |   | || |      | (   ) |
+| )   ( || (___) || (____/\| (____/\| (___) || (____/\| )   ( |
+|/     \|(_______)(_______/(_______/(_______)(_______/|/     \|
+                                                               
 """
 
 
@@ -8968,38 +8989,44 @@ def display_menu():
     print("\n\033[31m" + "=" * 80 + "\033[0m")
     print(
         "\033[91m"
-        + "BL4CKC3LL_P4NTH30N - ENHANCED SECURITY TESTING FRAMEWORK".center(80)
+        + "MOLLOCH - ADVANCED SECURITY TESTING FRAMEWORK".center(80)
         + "\033[0m"
     )
     print("\033[31m" + "=" * 80 + "\033[0m")
-    print("\033[93m1. [TARGET] Enhanced Target Management\033[0m")
-    print("\033[93m2. [REFRESH] Refresh Sources + Merge Wordlists\033[0m")
-    print("\033[93m3. [RECON] Enhanced Reconnaissance\033[0m")
-    print("\033[93m4. [VULN] Advanced Vulnerability Scan\033[0m")
-    print("\033[93m5. [FULL] Full Pipeline (Recon + Vuln + Report)\033[0m")
-    print("\033[95m6. [PRESET] Quick Preset Scan Configurations\033[0m")
-    print("\033[93m7. [REPORT] Generate Enhanced Report\033[0m")
-    print("\033[93m8. [CONFIG] Settings & Configuration\033[0m")
-    print("\033[93m9. [PLUGIN] Plugins Management\033[0m")
-    print("\033[93m10. [VIEW] View Last Report\033[0m")
-    print("\033[93m11. [NET] Network Analysis Tools\033[0m")
-    print("\033[93m12. [ASSESS] Security Assessment Summary\033[0m")
-    print("\033[92m13. [AI] AI-Powered Vulnerability Analysis\033[0m")
-    print("\033[92m14. [CLOUD] Cloud Security Assessment\033[0m")
-    print("\033[92m15. [API] API Security Testing\033[0m")
-    print("\033[92m16. [COMPLY] Compliance & Risk Assessment\033[0m")
-    print("\033[92m17. [CICD] CI/CD Integration Mode\033[0m")
-    print("\033[96m18. [ESLINT] ESLint Security Check\033[0m")
-    print("\033[96m19. [BUGBOUNTY] Bug Bounty Automation\033[0m")
-    print("\033[96m20. [AUTOCHAIN] Automated Testing Chain\033[0m")
-    print("\033[92m21. [TUI] Launch Advanced TUI Interface\033[0m")
-    print("\033[95m22. [PAYLOADS] Enhanced Payload Management\033[0m")
-    print("\033[95m23. [TOOLS] Tool Status & Fallback Management\033[0m")
-    print("\033[94m24. [BCAR] BCAR Enhanced Reconnaissance\033[0m")
-    print("\033[94m25. [TAKEOVER] Advanced Subdomain Takeover\033[0m")
-    print("\033[94m26. [PAYINJECT] Automated Payload Injection\033[0m")
-    print("\033[94m27. [FUZZ] Comprehensive Advanced Fuzzing\033[0m")
-    print("\033[91m28. [EXIT] Exit\033[0m")
+    
+    # Format as organized table-like menu
+    print("\033[96m┌─────┬─────────────────────────────────────────────────────────────────────┐\033[0m")
+    print("\033[96m│ No. │ Operation                                                               │\033[0m")
+    print("\033[96m├─────┼─────────────────────────────────────────────────────────────────────┤\033[0m")
+    print("\033[93m│  1  │ [TARGET] Target Management                                              │\033[0m")
+    print("\033[93m│  2  │ [REFRESH] Refresh Sources & Wordlists                                  │\033[0m")
+    print("\033[93m│  3  │ [RECON] Reconnaissance                                                  │\033[0m")
+    print("\033[93m│  4  │ [SCAN] Vulnerability Scan                                              │\033[0m")
+    print("\033[93m│  5  │ [FULL] Full Pipeline                                                   │\033[0m")
+    print("\033[95m│  6  │ [PRESET] Quick Presets                                                 │\033[0m")
+    print("\033[93m│  7  │ [REPORT] Generate Report                                               │\033[0m")
+    print("\033[93m│  8  │ [CONFIG] Configuration                                                 │\033[0m")
+    print("\033[93m│  9  │ [PLUGIN] Plugin Management                                             │\033[0m")
+    print("\033[93m│ 10  │ [VIEW] View Report                                                     │\033[0m")
+    print("\033[93m│ 11  │ [NET] Network Analysis                                                 │\033[0m")
+    print("\033[93m│ 12  │ [ASSESS] Security Assessment                                           │\033[0m")
+    print("\033[92m│ 13  │ [AI] AI Analysis                                                       │\033[0m")
+    print("\033[92m│ 14  │ [CLOUD] Cloud Security                                                 │\033[0m")
+    print("\033[92m│ 15  │ [API] API Security                                                     │\033[0m")
+    print("\033[92m│ 16  │ [COMPLY] Compliance Check                                              │\033[0m")
+    print("\033[92m│ 17  │ [CICD] CI/CD Integration                                               │\033[0m")
+    print("\033[96m│ 18  │ [ESLINT] ESLint Security                                               │\033[0m")
+    print("\033[96m│ 19  │ [BUGBOUNTY] Bug Bounty                                                 │\033[0m")
+    print("\033[96m│ 20  │ [AUTOCHAIN] Auto Testing                                               │\033[0m")
+    print("\033[92m│ 21  │ [TUI] Advanced Interface                                               │\033[0m")
+    print("\033[95m│ 22  │ [PAYLOADS] Payload Management                                          │\033[0m")
+    print("\033[95m│ 23  │ [TOOLS] Tool Management                                                │\033[0m")
+    print("\033[94m│ 24  │ [BCAR] BCAR Recon                                                      │\033[0m")
+    print("\033[94m│ 25  │ [TAKEOVER] Subdomain Takeover                                          │\033[0m")
+    print("\033[94m│ 26  │ [PAYINJECT] Payload Injection                                          │\033[0m")
+    print("\033[94m│ 27  │ [FUZZ] Auto Fuzzing                                                    │\033[0m")
+    print("\033[91m│ 28  │ [EXIT] Exit                                                            │\033[0m")
+    print("\033[96m└─────┴─────────────────────────────────────────────────────────────────────┘\033[0m")
     print("\033[31m" + "=" * 80 + "\033[0m")
 
 
@@ -9048,7 +9075,7 @@ def get_choice() -> int:
 def show_enhanced_help():
     """Show enhanced help information"""
     print(f"\n\033[96m{'='*80}\033[0m")
-    print("\033[96mBL4CKC3LL_P4NTH30N - HELP & QUICK REFERENCE".center(80) + "\033[0m")
+    print("\033[96mMOLLOCH - HELP & QUICK REFERENCE".center(80) + "\033[0m")
     print(f"\033[96m{'='*80}\033[0m")
 
     print("\n\033[95m🔧 ESSENTIAL OPERATIONS:\033[0m")
@@ -9056,20 +9083,20 @@ def show_enhanced_help():
     print("  2  → Refresh Sources       | Update wordlists and sources")
     print("  5  → Full Pipeline         | Complete recon + scan + report")
     print("  7  → Generate Report       | Create detailed findings report")
-    print("  23 → Tool Status           | Check installed security tools")
+    print("  23 → Tool Management       | Check installed security tools")
 
     print("\n\033[94m🔍 RECONNAISSANCE & SCANNING:\033[0m")
     print("  3  → Reconnaissance        | Subdomain discovery and enumeration")
     print("  4  → Vulnerability Scan    | Security vulnerability assessment")
     print("  11 → Network Analysis      | Advanced network scanning")
-    print("  24 → BCAR Enhanced Recon   | Certificate-based reconnaissance")
+    print("  24 → BCAR Recon            | Certificate-based reconnaissance")
 
     print("\n\033[93m⚡ QUICK SCAN PRESETS:\033[0m")
     print("  6  → Preset Configurations | Fast, thorough, stealth modes")
-    print("  20 → Automated Chain       | Fully automated testing sequence")
+    print("  20 → Auto Testing          | Fully automated testing sequence")
 
     print("\n\033[92m🛠️  ADVANCED FEATURES:\033[0m")
-    print("  21 → TUI Interface         | Terminal User Interface")
+    print("  21 → Advanced Interface    | Terminal User Interface")
     print("  13 → AI Analysis           | AI-powered vulnerability analysis")
     print("  14 → Cloud Security        | AWS/Azure/GCP security assessment")
     print("  15 → API Security          | REST/GraphQL API testing")
@@ -9077,7 +9104,7 @@ def show_enhanced_help():
     print("\n\033[91m🔐 SPECIALIZED TESTING:\033[0m")
     print("  25 → Subdomain Takeover    | Advanced takeover detection")
     print("  26 → Payload Injection     | Automated payload testing")
-    print("  27 → Advanced Fuzzing      | Comprehensive fuzzing operations")
+    print("  27 → Auto Fuzzing          | Comprehensive fuzzing operations")
 
     print("\n\033[90m💡 QUICK TIPS:\033[0m")
     print("  • First time? Try: 1 → 2 → 5 → 7 (setup targets → full scan → report)")
@@ -12579,6 +12606,10 @@ def auto_fix_missing_dependencies():
                 "login",
                 "test",
                 "upload",
+                "wp-admin",
+                "wp-content",
+                "administrator",
+                "phpmyadmin",
             ],
             EXTRA_DIR
             / "common_parameters.txt": [
@@ -12594,6 +12625,11 @@ def auto_fix_missing_dependencies():
                 "callback",
                 "search",
                 "query",
+                "page",
+                "action",
+                "cmd",
+                "exec",
+                "debug",
             ],
             EXTRA_DIR
             / "common_subdomains.txt": [
@@ -12609,6 +12645,12 @@ def auto_fix_missing_dependencies():
                 "secure",
                 "portal",
                 "dashboard",
+                "cdn",
+                "static",
+                "assets",
+                "ftp",
+                "vpn",
+                "remote",
             ],
         }
 
@@ -12617,6 +12659,19 @@ def auto_fix_missing_dependencies():
                 with open(wordlist_path, "w") as f:
                     f.write("\n".join(words))
                 logger.log(f"Created missing wordlist: {wordlist_path.name}", "INFO")
+
+        # Auto-install missing critical tools if possible
+        if ENHANCED_TOOL_MANAGER_AVAILABLE:
+            logger.log("Checking for missing critical tools...", "INFO")
+            critical_tools = ["subfinder", "httpx", "nuclei", "naabu"]
+            
+            for tool in critical_tools:
+                if not which(tool):
+                    logger.log(f"Attempting to auto-install {tool}...", "INFO")
+                    if EnhancedToolFallbackManager.install_tool(tool):
+                        logger.log(f"✅ Successfully installed {tool}", "SUCCESS")
+                    else:
+                        logger.log(f"❌ Failed to auto-install {tool}", "WARNING")
 
         logger.log("Dependencies auto-fix completed", "SUCCESS")
         return True

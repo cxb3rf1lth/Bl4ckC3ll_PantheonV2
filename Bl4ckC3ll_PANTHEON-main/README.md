@@ -1,14 +1,14 @@
-# 🛡️ Bl4ckC3ll_PANTHEON v2.0
+# 🛡️ Molloch v1.0
 
-### **Next-Generation Cybersecurity Testing Framework**
+### **Advanced Security Testing Framework**
 
-[![Security](https://img.shields.io/badge/security-penetration%20testing-red)](https://github.com/cxb3rf1lth/Bl4ckC3ll_PANTHEON)
+[![Security](https://img.shields.io/badge/security-penetration%20testing-red)](https://github.com/cxb3rf1lth/Bl4ckC3ll_PantheonV2)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-Educational-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.0-brightgreen)](https://github.com/cxb3rf1lth/Bl4ckC3ll_PANTHEON)
+[![Version](https://img.shields.io/badge/version-1.0-brightgreen)](https://github.com/cxb3rf1lth/Bl4ckC3ll_PantheonV2)
 [![Docker](https://img.shields.io/badge/docker-supported-blue)](https://docker.com)
 
-Bl4ckC3ll_PANTHEON v2.0 is a comprehensive, production-grade cybersecurity testing orchestrator that unifies multiple security tools and methodologies into an advanced testing platform. Designed for authorized penetration testing, security research, vulnerability assessments, and educational purposes.
+Molloch v1.0 is a comprehensive, production-grade cybersecurity testing orchestrator that unifies multiple security tools and methodologies into an advanced testing platform. Designed for authorized penetration testing, security research, vulnerability assessments, and educational purposes.
 
 ---
 

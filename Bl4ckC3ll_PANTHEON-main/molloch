@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+# Molloch - Advanced Security Testing Framework
+# Quick CLI launcher script
+
+import sys
+import subprocess
+from pathlib import Path
+
+def main():
+    script_dir = Path(__file__).parent
+    main_script = script_dir / "bl4ckc3ll_p4nth30n.py"
+    
+    if not main_script.exists():
+        print("❌ Molloch main script not found!")
+        sys.exit(1)
+    
+    # Pass all arguments to the main script
+    cmd = [sys.executable, str(main_script)] + sys.argv[1:]
+    try:
+        subprocess.run(cmd, check=True)
+    except KeyboardInterrupt:
+        print("\n🛑 Molloch interrupted by user")
+    except subprocess.CalledProcessError as e:
+        sys.exit(e.returncode)
+
+if __name__ == "__main__":
+    main()

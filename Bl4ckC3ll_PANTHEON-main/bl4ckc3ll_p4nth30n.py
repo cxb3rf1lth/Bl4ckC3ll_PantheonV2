@@ -606,7 +606,7 @@ DEFAULT_CFG: Dict[str, Any] = {
             "revenue_impact_per_hour": 25000.0,
         },
     },
-    "plugins": {"enabled": True, "directory": str(PLUGINS_DIR), "auto_execute": False},
+    "plugins": {"enabled": True, "directory": str(PLUGINS_DIR), "auto_execute": True},  # Enable auto-execute plugins
     "fallback": {"enabled": True, "direct_downloads": True, "mirror_sites": True},
     "resource_management": {
         "cpu_threshold": 75,  # Reduced from 85
@@ -633,7 +633,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "pre_scan_validation": True,
     },
     "authentication": {
-        "enabled": False,
+        "enabled": True,  # Enable authentication testing
         "cookies_file": "",
         "headers_file": "",
         "basic_auth": "",
@@ -693,7 +693,7 @@ DEFAULT_CFG: Dict[str, Any] = {
         "iso27001": True,
     },
     "cicd_integration": {
-        "enabled": False,
+        "enabled": True,  # Enable CI/CD integration features
         "github_actions": True,
         "gitlab_ci": True,
         "jenkins": True,
@@ -4114,7 +4114,7 @@ def _validate_configuration(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
     # Notification settings
     notifications = validated_cfg.get("notifications", {})
-    notifications["enabled"] = notifications.get("enabled", False)
+    notifications["enabled"] = notifications.get("enabled", True)  # Enable notifications by default
     notifications["critical_only"] = notifications.get("critical_only", True)
     notifications["methods"] = notifications.get("methods", [])
     validated_cfg["notifications"] = notifications
@@ -4159,17 +4159,24 @@ class EnhancedToolFallbackManager:
             "sublist3r",
             "dnsrecon",
             "fierce",
+            "chaos-client",
+            "uncover",
         ],
-        "amass": ["subfinder", "assetfinder", "findomain", "sublist3r"],
+        "amass": ["subfinder", "assetfinder", "findomain", "sublist3r", "chaos-client"],
         "assetfinder": ["subfinder", "amass", "findomain", "sublist3r"],
         "findomain": ["subfinder", "amass", "assetfinder", "sublist3r"],
         "sublist3r": ["subfinder", "amass", "assetfinder", "findomain"],
+        "chaos-client": ["subfinder", "amass", "uncover"],
+        "uncover": ["subfinder", "chaos-client", "amass"],
         # Port Scanning (Enhanced)
         "naabu": ["masscan", "nmap", "zmap", "rustscan", "unicornscan"],
         "masscan": ["nmap", "naabu", "zmap", "rustscan"],
         "nmap": ["masscan", "naabu", "zmap", "rustscan"],
         "rustscan": ["nmap", "masscan", "naabu", "zmap"],
         "zmap": ["masscan", "nmap", "naabu", "rustscan"],
+        # DNS Resolution (Enhanced)
+        "dnsx": ["dig", "nslookup", "host", "shuffledns"],
+        "shuffledns": ["dnsx", "dig", "nslookup"],
         # HTTP Probing (Enhanced)
         "httpx": ["httprobe", "curl", "wget", "meg"],
         "httprobe": ["httpx", "curl", "wget"],
@@ -4254,6 +4261,17 @@ class EnhancedToolFallbackManager:
         "paramspider": "go install github.com/devanshbatham/paramspider@latest",
         "dalfox": "go install github.com/hahwul/dalfox/v2@latest",
         "x8": "go install github.com/Sh1Yo/x8/cmd/x8@latest",
+        # Additional enhanced tools
+        "dnsx": "go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest",
+        "uncover": "go install -v github.com/projectdiscovery/uncover/cmd/uncover@latest",
+        "notify": "go install -v github.com/projectdiscovery/notify/cmd/notify@latest",
+        "interactsh-client": "go install -v github.com/projectdiscovery/interactsh/cmd/interactsh-client@latest",
+        "chaos-client": "go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest",
+        "tlsx": "go install github.com/projectdiscovery/tlsx/cmd/tlsx@latest",
+        "cdncheck": "go install github.com/projectdiscovery/cdncheck/cmd/cdncheck@latest",
+        "asnmap": "go install github.com/projectdiscovery/asnmap/cmd/asnmap@latest",
+        "mapcidr": "go install -v github.com/projectdiscovery/mapcidr/cmd/mapcidr@latest",
+        "shuffledns": "go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest",
         "rustscan": "go install github.com/RustScan/RustScan@latest",
         "hakrawler": "go install github.com/hakluke/hakrawler@latest",
         "meg": "go install github.com/tomnomnom/meg@latest",
@@ -12588,6 +12606,10 @@ def auto_fix_missing_dependencies():
                 "login",
                 "test",
                 "upload",
+                "wp-admin",
+                "wp-content",
+                "administrator",
+                "phpmyadmin",
             ],
             EXTRA_DIR
             / "common_parameters.txt": [
@@ -12603,6 +12625,11 @@ def auto_fix_missing_dependencies():
                 "callback",
                 "search",
                 "query",
+                "page",
+                "action",
+                "cmd",
+                "exec",
+                "debug",
             ],
             EXTRA_DIR
             / "common_subdomains.txt": [
@@ -12618,6 +12645,12 @@ def auto_fix_missing_dependencies():
                 "secure",
                 "portal",
                 "dashboard",
+                "cdn",
+                "static",
+                "assets",
+                "ftp",
+                "vpn",
+                "remote",
             ],
         }
 
@@ -12626,6 +12659,19 @@ def auto_fix_missing_dependencies():
                 with open(wordlist_path, "w") as f:
                     f.write("\n".join(words))
                 logger.log(f"Created missing wordlist: {wordlist_path.name}", "INFO")
+
+        # Auto-install missing critical tools if possible
+        if ENHANCED_TOOL_MANAGER_AVAILABLE:
+            logger.log("Checking for missing critical tools...", "INFO")
+            critical_tools = ["subfinder", "httpx", "nuclei", "naabu"]
+            
+            for tool in critical_tools:
+                if not which(tool):
+                    logger.log(f"Attempting to auto-install {tool}...", "INFO")
+                    if EnhancedToolFallbackManager.install_tool(tool):
+                        logger.log(f"✅ Successfully installed {tool}", "SUCCESS")
+                    else:
+                        logger.log(f"❌ Failed to auto-install {tool}", "WARNING")
 
         logger.log("Dependencies auto-fix completed", "SUCCESS")
         return True

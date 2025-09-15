@@ -1,48 +1,53 @@
-# 🛡️ Bl4ckC3ll_PANTHEON
+# 🛡️ Bl4ckC3ll_PANTHEON v2.0
 
-## Advanced Security Testing Framework
+## Advanced Security Testing Framework - Enhanced Edition
 
 [![Security](https://img.shields.io/badge/security-penetration%20testing-red)](https://github.com/cxb3rf1lth/Bl4ckC3ll_PANTHEON)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-Educational-green)](LICENSE)
+[![Version](https://img.shields.io/badge/version-2.0-brightgreen)](https://github.com/cxb3rf1lth/Bl4ckC3ll_PANTHEON)
 
-**Bl4ckC3ll_PANTHEON** is a comprehensive security testing orchestrator designed for **authorized** penetration testing, security research, and vulnerability assessments. This production-grade framework integrates multiple security tools and methodologies into a unified testing platform.
+**Bl4ckC3ll_PANTHEON v2.0** is a next-generation comprehensive security testing orchestrator designed for **authorized** penetration testing, security research, and vulnerability assessments. This production-grade framework integrates multiple security tools and methodologies into a unified testing platform with enhanced modular architecture.
 
 > **⚠️ IMPORTANT NOTICE:** This tool is intended **exclusively** for authorized security testing, educational purposes, and legitimate bug bounty programs. Users are responsible for ensuring they have proper authorization before testing any systems.
 
-## ✨ Key Features
+## ✨ New in Version 2.0
 
-### 🔍 Advanced Reconnaissance
-- **Multi-source subdomain discovery** with subfinder, amass, and certificate transparency
-- **Enhanced port scanning** with naabu and intelligent rate limiting
-- **HTTP fingerprinting** with technology detection and response analysis
-- **Endpoint harvesting** from multiple sources (gau, katana, waybackurls, gospider)
-- **DNS enumeration** with historical data analysis
+### 🏗️ Enhanced Architecture
+- **Modular Package Structure** - Organized codebase with dedicated modules for each security domain
+- **Enhanced Security Controls** - Stricter command validation and allow-listing for security
+- **Improved Error Handling** - Comprehensive error management and logging
+- **Performance Optimization** - Better resource management and concurrent processing
 
-### 🚨 Vulnerability Assessment
-- **Nuclei integration** with enhanced template management and custom rules
-- **Web application security** testing (XSS, SQLi, CSRF, etc.)
-- **API security** testing for REST, GraphQL, and SOAP endpoints
-- **Cloud security** assessment for AWS, Azure, and GCP resources
-- **SSL/TLS analysis** and certificate validation
+### 🐳 Container Security Scanning
+- **Docker Image Analysis** - Comprehensive vulnerability scanning for container images
+- **Kubernetes Manifest Security** - Security assessment of K8s configurations
+- **Container Compliance Checking** - Industry standard compliance validation
+- **Integration with Trivy, Grype, and Docker security tools**
 
-### 🤖 AI-Powered Analysis
-- **Machine learning** false positive reduction
-- **Intelligent vulnerability prioritization** with risk scoring
-- **Pattern recognition** for vulnerability clustering
-- **Automated threat correlation** and impact assessment
+### 🌐 Advanced API Security Testing
+- **API Discovery & Enumeration** - Automatic discovery of REST, GraphQL, and SOAP endpoints
+- **OpenAPI/Swagger Analysis** - Comprehensive specification parsing and testing
+- **Authentication & Authorization Testing** - Advanced auth mechanism validation
+- **Input Validation & Injection Testing** - Comprehensive security vulnerability detection
 
-### 📊 Professional Reporting
-- **Multiple output formats**: HTML, JSON, CSV, SARIF
-- **Executive summaries** with business impact analysis
-- **Interactive dashboards** with risk visualization
-- **Compliance mapping** (OWASP, NIST, PCI-DSS)
+### ☁️ Cloud Security Assessment
+- **Multi-Cloud Support** - AWS, Azure, and GCP security assessments
+- **Misconfiguration Detection** - Automated cloud resource security analysis
+- **Compliance Framework Mapping** - CIS, NIST, and other standard alignments
+- **Cloud Resource Enumeration** - Comprehensive cloud asset discovery
 
-### 🔧 DevOps Integration
-- **CI/CD pipeline** integration with GitHub Actions
-- **Docker containerization** for scalable deployment
-- **API endpoints** for programmatic access
-- **Webhook notifications** and automated reporting
+### 🔄 Enhanced CI/CD Integration
+- **Multi-Platform Support** - GitHub Actions, GitLab CI, Jenkins, Azure DevOps
+- **Flexible Scan Types** - Quick, standard, comprehensive scan configurations
+- **SARIF Integration** - Security scan results format for better tool integration
+- **Automated Pipeline Generation** - One-command CI/CD setup
+
+### 📊 Advanced Reporting & Analytics
+- **Multiple Report Formats** - JSON, HTML, CSV, SARIF, XML output options
+- **Interactive Dashboards** - Rich HTML reports with security metrics
+- **Executive Summaries** - Business-focused security assessment reports
+- **Compliance Reporting** - Detailed compliance status and gap analysis
 
 ## 🚀 Quick Start
 
@@ -52,6 +57,7 @@
 - **Go**: 1.20+ for security tools
 - **Memory**: 4GB+ RAM (8GB+ recommended)
 - **Storage**: 10GB+ free space
+- **Docker**: For container security scanning (optional)
 
 ### Installation
 
@@ -63,12 +69,13 @@ cd Bl4ckC3ll_PANTHEON
 
 2. **Run automated setup**
 ```bash
-./quickstart.sh
+chmod +x install.sh
+./install.sh
 ```
 
-3. **Configure targets**
+3. **Test enhanced features**
 ```bash
-echo "example.com" > targets.txt
+python3 pantheon_enhanced_demo.py
 ```
 
 4. **Launch the framework**
@@ -79,20 +86,20 @@ python3 bl4ckc3ll_p4nth30n.py
 ### Docker Deployment
 
 ```bash
-# Build container
-docker build -t bl4ckc3ll-pantheon .
+# Build container with enhanced features
+docker build -t bl4ckc3ll-pantheon:v2.0 .
 
-# Run interactive mode
-docker run -it -v $(pwd)/results:/app/results bl4ckc3ll-pantheon
+# Run with enhanced capabilities
+docker run -it --privileged -v $(pwd)/results:/app/results bl4ckc3ll-pantheon:v2.0
 
-# Automated scan
-docker run -v $(pwd)/results:/app/results bl4ckc3ll-pantheon \
-  python3 cicd_integration.py --target example.com --scan-type full
+# Container security scanning
+docker run -v /var/run/docker.sock:/var/run/docker.sock bl4ckc3ll-pantheon:v2.0 \
+  python3 -c "from pantheon.containers import scan_container_images; print('Container scanning ready')"
 ```
 
-## 🎯 Usage Examples
+## 🎯 Enhanced Usage Examples
 
-### Basic Security Scan
+### Traditional Security Scanning
 ```bash
 # Quick reconnaissance
 python3 bl4ckc3ll_p4nth30n.py
@@ -103,139 +110,283 @@ python3 bl4ckc3ll_p4nth30n.py
 # Select: 5. Full Pipeline (Recon + Vuln + Report)
 ```
 
-### CI/CD Integration
+### Container Security Assessment
 ```bash
-# Quick security scan for CI/CD
-python3 cicd_integration.py \
-  --target your-target.com \
-  --scan-type quick \
-  --output-format sarif \
-  --fail-on high
+# Scan Docker images
+python3 -c "
+from pantheon.containers import scan_container_images
+from pathlib import Path
+results = scan_container_images(['nginx:latest', 'alpine:latest'], Path('results'))
+print(f'Scanned {len(results)} containers')
+"
 
-# Comprehensive assessment
-python3 cicd_integration.py \
-  --target your-target.com \
-  --scan-type full \
-  --output-format json \
-  --timeout 3600
+# Kubernetes manifest analysis
+python3 -c "
+from pantheon.containers import scan_kubernetes_manifests
+from pathlib import Path
+results = scan_kubernetes_manifests(Path('k8s-manifests'), Path('results'))
+print('Kubernetes security assessment completed')
+"
 ```
 
-### BCAR Enhanced Reconnaissance
+### API Security Testing
 ```bash
-# Run BCAR-specific setup
-./setup_bcar.sh
-
-# Launch with BCAR capabilities
-python3 bl4ckc3ll_p4nth30n.py
-# Select: 24. BCAR Enhanced Reconnaissance
+# Comprehensive API security assessment
+python3 -c "
+from pantheon.api import scan_api_endpoints
+from pathlib import Path
+results = scan_api_endpoints('https://api.example.com', Path('results'))
+print(f'API scan completed: {len(results[\"discovery\"][\"endpoints\"])} endpoints analyzed')
+"
 ```
 
-## 📁 Project Structure
+### Cloud Security Assessment
+```bash
+# AWS security assessment
+python3 -c "
+from pantheon.cloud import scan_cloud_infrastructure
+from pathlib import Path
+results = scan_cloud_infrastructure('aws', Path('results'))
+print(f'AWS assessment: {len(results.get(\"misconfigurations\", []))} issues found')
+"
+```
+
+### CI/CD Integration Setup
+```bash
+# Generate GitHub Actions workflow
+python3 -c "
+from pantheon.cicd import generate_cicd_integration
+from pathlib import Path
+result = generate_cicd_integration('github', 'standard', Path('.'))
+print(f'CI/CD setup: {result[\"files_created\"]}')
+"
+
+# Generate GitLab CI configuration
+python3 -c "
+from pantheon.cicd import generate_cicd_integration
+from pathlib import Path
+result = generate_cicd_integration('gitlab', 'comprehensive', Path('.'))
+print('GitLab CI configuration generated')
+"
+```
+
+### Enhanced Reporting
+```bash
+# Generate comprehensive security reports
+python3 -c "
+from pantheon.reporting import generate_security_report
+from pathlib import Path
+import json
+
+# Sample scan results
+scan_data = {
+    'vulnerabilities': [
+        {'severity': 'high', 'title': 'SQL Injection', 'description': 'Database injection vulnerability'}
+    ],
+    'container_scans': {},
+    'api_scans': {},
+    'cloud_scans': {}
+}
+
+report = generate_security_report(scan_data, Path('results'), ['json', 'html', 'csv'])
+print(f'Generated reports: {report[\"files_generated\"]}')
+"
+```
+
+## 📁 Enhanced Project Structure
 
 ```
 Bl4ckC3ll_PANTHEON/
-├── bl4ckc3ll_p4nth30n.py          # Main orchestrator
-├── bl4ckc3ll_pantheon_master.py   # Master CLI/TUI application
-├── bcar.py                        # BCAR reconnaissance module
-├── plugins/                       # Extensible plugin system
-├── tui/                          # Terminal user interface
-├── nuclei-templates/             # Vulnerability templates
-├── runs/                         # Scan results and reports
-├── logs/                         # Application logs
-├── install.sh                    # Automated installer
-├── quickstart.sh                 # Quick setup script
-├── Dockerfile                    # Container deployment
-└── requirements.txt              # Python dependencies
+├── pantheon/                          # 🆕 Modular package structure
+│   ├── core/                         # Core security and configuration modules
+│   │   ├── security.py              # Enhanced security controls & validation
+│   │   ├── logger.py                # Advanced logging & audit trails
+│   │   └── config.py                # Configuration management
+│   ├── containers/                   # 🆕 Container security scanning
+│   │   └── __init__.py              # Docker/K8s security assessment
+│   ├── api/                         # 🆕 API security testing
+│   │   └── __init__.py              # REST/GraphQL/SOAP security testing
+│   ├── cloud/                       # 🆕 Cloud security assessment
+│   │   └── __init__.py              # AWS/Azure/GCP security analysis
+│   ├── cicd/                        # 🆕 CI/CD integration
+│   │   └── __init__.py              # Pipeline configuration generation
+│   ├── reporting/                   # 🆕 Enhanced reporting
+│   │   └── __init__.py              # Multi-format report generation
+│   └── __init__.py                  # Main package initialization
+├── bl4ckc3ll_p4nth30n.py            # Main orchestrator (enhanced)
+├── pantheon_enhanced_demo.py         # 🆕 Feature demonstration script
+├── requirements.txt                  # 🆕 Enhanced dependencies
+├── install.sh                       # 🆕 Improved installation script
+└── README.md                        # 🆕 Updated documentation
 ```
 
-## ⚙️ Configuration
+## ⚙️ Enhanced Configuration
 
-The framework uses `p4nth30n.cfg.json` for configuration:
+The framework uses `p4nth30n.cfg.json` with new security and feature configurations:
 
 ```json
 {
-  "limits": {
-    "parallel_jobs": 20,
-    "http_timeout": 15,
-    "rps": 500,
-    "max_concurrent_scans": 8
+  "version": "2.0.0",
+  "security": {
+    "strict_mode": true,
+    "command_validation": true,
+    "rate_limiting": true,
+    "audit_logging": true,
+    "max_scan_duration": 3600
   },
-  "nuclei": {
-    "enabled": true,
-    "severity": "low,medium,high,critical",
-    "rps": 800,
-    "conc": 150
+  "containers": {
+    "scan_images": true,
+    "check_k8s_manifests": true,
+    "vulnerability_db_update": true
   },
-  "endpoints": {
-    "use_gau": true,
-    "use_katana": true,
-    "max_urls_per_target": 5000
+  "api": {
+    "enable_api_discovery": true,
+    "test_endpoints": true,
+    "include_swagger": true,
+    "max_api_requests": 1000
   },
-  "report": {
-    "formats": ["html", "json", "csv"],
-    "auto_open_html": true
+  "cloud": {
+    "aws_enabled": false,
+    "azure_enabled": false,
+    "gcp_enabled": false,
+    "check_misconfigurations": true
+  },
+  "reporting": {
+    "formats": ["html", "json", "csv", "sarif"],
+    "auto_open_html": true,
+    "include_screenshots": false,
+    "severity_filter": "medium"
   }
 }
 ```
 
-## 🔌 Plugin System
+## 🔌 Enhanced Plugin System
 
-Extend functionality with custom plugins:
+Extend functionality with the new modular plugin architecture:
 
 ```python
-# plugins/example.py
+# plugins/custom_scanner.py
+from pantheon.core import SecurityManager, PantheonLogger
+
 plugin_info = {
-    "name": "example",
-    "description": "Example plugin",
-    "version": "1.0.0",
-    "author": "Your Name"
+    "name": "custom_scanner",
+    "description": "Custom security scanner plugin",
+    "version": "2.0.0",
+    "author": "Your Name",
+    "dependencies": ["requests", "beautifulsoup4"]
 }
 
-def execute(run_dir: Path, env: Dict[str, str], cfg: Dict[str, Any]):
-    # Plugin implementation
-    pass
+def execute(target: str, output_dir: Path, config: Dict[str, Any]):
+    logger = PantheonLogger("custom_scanner")
+    security = SecurityManager()
+    
+    # Enhanced plugin implementation with security controls
+    logger.log(f"Starting custom scan for {target}", "INFO")
+    # ... plugin logic ...
+    
+    return {"status": "completed", "findings": []}
 ```
 
-## 📊 Reporting
+## 📊 Enhanced Reporting Capabilities
 
-Generated reports include:
-- **HTML**: Interactive dashboard with executive summary
-- **JSON**: Structured data for programmatic consumption
-- **CSV**: Flattened findings for analysis
-- **SARIF**: Security scanning results format for tool integration
+Generated reports now include:
+- **Interactive HTML Dashboards** - Rich visualizations and metrics
+- **SARIF Integration** - Security scanning results format
+- **Executive Summaries** - Business-focused security assessments
+- **Compliance Mapping** - Detailed compliance status reports
+- **Multi-format Output** - JSON, HTML, CSV, XML, SARIF support
+- **Vulnerability Correlation** - Cross-module vulnerability analysis
 
-Reports are saved under `runs/<run-id>/report/` with comprehensive vulnerability data and remediation guidance.
+Reports are saved under `runs/<run-id>/` with comprehensive vulnerability data, remediation guidance, and security metrics.
 
-## 🧪 Testing
+## 🧪 Enhanced Testing & Validation
 
-Run the test suite to validate installation:
+Run the comprehensive test suite:
 
 ```bash
+# Test enhanced modules
+python3 pantheon_enhanced_demo.py
+
 # Core functionality tests
 python3 enhanced_test_suite.py
 
-# Integration tests
+# Integration tests with new modules
 python3 final_integration_test.py
 
-# Automated testing chain
+# Automated testing with enhanced features
 python3 test_automation_integration.py
 ```
 
-## 🛠️ Tool Dependencies
+## 🛠️ Enhanced Tool Dependencies
 
-Core security tools (auto-installed via `install.sh`):
+The framework now supports enhanced integration with:
+
+### Container Security Tools
+- **Trivy** - Comprehensive container vulnerability scanner
+- **Grype** - Container vulnerability scanner
+- **Docker** - Container runtime security analysis
+- **kube-score** - Kubernetes security scoring
+- **Polaris** - Kubernetes best practices validation
+
+### API Security Tools  
+- **Postman/Newman** - API testing automation
+- **OWASP ZAP API** - API security testing
+- **Swagger Parser** - OpenAPI specification analysis
+- **GraphQL Introspection** - GraphQL schema analysis
+
+### Cloud Security Tools
+- **AWS CLI** - AWS security assessment
+- **Azure CLI** - Azure security analysis
+- **Google Cloud CLI** - GCP security evaluation
+- **Prowler** - Cloud security auditing
+- **Scout Suite** - Multi-cloud security assessment
+
+### Core Security Tools (Unchanged)
 - **Reconnaissance**: subfinder, amass, naabu, httpx
 - **Vulnerability Scanning**: nuclei, nikto, sqlmap
 - **Web Crawling**: katana, gau, waybackurls, gospider
 - **Directory Fuzzing**: gobuster, dirb, ffuf
 - **Subdomain Takeover**: subjack, subzy
 
-## 📚 Documentation
+## 📚 Enhanced Documentation
 
-- **[USAGE_GUIDE.md](USAGE_GUIDE.md)** - Comprehensive usage instructions
+- **[USAGE_GUIDE.md](USAGE_GUIDE.md)** - Comprehensive usage instructions with v2.0 features
+- **[CONTAINER_SECURITY.md](CONTAINER_SECURITY.md)** - 🆕 Container security scanning guide
+- **[API_SECURITY.md](API_SECURITY.md)** - 🆕 API security testing documentation
+- **[CLOUD_SECURITY.md](CLOUD_SECURITY.md)** - 🆕 Cloud security assessment guide
+- **[CICD_INTEGRATION.md](CICD_INTEGRATION.md)** - 🆕 CI/CD integration instructions
 - **[BCAR_USAGE_GUIDE.md](BCAR_USAGE_GUIDE.md)** - BCAR-specific features and setup
 - **[SECURITY_CHECKLIST.md](SECURITY_CHECKLIST.md)** - Security best practices
-- **[CHANGELOG.md](CHANGELOG.md)** - Version history and updates
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and v2.0 updates
+
+## 🚦 CI/CD Integration Examples
+
+### GitHub Actions
+```yaml
+name: Security Scan
+on: [push, pull_request]
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run PANTHEON Security Scan
+        run: |
+          git clone https://github.com/cxb3rf1lth/Bl4ckC3ll_PANTHEON.git
+          cd Bl4ckC3ll_PANTHEON
+          ./install.sh
+          python3 cicd_integration.py --target ${{ github.event.repository.html_url }}
+```
+
+### GitLab CI
+```yaml
+security_scan:
+  stage: security
+  script:
+    - git clone https://github.com/cxb3rf1lth/Bl4ckC3ll_PANTHEON.git
+    - cd Bl4ckC3ll_PANTHEON && ./install.sh
+    - python3 cicd_integration.py --target $CI_PROJECT_URL --scan-type comprehensive
+```
 
 ## ⚖️ Legal Notice
 
@@ -249,19 +400,40 @@ This tool is designed for **authorized security testing only**. Users must:
 
 ## 🤝 Contributing
 
-We welcome contributions! Please:
+We welcome contributions to PANTHEON v2.0! Please:
 1. Open an issue to discuss proposed changes
-2. Follow the existing code style and patterns
+2. Follow the modular architecture patterns
 3. Include comprehensive tests for new features
-4. Update documentation as needed
+4. Update documentation for new capabilities
+5. Ensure compatibility with existing functionality
+
+## 🔄 Migration from v1.x
+
+To upgrade from PANTHEON v1.x:
+
+```bash
+# Backup existing configuration
+cp p4nth30n.cfg.json p4nth30n.cfg.json.backup
+
+# Update to v2.0
+git pull origin main
+./install.sh
+
+# Test new features
+python3 pantheon_enhanced_demo.py
+```
 
 ## 🙏 Acknowledgments
 
 This project builds upon excellent open-source tools from the security community, including:
 - ProjectDiscovery suite (nuclei, subfinder, httpx, etc.)
-- Tom Hudson's utilities (waybackurls, etc.)
+- Container security tools (Trivy, Grype, Docker)
+- Cloud security frameworks (Prowler, Scout Suite)
+- API security testing tools (OWASP ZAP, Postman)
 - The broader cybersecurity open-source ecosystem
 
 ---
 
 **Made with ❤️ for the cybersecurity community**
+
+*Bl4ckC3ll_PANTHEON v2.0 - Enhanced Security Testing Framework*
